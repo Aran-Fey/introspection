@@ -4,26 +4,70 @@ import ast
 import inspect
 import functools
 
-import datatypes
+from typing import Dict, Any, Type, List, Callable, Iterable
 
 from .Parameter import Parameter
+from .utils import *
 
-__all__ = ['get_configurable_attributes', 'get_constructor_parameters', 'get_parameters']
+__all__ = ['get_attributes', 'get_configurable_attributes', 'get_constructor_parameters', 'get_parameters']
 
 
-@functools.lru_cache()
-def get_configurable_attributes(type):
-    # FIXME: also look for settable properties
-    attrs = get_constructor_parameters(type)
+def get_attributes(obj: Any) -> Dict[str, Any]:
+    """
+    Returns a dictionary of all of *obj*'s attributes.
+
+    :param obj: the object whose attributes will be returned
+    :return: a dict of :code:`{attr_name: attr_value}`
+    """
+    return {attr: getattr(obj, attr) for attr in dir(obj) if not attr.startswith('__')}
+
+
+# @functools.lru_cache()
+def get_configurable_attributes(cls: type) -> Iterable[str]:
+    """
+    Returns a collection of all of *configurable* attributes of *cls* instances.
+
+    An attribute is considered configurable if any of the following conditions apply:
+
+     - It's a descriptor with a :code:`__set__` method
+     - The class's constructor accepts a parameter with the same name
+
+    :param cls: the class whose attributes will be returned
+    :return: an iterable of attribute names
+    """
+
+    params = get_constructor_parameters(cls)
+    attrs = {param.name for param in params}
+
+    # iterate through all the class's descriptors and find those with a __set__ method
+    for attr, value in get_attributes(cls).items():
+        if hasattr(value, '__get__'):
+            if not hasattr(value, '__set__') or (isinstance(value, property) and value.fset is None):
+                pass
+            else:
+                attrs.add(attr)
+
     return attrs
 
 
-def get_constructor_parameters(type):
-    return get_parameters(type)
+def get_constructor_parameters(cls: type) -> List[Parameter]:
+    """
+    Returns a list of parameters accepted by *cls*'s constructor.
+
+    :param cls: The class whose constructor parameters to retrieve
+    :return: a list of :class:`Parameter` instances
+    """
+    return get_parameters(cls)
 
 
-@functools.lru_cache()
-def get_parameters(callable):
+# @functools.lru_cache()
+def get_parameters(callable: Callable) -> List[Parameter]:
+    """
+    Returns a list of parameters accepted by *callable*.
+
+    :param cls: the function or callable whose parameters to retrieve
+    :return: a list of :class:`Parameter` instances
+    """
     parameters = []
 
     try:
@@ -56,14 +100,15 @@ def get_parameters(callable):
 
                 default = match.group('default')
                 if default:
-                    param.default_value = ast.literal_eval(default)
+                    param.default = ast.literal_eval(default)
 
-                    param.type = type(param.default_value)
+                    annotation = type(param.default)
+                    if param.annotation != Parameter.empty:
+                        annotation = common_ancestor(annotation, param.annotation)
+                    param.annotation = annotation
     else:
         for parameter in sig.parameters.values():
-            param_type = datatypes.Any() if parameter.annotation is inspect.Parameter.empty else parameter.annotation
-            default_value = Parameter.NONE if parameter.default is inspect.Parameter.empty else parameter.default
-            param = Parameter(parameter.name, param_type, default_value=default_value)
+            param = Parameter.from_parameter(parameter)
             parameters.append(param)
 
     return parameters
