@@ -31,6 +31,7 @@ The available functions have been roughly categorized by what they return or wha
    signatures_and_parameters
    callables
    classes
+   callstack
    misc
 
 

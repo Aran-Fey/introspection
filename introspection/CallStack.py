@@ -11,15 +11,31 @@ __all__ = ['CallStack']
 
 
 class CallStack:
+    """
+    Represents the call stack - a series of `CallFrame` instances.
+
+    This class can be used like a read-only list. It supports iteration, indexing, membership testing, etc.
+    """
+
     def __init__(self, frames: List[CallFrame]):
         self.__frames = frames
 
     @classmethod
-    def get(cls):
+    def get(cls) -> 'CallStack':
+        """
+        Get the current call stack.
+        """
         return cls.from_frame(inspect.currentframe())
 
     @classmethod
-    def from_frame(cls, frame):
+    def from_frame(cls, frame) -> 'CallStack':
+        """
+        Creates a :class:`CallStack` containing *frame* and all its parents.
+
+        :param frame: The last frame in the call stack
+        :return: A new :class:`CallStack` instance
+        """
+
         frames = [frame]
         while True:
             frame = frame.f_back
@@ -53,6 +69,9 @@ class CallStack:
 
     @property
     def last_frame(self):
+        """
+        :return: the last frame in the stack
+        """
         return self[-1]
 
     def get_first_external_frame(self):

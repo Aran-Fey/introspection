@@ -2,12 +2,15 @@
 import inspect
 
 
+__all__ = ['get_current_class']
+
+
 def get_current_class():
     """
     Returns the name of the current module and the name of the class that is currently being created.
     Has to be called in class-level code, for example:
-
     ::
+
         def deco(f):
             print(get_current_class())
             return f
@@ -28,6 +31,7 @@ def get_current_class():
             @deco2('foobar')
             def f2(self):
                 pass
+
     """
     frame = inspect.currentframe()
     while True:
