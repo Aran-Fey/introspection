@@ -1,9 +1,5 @@
+Functions related to Classes
+========================================
 
-Classes
-========
-
-.. autoclass:: introspection.Signature
-   :members:
-
-.. autoclass:: introspection.Parameter
-   :members:
+.. automodule:: introspection.classes
+    :members:

@@ -4,6 +4,9 @@ import inspect
 from collections import defaultdict, deque
 
 
+__all__ = ['common_ancestor']
+
+
 def common_ancestor(*cls_list):
     mros = [deque(inspect.getmro(cls)) for cls in cls_list]
     track = defaultdict(int)

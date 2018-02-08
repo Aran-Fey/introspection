@@ -4,7 +4,7 @@ import functools
 from typing import Union, List, Dict, Callable
 
 from .Parameter import Parameter
-from .introspection import get_parameters
+from .callables import get_parameters
 
 
 class Signature(inspect.Signature):

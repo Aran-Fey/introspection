@@ -14,15 +14,24 @@ Some functions are improved versions of the functions found in the `inspect modu
 
 |
 
-Since this just a collection of largely unrelated functions, the documentation will simply list all the available functions.
+The two fundamental concepts are modeled by the :class:`Signature` and :class:`Parameter` classes.
 
+Most functions will return instances of these classes, so it's important to know about them.
+
+|
+
+The available functions have been roughly categorized by what they return or what kind of objects they operate on.
+
+|
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
+   signatures_and_parameters
+   callables
    classes
-   functions
+   misc
 
 
 Indices and tables
