@@ -1,0 +1,213 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Classes &#8212; introspection 0.1 documentation</title>
+    <link rel="stylesheet" href="_static/graphite.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Functions related to Callables" href="callables.html" />
+    <link rel="prev" title="Welcome to introspection’s documentation!" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="callables.html" title="Functions related to Callables"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to introspection’s documentation!"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">introspection 0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="classes">
+<h1>Classes<a class="headerlink" href="#classes" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="introspection.Signature">
+<em class="property">class </em><code class="descclassname"></code><code class="descname">Signature</code><span class="sig-paren">(</span><em>parameters</em>, <em>return_annotation=None</em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.Signature" title="Permalink to this definition">¶</a></dt>
+<dd><p>Represents a function’s parameter signature and return annotation.</p>
+<p>Implements the same interface as the <code class="xref py py-class docutils literal"><span class="pre">inspect.Signature</span></code> class.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
+<li><strong>parameters</strong> – an <code class="xref py py-class docutils literal"><span class="pre">OrderedDict</span></code> of parameter names mapped to <a class="reference internal" href="#introspection.Parameter" title="introspection.Parameter"><code class="xref py py-class docutils literal"><span class="pre">Parameter</span></code></a> instances</li>
+<li><strong>return_annotation</strong> – the annotation for the return value, or <em>Signature.empty</em></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="introspection.Signature.empty">
+<code class="descname">empty</code><a class="headerlink" href="#introspection.Signature.empty" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal"><span class="pre">_empty</span></code></p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="introspection.Signature.from_callable">
+<em class="property">classmethod </em><code class="descname">from_callable</code><span class="sig-paren">(</span><em>callable</em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.Signature.from_callable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a matching <a class="reference internal" href="#introspection.Signature" title="introspection.Signature"><code class="xref py py-class docutils literal"><span class="pre">Signature</span></code></a> instance for the given <em>callable</em>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>callable</strong> – a function or any other callable object</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a corresponding <a class="reference internal" href="#introspection.Signature" title="introspection.Signature"><code class="xref py py-class docutils literal"><span class="pre">Signature</span></code></a> instance</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="introspection.Signature.from_signature">
+<em class="property">classmethod </em><code class="descname">from_signature</code><span class="sig-paren">(</span><em>signature</em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.Signature.from_signature" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a new <cite>Signature</cite> instance from an <code class="xref py py-class docutils literal"><span class="pre">inspect.Signature</span></code> instance.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>signature</strong> – an <code class="xref py py-class docutils literal"><span class="pre">inspect.Signature</span></code> instance</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a new <cite>Signature</cite> instance</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="introspection.Parameter">
+<em class="property">class </em><code class="descclassname"></code><code class="descname">Parameter</code><span class="sig-paren">(</span><em>name</em>, <em>kind</em>, <em>default=None</em>, <em>annotation=&lt;_ParameterKind.POSITIONAL_OR_KEYWORD: 1&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.Parameter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Represents a function parameter.</p>
+<p>Implements the same interface as the <code class="xref py py-class docutils literal"><span class="pre">inspect.Parameter</span></code> class.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
+<li><strong>name</strong> – the parameter’s name</li>
+<li><strong>kind</strong> – the parameter’s kind. See <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Parameter.kind">inspect.Parameter.kind</a> for details.</li>
+<li><strong>default</strong> – the parameter’s default value or <cite>Parameter.empty</cite></li>
+<li><strong>annotation</strong> – the parameter’s type annotation</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="introspection.Parameter.default_value">
+<code class="descname">default_value</code><a class="headerlink" href="#introspection.Parameter.default_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Synonym for <cite>Parameter.default</cite>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="introspection.Parameter.empty">
+<code class="descname">empty</code><a class="headerlink" href="#introspection.Parameter.empty" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal"><span class="pre">_empty</span></code></p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="introspection.Parameter.from_parameter">
+<em class="property">classmethod </em><code class="descname">from_parameter</code><span class="sig-paren">(</span><em>parameter</em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.Parameter.from_parameter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a new <cite>Parameter</cite> instance from an <code class="xref py py-class docutils literal"><span class="pre">inspect.Parameter</span></code> instance.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>parameter</strong> – an <code class="xref py py-class docutils literal"><span class="pre">inspect.Parameter</span></code> instance</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a new <cite>Parameter</cite> instance</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to introspection’s documentation!</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="callables.html"
+                        title="next chapter">Functions related to Callables</a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="callables.html" title="Functions related to Callables"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to introspection’s documentation!"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">introspection 0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Paul Pinterits.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.6.
+    </div>
+  </body>
+</html>

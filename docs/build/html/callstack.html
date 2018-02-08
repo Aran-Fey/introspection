@@ -1,0 +1,300 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Functions related to Scopes and the Callstack &#8212; introspection 0.1 documentation</title>
+    <link rel="stylesheet" href="_static/graphite.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Misc. functions" href="misc.html" />
+    <link rel="prev" title="Functions related to Classes" href="classes.html" /> 
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="misc.html" title="Misc. functions"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="classes.html" title="Functions related to Classes"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">introspection 0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="functions-related-to-scopes-and-the-callstack">
+<h1>Functions related to Scopes and the Callstack<a class="headerlink" href="#functions-related-to-scopes-and-the-callstack" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="introspection.CallStack.CallStack">
+<em class="property">class </em><code class="descclassname"></code><code class="descname">CallStack</code><span class="sig-paren">(</span><em>frames</em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.CallStack.CallStack" title="Permalink to this definition">¶</a></dt>
+<dd><p>Represents the call stack - a series of <cite>CallFrame</cite> instances.</p>
+<p>This class can be used like a read-only list. It supports iteration, indexing, membership testing, etc.</p>
+<dl class="classmethod">
+<dt id="introspection.CallStack.CallStack.from_frame">
+<em class="property">classmethod </em><code class="descname">from_frame</code><span class="sig-paren">(</span><em>frame</em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.CallStack.CallStack.from_frame" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a <a class="reference internal" href="#introspection.CallStack.CallStack" title="introspection.CallStack.CallStack"><code class="xref py py-class docutils literal"><span class="pre">CallStack</span></code></a> containing <em>frame</em> and all its parents.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>frame</strong> – The last frame in the call stack</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A new <a class="reference internal" href="#introspection.CallStack.CallStack" title="introspection.CallStack.CallStack"><code class="xref py py-class docutils literal"><span class="pre">CallStack</span></code></a> instance</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="introspection.CallStack.CallStack.get">
+<em class="property">classmethod </em><code class="descname">get</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#introspection.CallStack.CallStack.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the current call stack.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="introspection.CallStack.CallStack.last_frame">
+<code class="descname">last_frame</code><a class="headerlink" href="#introspection.CallStack.CallStack.last_frame" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">the last frame in the stack</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="introspection.CallFrame.CallFrame">
+<em class="property">class </em><code class="descclassname"></code><code class="descname">CallFrame</code><span class="sig-paren">(</span><em>frame</em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.CallFrame.CallFrame" title="Permalink to this definition">¶</a></dt>
+<dd><p>Represents a call frame - an element of the call stack.
+It keeps track of local and closure variables.</p>
+<dl class="attribute">
+<dt id="introspection.CallFrame.CallFrame.builtins">
+<code class="descname">builtins</code><a class="headerlink" href="#introspection.CallFrame.CallFrame.builtins" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The builtins seen by this frame</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="introspection.CallFrame.CallFrame.code">
+<code class="descname">code</code><a class="headerlink" href="#introspection.CallFrame.CallFrame.code" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The code object being executed in this frame</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="introspection.CallFrame.CallFrame.filename">
+<code class="descname">filename</code><a class="headerlink" href="#introspection.CallFrame.CallFrame.filename" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The name of the file in which this frame’s code was defined</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="introspection.CallFrame.CallFrame.get_surrounding_function">
+<code class="descname">get_surrounding_function</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#introspection.CallFrame.CallFrame.get_surrounding_function" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds and returns the function in which this CallFrame was called.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The calling function object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="introspection.CallFrame.CallFrame.globals">
+<code class="descname">globals</code><a class="headerlink" href="#introspection.CallFrame.CallFrame.globals" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The global scope seen by this frame</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="introspection.CallFrame.CallFrame.locals">
+<code class="descname">locals</code><a class="headerlink" href="#introspection.CallFrame.CallFrame.locals" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The frame’s local variable scope</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="introspection.CallFrame.CallFrame.parent">
+<code class="descname">parent</code><a class="headerlink" href="#introspection.CallFrame.CallFrame.parent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the next frame one level higher on the callstack.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">the frame’s parent frame</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="introspection.CallFrame.CallFrame.resolve_name">
+<code class="descname">resolve_name</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.CallFrame.CallFrame.resolve_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resolves a variable name, returning the variable’s value.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>Closure variables don’t have a named associated with them,
+which means they cannot be looked up with this function.</p>
+<p class="last">This includes variables marked as <code class="code docutils literal"><span class="pre">nonlocal</span></code>.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The value mapped to the given name</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><strong>NameError</strong> – if no matching variable is found</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<span class="target" id="module-introspection.callstack"></span><dl class="function">
+<dt id="introspection.callstack.get_current_class">
+<code class="descclassname"></code><code class="descname">get_current_class</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#introspection.callstack.get_current_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the name of the current module and the name of the class that is currently being created.
+Has to be called in class-level code, for example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">deco</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">get_current_class</span><span class="p">())</span>
+    <span class="k">return</span> <span class="n">f</span>
+
+<span class="k">def</span> <span class="nf">deco2</span><span class="p">(</span><span class="n">arg</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">wrap</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">get_current_class</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">f</span>
+    <span class="k">return</span> <span class="n">wrap</span>
+
+<span class="k">class</span> <span class="nc">Foo</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">get_current_class</span><span class="p">())</span>
+
+    <span class="nd">@deco</span>
+    <span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@deco2</span><span class="p">(</span><span class="s1">&#39;foobar&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">f2</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="classes.html"
+                        title="previous chapter">Functions related to Classes</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="misc.html"
+                        title="next chapter">Misc. functions</a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="misc.html" title="Misc. functions"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="classes.html" title="Functions related to Classes"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">introspection 0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Paul Pinterits.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.6.
+    </div>
+  </body>
+</html>
