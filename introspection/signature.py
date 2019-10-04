@@ -11,6 +11,14 @@ from .misc import common_ancestor
 __all__ = ['Signature']
 
 
+BUILTIN_SIGNATURES = {
+    bool: (bool, [Parameter('x', Parameter.POSITIONAL_ONLY, Parameter.missing, object)]),
+    float: (float, [Parameter('x', Parameter.POSITIONAL_ONLY, Parameter.missing, object)]),
+    int: (int, [Parameter('x', Parameter.POSITIONAL_ONLY, Parameter.missing, object),
+                Parameter('base', Parameter.POSITIONAL_ONLY, 10, int)]),
+}
+
+
 class Signature(inspect.Signature):
     """
     Represents a function's parameter signature and return annotation.
@@ -48,16 +56,17 @@ class Signature(inspect.Signature):
         :return: a corresponding :class:`Signature` instance
         """
 
+        if callable_ in BUILTIN_SIGNATURES:
+            ret_type, params = BUILTIN_SIGNATURES[callable_]
+            params = [param.copy() for param in params]
+            return Signature(params, ret_type)
+
         try:
             sig = inspect.signature(callable_)
         except ValueError:  # builtin types don't have an accessible signature
             pass
         else:
             return cls.from_signature(sig)
-
-        if callable_ is bool:
-            parameters = [Parameter('x', Parameter.POSITIONAL_ONLY, Parameter.missing, object)]
-            return Signature(parameters, bool)
 
         doc = callable_.__doc__
         if doc:
@@ -103,17 +112,34 @@ class Signature(inspect.Signature):
                 return_types.add(return_type)
 
             paramlist = match.group(1)
+            kw_only = False
             for i, param_desc in enumerate(paramlist.split(', ')):
+                if param_desc == '/':
+                    for param in params[:i]:
+                        param['kind'] = Parameter.POSITIONAL_ONLY
+                    continue
+                elif param_desc == '*':
+                    kw_only = True
+                    continue
+
                 try:
                     param = params[i]
                 except IndexError:
-                    param = {'names': set(), 'defaults': [], 'types': set()}
+                    param = {
+                        'names': set(),
+                        'defaults': [],
+                        'types': set(),
+                        'kind': Parameter.POSITIONAL_OR_KEYWORD
+                    }
                     params.append(param)
 
                     # if there's a form with fewer arguments, then this
                     # parameter must be optional
                     if line_nr > 0:
                         param['defaults'].append(Parameter.missing)
+
+                if kw_only:
+                    param['kind'] = Parameter.KEYWORD_ONLY
 
                 name, _, default = param_desc.partition('=')
 
@@ -138,7 +164,7 @@ class Signature(inspect.Signature):
         for param in params:
             if len(param['names']) == 1:
                 name = next(iter(param['names']))
-                kind = Parameter.POSITIONAL_OR_KEYWORD
+                kind = param['kind']
             else:
                 name = '_or_'.join(sorted(param['names']))
                 kind = Parameter.POSITIONAL_ONLY

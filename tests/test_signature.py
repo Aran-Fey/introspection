@@ -24,10 +24,19 @@ def test_get_int_signature():
     assert sig.return_annotation is int
     assert len(sig.parameters) == 2
     assert list(sig.parameters) == ['x', 'base']
-    assert sig.parameters['x'].kind == Parameter.POSITIONAL_OR_KEYWORD
+    assert sig.parameters['x'].kind == Parameter.POSITIONAL_ONLY
     assert sig.parameters['x'].default in {0, Parameter.missing}
-    assert sig.parameters['base'].kind == Parameter.POSITIONAL_OR_KEYWORD
+    assert sig.parameters['base'].kind == Parameter.POSITIONAL_ONLY
     assert sig.parameters['base'].default in {10, Parameter.missing}
+
+
+def test_get_float_signature():
+    sig = Signature.from_callable(float)
+    assert sig.return_annotation is float
+    assert len(sig.parameters) == 1
+    assert list(sig.parameters) == ['x']
+    assert sig.parameters['x'].kind == Parameter.POSITIONAL_ONLY
+    assert sig.parameters['x'].default in {0, Parameter.missing}
 
 
 def test_get_bool_signature():

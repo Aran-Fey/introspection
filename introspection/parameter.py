@@ -29,6 +29,10 @@ class Parameter:
         self.default = default
         self.annotation = annotation
 
+    def copy(self):
+        cls = type(self)
+        return cls(self.name, self.kind, self.default, self.annotation)
+
     @property
     def is_optional(self):
         return self.default is not self.empty
