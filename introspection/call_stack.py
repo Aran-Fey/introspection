@@ -4,7 +4,7 @@ import inspect
 from pathlib import Path
 from typing import List
 
-from .CallFrame import CallFrame
+from .call_frame import CallFrame
 
 
 __all__ = ['CallStack']

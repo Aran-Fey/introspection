@@ -19,15 +19,33 @@ def test_get_signature():
     assert sig.parameters['b'].default == 3
 
 
-def test_get_builtin_signature():
+def test_get_int_signature():
     sig = Signature.from_callable(int)
     assert sig.return_annotation is int
     assert len(sig.parameters) == 2
     assert list(sig.parameters) == ['x', 'base']
     assert sig.parameters['x'].kind == Parameter.POSITIONAL_OR_KEYWORD
-    assert sig.parameters['x'].default == 0
+    assert sig.parameters['x'].default in {0, Parameter.missing}
     assert sig.parameters['base'].kind == Parameter.POSITIONAL_OR_KEYWORD
-    assert sig.parameters['base'].default == 10
+    assert sig.parameters['base'].default in {10, Parameter.missing}
+
+
+def test_get_bool_signature():
+    sig = Signature.from_callable(bool)
+    assert sig.return_annotation is bool
+    assert len(sig.parameters) == 1
+    assert list(sig.parameters) == ['x']
+    assert sig.parameters['x'].kind == Parameter.POSITIONAL_ONLY
+    assert sig.parameters['x'].default is Parameter.missing
+
+
+def test_signature_with_optional_parameter():
+    sig = Signature.from_callable(vars)
+
+    assert sig.return_annotation is dict
+    assert len(sig.parameters) == 1
+    assert sig.parameters['object'].annotation is object
+    assert sig.parameters['object'].default is Parameter.missing
 
 
 def test_store_signature():

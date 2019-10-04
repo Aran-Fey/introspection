@@ -15,6 +15,7 @@ class Parameter:
     """
 
     empty = inspect.Parameter.empty
+    missing = type('_missing', (), {})
 
     POSITIONAL_ONLY = inspect.Parameter.POSITIONAL_ONLY
     POSITIONAL_OR_KEYWORD = inspect.Parameter.POSITIONAL_OR_KEYWORD
@@ -27,6 +28,10 @@ class Parameter:
         self.kind = kind
         self.default = default
         self.annotation = annotation
+
+    @property
+    def is_optional(self):
+        return self.default is not self.empty
 
     @property
     def default_value(self):

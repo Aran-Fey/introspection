@@ -1,10 +1,9 @@
 
-from .Parameter import Parameter
-from .Signature import Signature
-from .CallStack import CallStack
-from .CallFrame import CallFrame
+from .parameter import *
+from .signature import *
+from .call_stack import *
+from .call_frame import *
 
 from .callables import *
-from .callstack import *
 from .classes import *
 from .misc import *

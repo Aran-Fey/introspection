@@ -1,7 +1,7 @@
 
 from typing import Dict, Any, List, Iterable
 
-from .Parameter import Parameter
+from .parameter import Parameter
 from .callables import *
 
 
