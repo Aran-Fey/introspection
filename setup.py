@@ -4,7 +4,7 @@ import setuptools
 import sys
 
 
-HERE = os.path.basename(__file__)
+HERE = os.path.basename(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 
