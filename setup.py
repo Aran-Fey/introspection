@@ -25,9 +25,9 @@ def import_package_from_path(path):
 
 author = "Aran-Fey"
 
-name = HERE.name
 long_description = (HERE / "README.md").read_text()
-
+packages = setuptools.find_packages()
+name = packages[0]
 module = import_package_from_path(HERE / name)
 
 setuptools.setup(
@@ -37,7 +37,7 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/{}/{}".format(author, name),
-    packages=[name],
+    packages=packages,
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
