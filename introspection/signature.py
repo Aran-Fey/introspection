@@ -44,7 +44,8 @@ class Signature(inspect.Signature):
         :param signature: an :class:`inspect.Signature` instance
         :return: a new `Signature` instance
         """
-        return cls(signature.parameters.values(), return_annotation=signature.return_annotation)
+        params = [Parameter.from_parameter(param) for param in signature.parameters.values()]
+        return cls(params, return_annotation=signature.return_annotation)
 
     @classmethod
     @functools.lru_cache()

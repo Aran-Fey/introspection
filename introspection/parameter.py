@@ -1,8 +1,10 @@
 
 import inspect
 
+__all__ = ['Parameter']
 
-class Parameter:
+
+class Parameter(inspect.Parameter):
     """
     Represents a function parameter.
 
@@ -24,10 +26,12 @@ class Parameter:
     VAR_KEYWORD = inspect.Parameter.VAR_KEYWORD
 
     def __init__(self, name=None, kind=POSITIONAL_OR_KEYWORD, default=empty, annotation=empty):
-        self.name = name
-        self.kind = kind
-        self.default = default
-        self.annotation = annotation
+        if kind is Parameter.VAR_POSITIONAL:
+            default = ()
+        elif kind is Parameter.VAR_KEYWORD:
+            default = {}
+
+        super().__init__(name, kind, default=default, annotation=annotation)
 
     def copy(self):
         cls = type(self)
