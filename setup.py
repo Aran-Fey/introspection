@@ -28,7 +28,7 @@ author = "Aran-Fey"
 name = HERE.name
 long_description = (HERE / "README.md").read_text()
 
-module = import_package_from_path(name)
+module = import_package_from_path(HERE / name)
 
 setuptools.setup(
     name=name,
