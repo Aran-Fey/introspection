@@ -1,34 +1,21 @@
 
-import importlib.machinery
-import importlib.util
+import os.path
 import setuptools
 import sys
-from pathlib import Path
 
 
-HERE = Path(__file__).parent
-
-
-def import_package_from_path(path):
-    name = path.stem
-    origin = str(path / '__init__.py')
-
-    loader = importlib.machinery.SourceFileLoader(name, origin)
-    spec = importlib.util.spec_from_file_location(name, origin, loader=loader)
-    module = importlib.util.module_from_spec(spec)
-
-    # add the module to sys.path before executing it so that relative imports work
-    sys.modules[name] = module
-    spec.loader.exec_module(module)
-    return module
+HERE = os.path.basename(__file__)
+sys.path.insert(0, HERE)
 
 
 author = "Aran-Fey"
 
-long_description = (HERE / "README.md").read_text()
+with open(HERE+"/README.md") as file:
+    long_description = file.read()
+
 packages = setuptools.find_packages()
 name = packages[0]
-module = import_package_from_path(HERE / name)
+module = __import__(name)
 
 setuptools.setup(
     name=name,
