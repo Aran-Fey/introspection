@@ -1,4 +1,6 @@
 
+__version__ = '1.0'
+
 from .parameter import *
 from .signature import *
 from .call_stack import *
