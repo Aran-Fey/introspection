@@ -62,12 +62,10 @@
 <code class="sig-prename descclassname"></code><code class="sig-name descname">get_configurable_attributes</code><span class="sig-paren">(</span><em class="sig-param">cls</em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.classes.get_configurable_attributes" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a collection of all of <em>configurable</em> attributes of <em>cls</em> instances.</p>
 <p>An attribute is considered configurable if any of the following conditions apply:</p>
-<blockquote>
-<div><ul class="simple">
+<ul class="simple">
 <li><p>It’s a descriptor with a <code class="code docutils literal notranslate"><span class="pre">__set__</span></code> method</p></li>
 <li><p>The class’s constructor accepts a parameter with the same name</p></li>
 </ul>
-</div></blockquote>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>cls</strong> – The class whose attributes will be returned</p>

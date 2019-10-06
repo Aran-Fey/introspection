@@ -127,6 +127,7 @@ tt {
 }
 
 ol.simple, ul.simple {
+  margin-top: 0.7em;
   margin-bottom: 0;
 }
 
@@ -171,9 +172,8 @@ div.section ol {
   text-indent: -1.6em;
 }
   
-
 div.section li {
-  margin: 0.1em 0.1em 0.1em 1em;
+  margin: 0.1em 0.1em 0.1em 1.5em;
 }
 
 div.section ul > li:before {
@@ -196,6 +196,10 @@ div.section li p {
 div.section dl {
   margin: 1em 2em 0.5em;
   padding: 0;
+}
+
+div.section dl.field-list {
+  margin-left: 1em;
 }
 
 div.section dt {

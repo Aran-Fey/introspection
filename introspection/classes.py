@@ -12,8 +12,8 @@ def get_attributes(obj: Any) -> Dict[str, Any]:
     """
     Returns a dictionary of all of *obj*'s attributes.
 
-    :param obj: the object whose attributes will be returned
-    :return: a dict of :code:`{attr_name: attr_value}`
+    :param obj: The object whose attributes will be returned
+    :return: A dict of :code:`{attr_name: attr_value}`
     """
     return {attr: getattr(obj, attr) for attr in dir(obj) if not attr.startswith('__')}
 
@@ -24,8 +24,8 @@ def get_configurable_attributes(cls: type) -> Iterable[str]:
 
     An attribute is considered configurable if any of the following conditions apply:
 
-     - It's a descriptor with a :code:`__set__` method
-     - The class's constructor accepts a parameter with the same name
+    * It's a descriptor with a :code:`__set__` method
+    * The class's constructor accepts a parameter with the same name
 
     :param cls: The class whose attributes will be returned
     :return: An iterable of attribute names
