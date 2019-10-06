@@ -1,7 +1,4 @@
 
-import inspect
-
-from pathlib import Path
 from typing import List
 
 from .call_frame import CallFrame
@@ -12,7 +9,7 @@ __all__ = ['CallStack']
 
 class CallStack:
     """
-    Represents the call stack - a series of `CallFrame` instances.
+    Represents the call stack - a series of :class:`CallFrame` instances.
 
     This class can be used like a read-only list. It supports iteration, indexing, membership testing, etc.
     """
@@ -25,15 +22,15 @@ class CallStack:
         """
         Get the current call stack.
         """
-        return cls.from_frame(inspect.currentframe())
+        return cls.from_frame(CallFrame.current())
 
     @classmethod
     def from_frame(cls, frame) -> 'CallStack':
         """
-        Creates a :class:`CallStack` containing *frame* and all its parents.
+        Creates a `CallStack` containing *frame* and all its parents.
 
         :param frame: The last frame in the call stack
-        :return: A new :class:`CallStack` instance
+        :return: A new `CallStack` instance
         """
 
         frames = [frame]
@@ -70,7 +67,7 @@ class CallStack:
     @property
     def last_frame(self):
         """
-        :return: the last frame in the stack
+        :return: The last frame on the stack
         """
         return self[-1]
 

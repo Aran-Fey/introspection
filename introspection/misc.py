@@ -10,9 +10,10 @@ __all__ = ['common_ancestor']
 def common_ancestor(*cls_list):
     """
     Finds the closest common parent class of the given classes.
+    If called with no arguments, :code:`object` is returned.
 
-    :param cls_list: a list of classes
-    :return: the given classes' shared parent class
+    :param cls_list: Any number of classes
+    :return: The given classes' shared parent class
     """
 
     mros = [deque(inspect.getmro(cls)) for cls in cls_list]

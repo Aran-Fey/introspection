@@ -1,32 +1,22 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
   <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Functions related to Classes &#8212; introspection 0.1 documentation</title>
+    <meta charset="utf-8" />
+    <title>Functions related to Classes &#8212; introspection 1.0 documentation</title>
     <link rel="stylesheet" href="_static/graphite.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    './',
-        VERSION:     '0.1',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true,
-        SOURCELINK_SUFFIX: '.txt'
-      };
-    </script>
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Functions related to Scopes and the Callstack" href="callstack.html" />
+    <link rel="next" title="Functions related to Scopes and the Call Stack" href="call_stack.html" />
     <link rel="prev" title="Functions related to Callables" href="callables.html" /> 
-  </head>
-  <body>
+  </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
@@ -37,12 +27,12 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="callstack.html" title="Functions related to Scopes and the Callstack"
+          <a href="call_stack.html" title="Functions related to Scopes and the Call Stack"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="callables.html" title="Functions related to Callables"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">introspection 0.1 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">introspection 1.0 documentation</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -55,57 +45,51 @@
 <span id="functions-related-to-classes"></span><h1>Functions related to Classes<a class="headerlink" href="#module-introspection.classes" title="Permalink to this headline">¶</a></h1>
 <dl class="function">
 <dt id="introspection.classes.get_attributes">
-<code class="descclassname"></code><code class="descname">get_attributes</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.classes.get_attributes" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"></code><code class="sig-name descname">get_attributes</code><span class="sig-paren">(</span><em class="sig-param">obj</em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.classes.get_attributes" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a dictionary of all of <em>obj</em>’s attributes.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>obj</strong> – the object whose attributes will be returned</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a dict of <code class="code docutils literal"><span class="pre">{attr_name:</span> <span class="pre">attr_value}</span></code></td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>obj</strong> – the object whose attributes will be returned</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a dict of <code class="code docutils literal notranslate"><span class="pre">{attr_name:</span> <span class="pre">attr_value}</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="introspection.classes.get_configurable_attributes">
-<code class="descclassname"></code><code class="descname">get_configurable_attributes</code><span class="sig-paren">(</span><em>cls</em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.classes.get_configurable_attributes" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"></code><code class="sig-name descname">get_configurable_attributes</code><span class="sig-paren">(</span><em class="sig-param">cls</em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.classes.get_configurable_attributes" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a collection of all of <em>configurable</em> attributes of <em>cls</em> instances.</p>
 <p>An attribute is considered configurable if any of the following conditions apply:</p>
 <blockquote>
 <div><ul class="simple">
-<li>It’s a descriptor with a <code class="code docutils literal"><span class="pre">__set__</span></code> method</li>
-<li>The class’s constructor accepts a parameter with the same name</li>
+<li><p>It’s a descriptor with a <code class="code docutils literal notranslate"><span class="pre">__set__</span></code> method</p></li>
+<li><p>The class’s constructor accepts a parameter with the same name</p></li>
 </ul>
 </div></blockquote>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>cls</strong> – the class whose attributes will be returned</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">an iterable of attribute names</td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>cls</strong> – The class whose attributes will be returned</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>An iterable of attribute names</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="introspection.classes.get_constructor_parameters">
-<code class="descclassname"></code><code class="descname">get_constructor_parameters</code><span class="sig-paren">(</span><em>cls</em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.classes.get_constructor_parameters" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"></code><code class="sig-name descname">get_constructor_parameters</code><span class="sig-paren">(</span><em class="sig-param">cls</em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.classes.get_constructor_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a list of parameters accepted by <em>cls</em>’s constructor.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>cls</strong> – The class whose constructor parameters to retrieve</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a list of <code class="xref py py-class docutils literal"><span class="pre">Parameter</span></code> instances</td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>cls</strong> – The class whose constructor parameters to retrieve</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code> instances</p>
+</dd>
+</dl>
 </dd></dl>
 
 </div>
@@ -120,16 +104,16 @@
   <p class="topless"><a href="callables.html"
                         title="previous chapter">Functions related to Callables</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="callstack.html"
-                        title="next chapter">Functions related to Scopes and the Callstack</a></p>
+  <p class="topless"><a href="call_stack.html"
+                        title="next chapter">Functions related to Scopes and the Call Stack</a></p>
 <div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <div><input type="text" name="q" /></div>
-      <div><input type="submit" value="Go" /></div>
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
     </form>
+    </div>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
@@ -146,17 +130,17 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="callstack.html" title="Functions related to Scopes and the Callstack"
+          <a href="call_stack.html" title="Functions related to Scopes and the Call Stack"
              >next</a> |</li>
         <li class="right" >
           <a href="callables.html" title="Functions related to Callables"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">introspection 0.1 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">introspection 1.0 documentation</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Paul Pinterits.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.6.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.2.0.
     </div>
   </body>
 </html>

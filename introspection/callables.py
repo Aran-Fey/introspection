@@ -8,11 +8,11 @@ from .signature import Signature
 __all__ = ['get_parameters']
 
 
-def get_parameters(callable: Callable) -> List[Parameter]:
+def get_parameters(callable_: Callable) -> List[Parameter]:
     """
-    Returns a list of parameters accepted by *callable*.
+    Returns a list of parameters accepted by *callable_*.
 
-    :param callable: the callable whose parameters to retrieve
+    :param callable_: the callable whose parameters to retrieve
     :return: a list of :class:`Parameter` instances
     """
-    return list(Signature.from_callable(callable).parameters.values())
+    return list(Signature.from_callable(callable_).parameters.values())

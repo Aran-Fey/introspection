@@ -27,8 +27,8 @@ def get_configurable_attributes(cls: type) -> Iterable[str]:
      - It's a descriptor with a :code:`__set__` method
      - The class's constructor accepts a parameter with the same name
 
-    :param cls: the class whose attributes will be returned
-    :return: an iterable of attribute names
+    :param cls: The class whose attributes will be returned
+    :return: An iterable of attribute names
     """
 
     params = get_constructor_parameters(cls)
@@ -50,7 +50,7 @@ def get_constructor_parameters(cls: type) -> List[Parameter]:
     Returns a list of parameters accepted by *cls*'s constructor.
 
     :param cls: The class whose constructor parameters to retrieve
-    :return: a list of :class:`Parameter` instances
+    :return: A list of :class:`Parameter` instances
     """
     return get_parameters(cls)
 

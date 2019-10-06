@@ -25,6 +25,22 @@ body > h1, h1.title {
   text-shadow: 0 3px 6px rgba(0,0,0,0.5);
 }
 
+code:not(.sig-prename):not(.sig-name) {
+  font-size: 1.3em;
+  background: #333;
+  padding: 0 0.1em;
+  border-radius: 0.2em;
+}
+
+code.sig-prename {
+  font-size: 1.2em;
+}
+
+code.sig-name {
+  font-size: 1.4em;
+  font-weight: bold;
+}
+
 div.related {
   background-color: #555555;
   margin: 0;
@@ -72,7 +88,8 @@ div.section h1 {
   text-align: left;
   font-size: 180%;
   border-bottom: 1px solid #333333;
-  padding: 0.2em;
+  padding: 0.3em;
+  padding-bottom: 1em;
   margin: 0;
 }
 
@@ -109,6 +126,10 @@ tt {
   font-family: monospace;
 }
 
+ol.simple, ul.simple {
+  margin-bottom: 0;
+}
+
 div.section blockquote {
   margin: 1em 2em 0.5em;
   padding: 0.5em;
@@ -130,8 +151,7 @@ div.section pre {
 div.section ul, div.sphinxsidebar ul {
   list-style: none;
   margin-left: 0;
-  padding-left: 2.2em;
-  text-indent: -1.2em;
+  padding-left: 0;
 }
 
 div.sphinxsidebar ul > li:before {
@@ -159,6 +179,7 @@ div.section li {
 div.section ul > li:before {
   content: "\2023 \2002";
   color: #cccccc;
+  float: left;
 }
 
 div.section ol > li:before {
@@ -178,10 +199,10 @@ div.section dl {
 }
 
 div.section dt {
-  background-color: #555555;
+  background-color: #555;
+  border-radius: 0.2em;
   margin: 0.2em 0;
   padding: 0.2em 0.5em;
-  font-weight: bold;
 }
 
 div.section dd {
@@ -189,13 +210,22 @@ div.section dd {
   padding: 0.2em 2em;
 }
 
+div.section dl > dt.class {
+  background-color: #666;
+}
+
+div.section dl dl.field-list dt {
+  background-color: #4f4f4f;
+  border-radius: 0.5em;
+}
+
 a {
-  color: #bbbbbb;
+  color: #88f;
   text-decoration: none;
 }
 
 a:hover {
-  text-shadow: 0 0 8px #cccccc;
+  color: #66d;
 }
 
 a.headerlink {
@@ -232,6 +262,7 @@ div.bodywrapper {
 
 div.body {
   padding: 0 1em;
+  max-width: 60em;
 }
 
 div.sphinxsidebar {
@@ -239,6 +270,18 @@ div.sphinxsidebar {
   width: 220px;
   margin-left: -100%;
   padding: 10px;
+}
+
+input[type="text"] {
+  background: #ccc;
+  width: 100%;
+  padding: 5px;
+  margin: 0;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  -o-box-sizing: border-box;
+  -ms-box-sizing: border-box;
+  box-sizing: border-box;
 }
 
 table.indextable {
@@ -253,10 +296,16 @@ table.indextable td {
 em {
   font-weight: bold;
   font-style: italic;
+  font-size: 0.9em;
 }
 
 em.property {
   margin: 0 0.25em;
+  font-weight: normal;
+}
+
+em.sig-param {
+  font-weight: normal;
 }
 
 big {
@@ -269,5 +318,9 @@ big {
   font-variant: small-caps;
   font-size: 90%;
   vertical-align: text-top;
+}
+
+div.admonition {
+  background-color: #334;
 }
 

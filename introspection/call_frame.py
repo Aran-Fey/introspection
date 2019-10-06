@@ -1,4 +1,6 @@
 
+import inspect
+
 __all__ = ['CallFrame']
 
 
@@ -6,10 +8,29 @@ class CallFrame:
     """
     Represents a call frame - an element of the call stack.
     It keeps track of local and closure variables.
+
+    Note that storing CallFrames in variables can create reference
+    cycles where a frame contains a reference to itself. To avoid
+    this, CallFrames can be used as context managers - upon exit,
+    the reference to the underlying frame object is released.
+
+    ::
+        with CallFrame.current() as frame:
+            ...  # do stuff with the frame
+        # at this point, the frame has become unusable
     """
 
     def __init__(self, frame):
         self.__frame = frame
+
+    @classmethod
+    def current(cls) -> 'CallFrame':
+        """
+        Retrieves the current call frame.
+
+        :return: The current call frame
+        """
+        return cls(inspect.currentframe().f_back)
 
     def __getattr__(self, attr):
         return getattr(self.__frame, attr)
@@ -23,7 +44,7 @@ class CallFrame:
     @property
     def parent(self):
         """
-        Returns the next frame one level higher on the callstack.
+        Returns the next frame one level higher on the call stack.
 
         :return: the frame's parent frame
         """

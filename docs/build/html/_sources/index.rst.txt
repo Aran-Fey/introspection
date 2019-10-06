@@ -1,7 +1,3 @@
-.. introspection documentation master file, created by
-   sphinx-quickstart on Wed Feb  7 17:05:15 2018.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
 
 Welcome to introspection's documentation!
 =========================================
@@ -31,7 +27,7 @@ The available functions have been roughly categorized by what they return or wha
    signatures_and_parameters
    callables
    classes
-   callstack
+   call_stack
    misc
 
 

@@ -101,8 +101,9 @@ div.footer, div.header {
 
 div.line-block {
   display: block ;
-  margin-top: 1em ;
-  margin-bottom: 1em }
+  margin-top: 0.2em ;
+  margin-bottom: 0.2em ;
+}
 
 div.line-block div.line-block {
   margin-top: 0 ;

@@ -21,12 +21,10 @@ BUILTIN_SIGNATURES = {
 
 class Signature(inspect.Signature):
     """
-    Represents a function's parameter signature and return annotation.
+    An :class:`inspect.Signature` subclass that represents a function's parameter signature and return annotation.
 
-    Implements the same interface as the :class:`inspect.Signature` class.
-
-    :ivar parameters: an :class:`OrderedDict` of parameter names mapped to :class:`Parameter` instances
-    :ivar return_annotation: the annotation for the return value, or *Signature.empty*
+    :ivar parameters: An :class:`OrderedDict` of parameter names mapped to :class:`Parameter` instances
+    :ivar return_annotation: The annotation for the return value, or *Signature.empty*
     """
 
     empty = inspect.Signature.empty
@@ -41,8 +39,8 @@ class Signature(inspect.Signature):
         """
         Creates a new `Signature` instance from an :class:`inspect.Signature` instance.
 
-        :param signature: an :class:`inspect.Signature` instance
-        :return: a new `Signature` instance
+        :param signature: An :class:`inspect.Signature` instance
+        :return: A new `Signature` instance
         """
         params = [Parameter.from_parameter(param) for param in signature.parameters.values()]
         return cls(params, return_annotation=signature.return_annotation)
@@ -51,10 +49,10 @@ class Signature(inspect.Signature):
     @functools.lru_cache()
     def from_callable(cls, callable_: Callable) -> 'Signature':
         """
-        Returns a matching :class:`Signature` instance for the given *callable*.
+        Returns a matching `Signature` instance for the given *callable_*.
 
-        :param callable_: a function or any other callable object
-        :return: a corresponding :class:`Signature` instance
+        :param callable_: A function or any other callable object
+        :return: A corresponding `Signature` instance
         """
 
         if callable_ in BUILTIN_SIGNATURES:

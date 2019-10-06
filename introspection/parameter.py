@@ -6,14 +6,12 @@ __all__ = ['Parameter']
 
 class Parameter(inspect.Parameter):
     """
-    Represents a function parameter.
+    An :class:`inspect.Parameter` subclass that represents a function parameter.
 
-    Implements the same interface as the :class:`inspect.Parameter` class.
-
-    :ivar name: the parameter's name
-    :ivar kind: the parameter's kind. See `inspect.Parameter.kind <https://docs.python.org/3/library/inspect.html#inspect.Parameter.kind>`_ for details.
-    :ivar default: the parameter's default value or `Parameter.empty`
-    :ivar annotation: the parameter's type annotation
+    :ivar name: The parameter's name
+    :ivar kind: The parameter's kind. See `inspect.Parameter.kind <https://docs.python.org/3/library/inspect.html#inspect.Parameter.kind>`_ for details.
+    :ivar default: The parameter's default value or `Parameter.empty`
+    :ivar annotation: The parameter's type annotation
     """
 
     empty = inspect.Parameter.empty
@@ -57,7 +55,7 @@ class Parameter(inspect.Parameter):
         """
         Creates a new `Parameter` instance from an :class:`inspect.Parameter` instance.
 
-        :param parameter: an :class:`inspect.Parameter` instance
-        :return: a new `Parameter` instance
+        :param parameter: An :class:`inspect.Parameter` instance
+        :return: A new `Parameter` instance
         """
         return cls(parameter.name, parameter.kind, default=parameter.default, annotation=parameter.annotation)
