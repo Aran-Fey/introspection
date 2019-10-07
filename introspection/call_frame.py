@@ -12,9 +12,8 @@ class CallFrame:
     Note that storing CallFrames in variables can create reference
     cycles where a frame contains a reference to itself. To avoid
     this, CallFrames can be used as context managers - upon exit,
-    the reference to the underlying frame object is released.
+    the reference to the underlying frame object is released::
 
-    ::
         with CallFrame.current() as frame:
             ...  # do stuff with the frame
         # at this point, the frame has become unusable
@@ -45,43 +44,41 @@ class CallFrame:
     def parent(self):
         """
         Returns the next frame one level higher on the call stack.
-
-        :return: the frame's parent frame
         """
         return self.__frame.f_back
 
     @property
     def builtins(self):
         """
-        :return: The builtins seen by this frame
+        The builtins seen by this frame
         """
         return self.__frame.f_builtins
 
     @property
     def globals(self):
         """
-        :return: The global scope seen by this frame
+        The global scope seen by this frame
         """
         return self.__frame.f_globals
 
     @property
     def locals(self):
         """
-        :return: The frame's local variable scope
+        The frame's local variable scope
         """
         return self.__frame.f_locals
 
     @property
     def code(self):
         """
-        :return: The code object being executed in this frame
+        The code object being executed in this frame
         """
         return self.__frame.f_code
 
     @property
     def filename(self):
         """
-        :return: The name of the file in which this frame's code was defined
+        The name of the file in which this frame's code was defined
         """
         return self.code.co_filename
 

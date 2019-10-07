@@ -1,25 +1,34 @@
 
 import os.path
+import re
 import setuptools
-import sys
-
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, HERE)
+
+
+def extract_version():
+    path = os.path.join(HERE, name, '__init__.py')
+    with open(path) as file:
+        code = file.read()
+
+    pattern = re.compile(r'''^__version__\s*=\s*["']([^"']+)''', re.M)
+    match = pattern.search(code)
+    return match.group(1)
 
 
 author = "Aran-Fey"
 
+packages = setuptools.find_packages()
+name = packages[0]
+
 with open(HERE+"/README.md") as file:
     long_description = file.read()
 
-packages = setuptools.find_packages()
-name = packages[0]
-module = __import__(name)
+version = extract_version()
 
 setuptools.setup(
     name=name,
-    version=module.__version__,
+    version=version,
     author=author,
     long_description=long_description,
     long_description_content_type="text/markdown",
