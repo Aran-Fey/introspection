@@ -1,11 +1,43 @@
 
+import inspect
+
 from typing import Dict, Any, List, Iterable
 
 from .parameter import Parameter
 from .callables import *
 
 
-__all__ = ['get_attributes', 'get_configurable_attributes', 'get_constructor_parameters']
+__all__ = ['get_subclasses', 'get_attributes', 'get_configurable_attributes', 'get_constructor_parameters', 'implements_special_method']
+
+
+def implements_special_method(cls, method_name):
+    if not isinstance(cls, type):
+        raise TypeError("'cls' argument must be a class, not {}".format(cls))
+    
+    for cls in cls.mro():
+        try:
+            method = vars(cls)[method_name]
+        except KeyError:
+            continue
+        else:
+            return method is not None
+    
+    return False
+
+
+def get_subclasses(cls):
+    subclasses = set()
+    queue = cls.__subclasses__()
+
+    while queue:
+        cls = queue.pop()
+
+        if not inspect.isabstract(cls):
+            subclasses.add(cls)
+
+        queue += cls.__subclasses__()
+
+    return subclasses
 
 
 def get_attributes(obj: Any) -> Dict[str, Any]:

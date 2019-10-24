@@ -8,7 +8,7 @@ from typing import Union, List, Dict, Callable
 from .parameter import Parameter
 from .misc import common_ancestor
 
-__all__ = ['Signature']
+__all__ = ['Signature', 'signature']
 
 
 BUILTIN_SIGNATURES = {
@@ -35,19 +35,19 @@ class Signature(inspect.Signature):
         super().__init__(parameters, return_annotation=return_annotation, __validate_parameters__=False)
 
     @classmethod
-    def from_signature(cls, signature: inspect.Signature) -> 'Signature':
+    def from_signature(cls, signature: inspect.Signature, parameter_type=Parameter) -> 'Signature':
         """
         Creates a new `Signature` instance from an :class:`inspect.Signature` instance.
 
         :param signature: An :class:`inspect.Signature` instance
         :return: A new `Signature` instance
         """
-        params = [Parameter.from_parameter(param) for param in signature.parameters.values()]
+        params = [parameter_type.from_parameter(param) for param in signature.parameters.values()]
         return cls(params, return_annotation=signature.return_annotation)
 
     @classmethod
     @functools.lru_cache()
-    def from_callable(cls, callable_: Callable) -> 'Signature':
+    def from_callable(cls, callable_: Callable, parameter_type=Parameter) -> 'Signature':
         """
         Returns a matching `Signature` instance for the given *callable_*.
 
@@ -57,24 +57,24 @@ class Signature(inspect.Signature):
 
         if callable_ in BUILTIN_SIGNATURES:
             ret_type, params = BUILTIN_SIGNATURES[callable_]
-            params = [param.copy() for param in params]
-            return Signature(params, ret_type)
+            params = [parameter_type.from_parameter(param) for param in params]
+            return cls(params, ret_type)
 
         try:
             sig = inspect.signature(callable_)
         except ValueError:  # builtin types don't have an accessible signature
             pass
         else:
-            return cls.from_signature(sig)
+            return cls.from_signature(sig, parameter_type=parameter_type)
 
         doc = callable_.__doc__
         if doc:
-            return cls.from_doctring(doc)
+            return cls.from_docstring(doc, parameter_type=parameter_type)
 
         raise TypeError("Can't determine signature of {}".format(callable_))
 
     @classmethod
-    def from_doctring(cls, doc):
+    def from_docstring(cls, doc, parameter_type=Parameter):
         TYPE_MAP = {
             'object': object,
             'dict': dict,
@@ -91,9 +91,10 @@ class Signature(inspect.Signature):
             'complex': complex,
             'bool': bool,
             'boolean': bool,
+            'range object': range,
         }
 
-        pattern = re.compile(r'[\w.]+\((.*)\) -> (.+)')
+        pattern = re.compile(r'[\w.]+\((.*)\)(?: -> (.+))?')
 
         params = []
         return_types = set()
@@ -103,14 +104,18 @@ class Signature(inspect.Signature):
                 break
 
             return_type = match.group(2)
-            try:
-                return_type = TYPE_MAP[return_type]
-            except KeyError:
-                pass
+            if return_type is None:
+                return_types.add(object)
             else:
-                return_types.add(return_type)
+                try:
+                    return_type = TYPE_MAP[return_type]
+                except KeyError:
+                    pass
+                else:
+                    return_types.add(return_type)
 
             paramlist = match.group(1)
+            paramlist = paramlist.replace('[, ', ', [')
             kw_only = False
             for i, param_desc in enumerate(paramlist.split(', ')):
                 if param_desc == '/':
@@ -179,9 +184,20 @@ class Signature(inspect.Signature):
 
             annotation = common_ancestor(*param['types'])
 
-            parameter = Parameter(name, kind, default, annotation)
+            parameter = parameter_type(name, kind, default, annotation)
             parameters.append(parameter)
 
         return_annotation = common_ancestor(*return_types)
 
         return cls(parameters, return_annotation=return_annotation)
+    
+    @property
+    def num_required_arguments(self):
+        return sum(not p.is_optional for p in self)
+
+    def __iter__(self):
+        return iter(self.parameters.values())
+
+
+def signature(func):
+    return Signature.from_callable(func)

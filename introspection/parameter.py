@@ -24,10 +24,8 @@ class Parameter(inspect.Parameter):
     VAR_KEYWORD = inspect.Parameter.VAR_KEYWORD
 
     def __init__(self, name=None, kind=POSITIONAL_OR_KEYWORD, default=empty, annotation=empty):
-        if kind is Parameter.VAR_POSITIONAL:
-            default = ()
-        elif kind is Parameter.VAR_KEYWORD:
-            default = {}
+        if kind in {Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD}:
+            default = Parameter.empty
 
         super().__init__(name, kind, default=default, annotation=annotation)
 
@@ -44,6 +42,9 @@ class Parameter(inspect.Parameter):
         """
         Synonym for `Parameter.default`.
         """
+        if self.kind in {Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD}:
+            return Parameter.missing
+
         return self.default
 
     @default_value.setter
@@ -58,4 +59,9 @@ class Parameter(inspect.Parameter):
         :param parameter: An :class:`inspect.Parameter` instance
         :return: A new `Parameter` instance
         """
-        return cls(parameter.name, parameter.kind, default=parameter.default, annotation=parameter.annotation)
+        return cls(
+            parameter.name,
+            kind=parameter.kind,
+            default=parameter.default,
+            annotation=parameter.annotation
+        )
