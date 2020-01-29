@@ -4,7 +4,6 @@ import inspect
 from introspection import Signature, Parameter
 
 
-
 def test_get_signature():
     def foo(a, b=3) -> str:
         pass

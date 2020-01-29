@@ -9,5 +9,5 @@ A list of all available functions can be found in [the docs](https://aran-fey.gi
 ## Installation
 
 ```bash
-python3 -m pip install git+https://github.com/Aran-Fey/introspection.git@release
+python3 -m pip install git+https://github.com/Aran-Fey/introspection.git@release/latest
 ```
