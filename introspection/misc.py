@@ -4,7 +4,11 @@ import inspect
 from collections import defaultdict, deque
 
 
-__all__ = ['common_ancestor']
+__all__ = ['common_ancestor', 'static_vars']
+
+
+def static_vars(obj):
+    return object.__getattribute__(obj, '__dict__')
 
 
 def common_ancestor(*cls_list):

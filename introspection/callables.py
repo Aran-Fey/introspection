@@ -12,7 +12,7 @@ def get_parameters(callable_: Callable) -> List[Parameter]:
     """
     Returns a list of parameters accepted by *callable_*.
 
-    :param callable_: the callable whose parameters to retrieve
-    :return: a list of :class:`Parameter` instances
+    :param callable_: The callable whose parameters to retrieve
+    :return: A list of :class:`Parameter` instances
     """
     return list(Signature.from_callable(callable_).parameters.values())

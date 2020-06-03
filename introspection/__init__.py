@@ -1,3 +1,6 @@
+"""
+New and improved introspection functions
+"""
 
 __version__ = '1.0'
 
@@ -8,4 +11,5 @@ from .call_frame import *
 
 from .callables import *
 from .classes import *
+from .dundermethods import *
 from .misc import *

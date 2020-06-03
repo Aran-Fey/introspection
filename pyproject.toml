@@ -1,12 +1,15 @@
 
 [build-system]
-requires = ["flit_core >=2,<3"]
+requires = ["flit_core >=2,<4"]
 build-backend = "flit_core.buildapi"
 
 [tool.flit.metadata]
+dist-name = "introspection"
 module = "introspection"
 author = "Paul Pinterits"
-requires-python = ">=3.5"
+description-file = "README.md"
+home-page = "https://github.com/Aran-Fey/introspection"
+requires-python = ">=3.5,<4"
 requires = []
 
 [tool.flit.metadata.requires-extra]

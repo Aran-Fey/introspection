@@ -1,5 +1,6 @@
 
 import inspect
+import types
 
 __all__ = ['CallFrame']
 
@@ -20,6 +21,9 @@ class CallFrame:
     """
 
     def __init__(self, frame):
+        if isinstance(frame, __class__):
+            frame = frame.__frame
+
         self.__frame = frame
 
     @classmethod
@@ -31,8 +35,20 @@ class CallFrame:
         """
         return cls(inspect.currentframe().f_back)
 
+    @classmethod
+    def from_frame(cls, frame):
+        return cls(frame)
+
     def __getattr__(self, attr):
         return getattr(self.__frame, attr)
+
+    def __eq__(self, other):
+        if isinstance(other, __class__):
+            return self.__frame == other.__frame
+        elif isinstance(other, types.FrameType):
+            return self.__frame == other
+        else:
+            return NotImplemented
 
     def __enter__(self):
         return self
@@ -45,7 +61,12 @@ class CallFrame:
         """
         Returns the next frame one level higher on the call stack.
         """
-        return self.__frame.f_back
+        parent = self.__frame.f_back
+        if parent is None:
+            return None
+
+        cls = type(self)
+        return cls(parent)
 
     @property
     def builtins(self):
@@ -69,18 +90,28 @@ class CallFrame:
         return self.__frame.f_locals
 
     @property
-    def code(self):
+    def code_object(self):
         """
         The code object being executed in this frame
         """
         return self.__frame.f_code
 
     @property
-    def filename(self):
+    def file_name(self):
         """
         The name of the file in which this frame's code was defined
         """
-        return self.code.co_filename
+        return self.code_object.co_filename
+
+    @property
+    def scope_name(self):
+        """
+        The name of the scope in which this frame's code was defined.
+        In case of a function, the function's name.
+        In case of a class, the class's name.
+        In any other case, whichever name the interpreter assigned to that scope.
+        """
+        return self.code_object.co_name
 
     def resolve_name(self, name):
         """
@@ -89,40 +120,51 @@ class CallFrame:
         .. note:: Closure variables don't have a named associated with them,
                 which means they cannot be looked up with this function.
 
-                This includes variables marked as :code:`nonlocal`.
+                This includes variables marked as ``nonlocal``.
 
         :return: The value mapped to the given name
-        :raises NameError: if no matching variable is found
+        :raises NameError: If no matching variable is found
         """
         try:
             return self.locals[name]
-        except NameError:
+        except KeyError:
             pass
 
         try:
             return self.globals[name]
-        except NameError:
+        except KeyError:
             pass
 
         try:
             return self.builtins[name]
-        except NameError:
+        except KeyError:
             pass
 
-        raise NameError(name)
+        msg = "Name {!r} not visible from frame {!r}"
+        raise NameError(msg.format(name, self))
 
     def get_surrounding_function(self):
         """
-        Finds and returns the function in which this CallFrame was called.
+        Finds and returns the function in which the code of this frame was defined.
 
-        :return: The calling function object
+        If the function can't be found, ``None`` is returned.
+
+        :return: The calling function object or None if it can't be found
         """
-        funcname = self.code.co_name
-
         parent = self.parent
+        if parent is None:
+            return None
+
+        funcname = self.scope_name
         try:
-            return parent.resolve_name(funcname)
+            function = parent.resolve_name(funcname)
         except NameError:
             return None
         finally:
             del parent
+
+        # Make sure the name referred to the correct function
+        if getattr(function, '__code__', None) is not self.code_object:
+            return None
+
+        return function

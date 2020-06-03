@@ -9,21 +9,16 @@ class Parameter(inspect.Parameter):
     An :class:`inspect.Parameter` subclass that represents a function parameter.
 
     :ivar name: The parameter's name
-    :ivar kind: The parameter's kind. See `inspect.Parameter.kind <https://docs.python.org/3/library/inspect.html#inspect.Parameter.kind>`_ for details.
-    :ivar default: The parameter's default value or `Parameter.empty`
+    :ivar kind: The parameter's kind. See :attr:`inspect.Parameter.kind` for details.
+    :ivar default: The parameter's default value or :attr:`inspect.Parameter.empty`
     :ivar annotation: The parameter's type annotation
     """
+    __slots__ = ()
 
     empty = inspect.Parameter.empty
     missing = type('_missing', (), {})
 
-    POSITIONAL_ONLY = inspect.Parameter.POSITIONAL_ONLY
-    POSITIONAL_OR_KEYWORD = inspect.Parameter.POSITIONAL_OR_KEYWORD
-    VAR_POSITIONAL = inspect.Parameter.VAR_POSITIONAL
-    KEYWORD_ONLY = inspect.Parameter.KEYWORD_ONLY
-    VAR_KEYWORD = inspect.Parameter.VAR_KEYWORD
-
-    def __init__(self, name=None, kind=POSITIONAL_OR_KEYWORD, default=empty, annotation=empty):
+    def __init__(self, name=None, kind=inspect.Parameter.POSITIONAL_OR_KEYWORD, default=empty, annotation=empty):
         if kind in {Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD}:
             default = Parameter.empty
 
@@ -40,7 +35,7 @@ class Parameter(inspect.Parameter):
     @property
     def default_value(self):
         """
-        Synonym for `Parameter.default`.
+        Synonym for :attr:`Parameter.default`.
         """
         if self.kind in {Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD}:
             return Parameter.missing
@@ -54,10 +49,10 @@ class Parameter(inspect.Parameter):
     @classmethod
     def from_parameter(cls, parameter: inspect.Parameter) -> 'Parameter':
         """
-        Creates a new `Parameter` instance from an :class:`inspect.Parameter` instance.
+        Creates a new :class:`Parameter` instance from an :class:`inspect.Parameter` instance.
 
         :param parameter: An :class:`inspect.Parameter` instance
-        :return: A new `Parameter` instance
+        :return: A new :class:`Parameter` instance
         """
         return cls(
             parameter.name,

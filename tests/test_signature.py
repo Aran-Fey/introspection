@@ -1,5 +1,8 @@
 
+import pytest
+
 import inspect
+import typing
 
 from introspection import Signature, Parameter
 
@@ -52,7 +55,7 @@ def test_signature_with_optional_parameter():
 
     assert sig.return_annotation is dict
     assert len(sig.parameters) == 1
-    assert sig.parameters['object'].annotation is object
+    assert sig.parameters['object'].annotation is typing.Any
     assert sig.parameters['object'].default is Parameter.missing
 
 
@@ -110,3 +113,17 @@ def test_signature_from_docstring_with_positional_only_args():
     assert parameters[1].name == 'y'
     assert parameters[1].default == 1
     assert parameters[1].kind is Parameter.POSITIONAL_OR_KEYWORD
+
+
+def test_builtin_signatures():
+    import builtins
+
+    for thing in vars(builtins).values():
+        if not callable(thing):
+            continue
+
+        try:
+            _ = Signature.from_callable(thing)
+        except Exception as e:
+            msg = "Couldn't obtain signature of {!r}: {!r}"
+            pytest.fail(msg.format(thing, e))

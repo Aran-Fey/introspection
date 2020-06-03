@@ -1,31 +1,16 @@
 
 import inspect
 
-from typing import Dict, Any, List, Iterable
+from typing import Dict, Any, List, Iterable, Set
 
 from .parameter import Parameter
 from .callables import *
 
 
-__all__ = ['get_subclasses', 'get_attributes', 'get_configurable_attributes', 'get_constructor_parameters', 'implements_special_method']
+__all__ = ['get_subclasses', 'get_attributes', 'get_configurable_attributes', 'get_constructor_parameters']
 
 
-def implements_special_method(cls, method_name):
-    if not isinstance(cls, type):
-        raise TypeError("'cls' argument must be a class, not {}".format(cls))
-    
-    for cls in cls.mro():
-        try:
-            method = vars(cls)[method_name]
-        except KeyError:
-            continue
-        else:
-            return method is not None
-    
-    return False
-
-
-def get_subclasses(cls):
+def get_subclasses(cls: type) -> Set[type]:
     subclasses = set()
     queue = cls.__subclasses__()
 

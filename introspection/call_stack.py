@@ -27,10 +27,10 @@ class CallStack:
     @classmethod
     def from_frame(cls, frame) -> 'CallStack':
         """
-        Creates a `CallStack` containing *frame* and all its parents.
+        Creates a :class:`CallStack` containing ``frame`` and all its parents.
 
         :param frame: The last frame in the call stack
-        :return: A new `CallStack` instance
+        :return: A new :class:`CallStack` instance
         """
 
         frames = [frame]
@@ -61,8 +61,8 @@ class CallStack:
     def __len__(self):
         return len(self.__frames)
 
-    def __contains__(self, item):
-        return item in self.__frames
+    def __contains__(self, frame):
+        return frame in self.__frames
 
     @property
     def last_frame(self):
@@ -70,11 +70,3 @@ class CallStack:
         :return: The last frame on the stack
         """
         return self[-1]
-
-    def get_first_external_frame(self):
-        frame = self.last_frame
-
-        try:
-            pass
-        finally:
-            del frame
