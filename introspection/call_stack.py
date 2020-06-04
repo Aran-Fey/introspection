@@ -1,5 +1,6 @@
 
-from typing import List
+import types
+from typing import Iterable, Union
 
 from .call_frame import CallFrame
 
@@ -13,16 +14,18 @@ class CallStack:
 
     This class can be used like a read-only list. It supports iteration, indexing, membership testing, etc.
     """
+    __slots__ = ('__frames',)
 
-    def __init__(self, frames: List[CallFrame]):
-        self.__frames = frames
+    def __init__(self, frames: Iterable[Union[CallFrame, types.FrameType]]):
+        self.__frames = [CallFrame.from_frame(frame) for frame in frames]
 
     @classmethod
-    def get(cls) -> 'CallStack':
+    def current(cls) -> 'CallStack':
         """
         Get the current call stack.
         """
-        return cls.from_frame(CallFrame.current())
+        with CallFrame.current() as frame:
+            return cls.from_frame(frame.parent)
 
     @classmethod
     def from_frame(cls, frame) -> 'CallStack':
@@ -41,7 +44,9 @@ class CallStack:
 
             frames.append(frame)
 
-        return cls(frames[::-1])
+        frames.reverse()
+
+        return cls(frames)
 
     def __enter__(self):
         return self
@@ -63,10 +68,3 @@ class CallStack:
 
     def __contains__(self, frame):
         return frame in self.__frames
-
-    @property
-    def last_frame(self):
-        """
-        :return: The last frame on the stack
-        """
-        return self[-1]

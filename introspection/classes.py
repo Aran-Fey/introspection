@@ -1,23 +1,22 @@
 
 import inspect
 
-from typing import Dict, Any, List, Iterable, Set
+from typing import Dict, Any, Iterable, Set
 
-from .parameter import Parameter
-from .callables import *
-
-
-__all__ = ['get_subclasses', 'get_attributes', 'get_configurable_attributes', 'get_constructor_parameters']
+from .signature import Signature
 
 
-def get_subclasses(cls: type) -> Set[type]:
+__all__ = ['get_subclasses', 'get_attributes', 'get_configurable_attributes']
+
+
+def get_subclasses(cls: type, include_abstract: bool = False) -> Set[type]:
     subclasses = set()
     queue = cls.__subclasses__()
 
     while queue:
         cls = queue.pop()
 
-        if not inspect.isabstract(cls):
+        if include_abstract or not inspect.isabstract(cls):
             subclasses.add(cls)
 
         queue += cls.__subclasses__()
@@ -27,7 +26,7 @@ def get_subclasses(cls: type) -> Set[type]:
 
 def get_attributes(obj: Any) -> Dict[str, Any]:
     """
-    Returns a dictionary of all of *obj*'s attributes.
+    Returns a dictionary of all of ``obj``'s attributes.
 
     :param obj: The object whose attributes will be returned
     :return: A dict of :code:`{attr_name: attr_value}`
@@ -48,7 +47,7 @@ def get_configurable_attributes(cls: type) -> Iterable[str]:
     :return: An iterable of attribute names
     """
 
-    params = get_constructor_parameters(cls)
+    params = Signature.from_class(cls).parameters.values()
     attrs = {param.name for param in params}
 
     # iterate through all the class's descriptors and find those with a __set__ method
@@ -60,15 +59,3 @@ def get_configurable_attributes(cls: type) -> Iterable[str]:
                 attrs.add(attr)
 
     return attrs
-
-
-def get_constructor_parameters(cls: type) -> List[Parameter]:
-    """
-    Returns a list of parameters accepted by *cls*'s constructor.
-
-    :param cls: The class whose constructor parameters to retrieve
-    :return: A list of :class:`Parameter` instances
-    """
-    return get_parameters(cls)
-
-

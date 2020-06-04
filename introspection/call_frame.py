@@ -19,6 +19,7 @@ class CallFrame:
             ...  # do stuff with the frame
         # at this point, the frame has become unusable
     """
+    __slots__ = ('__frame',)
 
     def __init__(self, frame):
         if isinstance(frame, __class__):

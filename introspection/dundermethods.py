@@ -3,7 +3,7 @@ from typing import Iterator, Iterable, Tuple, Dict, Any
 
 from .misc import static_vars
 
-__all__ = ['iter_class_dundermethods', 'class_implements_dundermethod']
+__all__ = ['iter_class_dundermethods', 'class_implements_dundermethod', 'class_implements_any_dundermethod', 'class_implements_dundermethods', 'collect_class_dundermethods']
 
 
 """
