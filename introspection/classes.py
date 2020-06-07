@@ -5,7 +5,6 @@ from typing import Dict, Any, Iterable, Set
 
 from .signature import Signature
 
-
 __all__ = ['get_subclasses', 'get_attributes', 'get_configurable_attributes']
 
 

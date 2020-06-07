@@ -116,6 +116,18 @@ def test_store_signature():
     assert s is sig
 
 
+@pytest.mark.parametrize('string, expected', [
+    ('(foo)', Signature([Parameter('foo')])),
+    ('(foo: None)', Signature([Parameter('foo', annotation=None)])),
+    ('(foo: Callable[..., None])', Signature([Parameter('foo', annotation=typing.Callable[..., None])])),
+    ('(foo: Callable[[int, str], None])', Signature([Parameter('foo', annotation=typing.Callable[[int, str], None])])),
+])
+def test_signature_from_string(string, expected):
+    signature = Signature.from_string(string)
+    
+    assert signature == expected
+
+
 def test_signature_from_docstring_with_optionals():
     doc = '''range(stop) -> range object
 range(start, stop[, step]) -> range object
@@ -302,3 +314,31 @@ def test_iteration():
     sig = Signature([param])
 
     assert list(sig) == [param]
+
+
+@pytest.mark.parametrize('signatures, expected', [
+    (['() -> int', '() -> float'], '() -> Union[int, float]'),
+    (['() -> int', '() -> bool'], '() -> int'),
+    (['() -> int', '() -> float', '() -> bool'], '() -> Union[int, float]'),
+    (['(a) -> int', '(*, b=3) -> float'], '(a, *, b=3) -> Union[int, float]'),
+])
+def test_union(signatures, expected):
+    signatures = [Signature.from_string(sig) for sig in signatures]
+    expected = Signature.from_string(expected)
+    
+    merged = signatures[0].union(*signatures[1:])
+    assert merged == expected
+
+
+@pytest.mark.parametrize('signature', [
+    '([a])',
+    '(a[, b])',
+    '(x: int) -> str',
+    '(x: bool = False)',
+    '(x: tuple) -> Tuple',
+    '() -> Tuple[int, List]',
+])
+def test_to_string(signature):
+    sig = Signature.from_string(signature)
+    
+    assert sig.to_string() == signature

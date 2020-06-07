@@ -1,8 +1,46 @@
 
 from collections import defaultdict, deque
 
+from datatypes import is_qualified_generic, get_base_generic, get_subtypes, get_type_name
 
-__all__ = ['common_ancestor', 'static_vars']
+from . import _parsers
+
+__all__ = ['annotation_to_string', 'common_ancestor', 'eval_annotation', 'static_vars']
+
+
+def eval_annotation(annotation, module=None):
+    parser = _parsers.annotation_parser(module)
+
+    try:
+        return parser(annotation)
+    except SyntaxError:
+        raise ValueError('{!r} is not a valid annotation'.format(annotation)) from None
+
+
+def annotation_to_string(annotation):
+    def process_nested(prefix, elems):
+        elems = ', '.join(map(annotation_to_string, elems))
+        return '{}[{}]'.format(prefix, elems)
+    
+    if isinstance(annotation, list):
+        return process_nested('', annotation)
+    
+    if is_qualified_generic(annotation):
+        base = get_base_generic(annotation)
+        subtypes = get_subtypes(annotation)
+        
+        prefix = annotation_to_string(base)
+        return process_nested(prefix, subtypes)
+
+    if hasattr(annotation, '__module__'):
+        if annotation.__module__ == 'builtins':
+            return annotation.__qualname__
+        elif annotation.__module__ == 'typing':
+            return get_type_name(annotation)
+        else:
+            return '{}.{}'.format(annotation.__module__, annotation.__qualname__)
+    
+    return repr(annotation)
 
 
 def static_vars(obj):

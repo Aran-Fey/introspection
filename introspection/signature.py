@@ -2,7 +2,6 @@
 import ast
 import builtins
 import inspect
-import io
 import functools
 import os
 import re
@@ -10,13 +9,19 @@ import sys
 import types
 import typing
 from numbers import Number
-from typing import Union, List, Dict, Callable, Any, Iterator, Iterable, Tuple, Optional
+from typing import Union, List, Dict, Callable, Any, Iterator, Iterable, Tuple, Optional, TypeVar
 
 from .parameter import Parameter
-from .misc import common_ancestor
+from .misc import common_ancestor, eval_annotation, annotation_to_string
 
 __all__ = ['Signature', 'signature']
 
+
+T = TypeVar('T')
+A = TypeVar('A')
+B = TypeVar('B')
+K = TypeVar('K')
+V = TypeVar('V')
 
 BUILTIN_SIGNATURES = {
     'abs': (Any, [
@@ -69,26 +74,26 @@ BUILTIN_SIGNATURES = {
         Parameter('optimize', Parameter.POSITIONAL_OR_KEYWORD, -1, int),
     ]),
     'complex': (complex, [
-        Parameter('real', Parameter.POSITIONAL_OR_KEYWORD, Parameter.missing, int),
-        Parameter('imag', Parameter.POSITIONAL_OR_KEYWORD, Parameter.missing, int),
+        Parameter('real', Parameter.POSITIONAL_OR_KEYWORD, Parameter.missing, Union[int, float]),
+        Parameter('imag', Parameter.POSITIONAL_OR_KEYWORD, Parameter.missing, Union[int, float]),
     ]),
     'delattr': (None, [
         Parameter('object', Parameter.POSITIONAL_ONLY, annotation=Any),
         Parameter('name', Parameter.POSITIONAL_ONLY, annotation=str),
     ]),
-    'dict': (dict, [
-        Parameter('mapping_or_iterable', Parameter.POSITIONAL_ONLY, Parameter.missing, Iterable),
-        Parameter('kwargs', Parameter.VAR_KEYWORD, annotation=Any),
+    'dict': (Dict[K, V], [
+        Parameter('mapping_or_iterable', Parameter.POSITIONAL_ONLY, Parameter.missing, Iterable[Tuple[K, V]]),
+        Parameter('kwargs', Parameter.VAR_KEYWORD, annotation=V),
     ]),
     'dir': (List[str], [
         Parameter('object', Parameter.POSITIONAL_ONLY, Parameter.missing, Any)
     ]),
-    'divmod': (Tuple[int, int], [
+    'divmod': (Tuple[Union[int, float], Union[int, float]], [
         Parameter('a', Parameter.POSITIONAL_ONLY, annotation=Union[int, float]),
         Parameter('b', Parameter.POSITIONAL_ONLY, annotation=Union[int, float]),
     ]),
-    'enumerate': (Iterator[Tuple[int, Any]], [
-        Parameter('iterable', Parameter.POSITIONAL_OR_KEYWORD, annotation=Iterable),
+    'enumerate': (Iterator[Tuple[int, T]], [
+        Parameter('iterable', Parameter.POSITIONAL_OR_KEYWORD, annotation=Iterable[T]),
         Parameter('start', Parameter.POSITIONAL_OR_KEYWORD, 1, int),
     ]),
     'eval': (Any, [
@@ -101,19 +106,19 @@ BUILTIN_SIGNATURES = {
         Parameter('globals', Parameter.POSITIONAL_ONLY, None, annotation=Optional[dict]),
         Parameter('locals', Parameter.POSITIONAL_ONLY, None, annotation=Optional[dict]),
     ]),
-    'filter': (Iterator, [
-        Parameter('function', Parameter.POSITIONAL_ONLY, annotation=Callable[[Any], Any]),
-        Parameter('iterable', Parameter.POSITIONAL_ONLY, annotation=Iterable),
+    'filter': (Iterator[T], [
+        Parameter('function', Parameter.POSITIONAL_ONLY, annotation=Callable[[T], Any]),
+        Parameter('iterable', Parameter.POSITIONAL_ONLY, annotation=Iterable[T]),
     ]),
     'float': (float, [
-        Parameter('x', Parameter.POSITIONAL_ONLY, Parameter.missing, Any)
+        Parameter('x', Parameter.POSITIONAL_ONLY, Parameter.missing, typing.SupportsFloat)
     ]),
     'format': (str, [
         Parameter('value', Parameter.POSITIONAL_ONLY, annotation=Any),
         Parameter('format_spec', Parameter.POSITIONAL_ONLY, Parameter.missing, str),
     ]),
-    'frozenset': (frozenset, [
-        Parameter('iterable', Parameter.POSITIONAL_ONLY, Parameter.missing, Iterable)
+    'frozenset': (typing.FrozenSet[T], [
+        Parameter('iterable', Parameter.POSITIONAL_ONLY, Parameter.missing, Iterable[T])
     ]),
     'getattr': (Any, [
         Parameter('object', Parameter.POSITIONAL_ONLY, annotation=Any),
@@ -141,7 +146,7 @@ BUILTIN_SIGNATURES = {
         Parameter('prompt', Parameter.POSITIONAL_ONLY, Parameter.missing, str)
     ]),
     'int': (int, [
-        Parameter('x', Parameter.POSITIONAL_ONLY, Parameter.missing, Any),
+        Parameter('x', Parameter.POSITIONAL_ONLY, Parameter.missing, Union[str, typing.SupportsInt]),
         Parameter('base', Parameter.POSITIONAL_ONLY, 10, int)
     ]),
     'isinstance': (bool, [
@@ -152,43 +157,43 @@ BUILTIN_SIGNATURES = {
         Parameter('class', Parameter.POSITIONAL_ONLY, annotation=type),
         Parameter('classinfo', Parameter.POSITIONAL_ONLY, annotation=Union[type, Tuple[type]])
     ]),
-    'iter': (Iterator, [
-        Parameter('object', Parameter.POSITIONAL_ONLY, annotation=Union[Iterable, Callable[[], Any]]),
+    'iter': (Iterator[T], [
+        Parameter('object', Parameter.POSITIONAL_ONLY, annotation=Union[Iterable[T], Callable[[], T]]),
         Parameter('sentinel', Parameter.POSITIONAL_ONLY, Parameter.missing, Any)
     ]),
     'len': (int, [
         Parameter('s', Parameter.POSITIONAL_ONLY, annotation=typing.Sized)
     ]),
-    'list': (list, [
-        Parameter('iterable', Parameter.POSITIONAL_ONLY, Parameter.missing, Iterable)
+    'list': (List[T], [
+        Parameter('iterable', Parameter.POSITIONAL_ONLY, Parameter.missing, Iterable[T])
     ]),
     'locals': (dict, []),
     'map': (Iterator, [
         Parameter('function', Parameter.POSITIONAL_ONLY, annotation=Callable),
         Parameter('iterables', Parameter.VAR_POSITIONAL, annotation=Iterable)
     ]),
-    'max': (Any, [
-        Parameter('args', Parameter.VAR_POSITIONAL, annotation=Any),
-        Parameter('key', Parameter.KEYWORD_ONLY, Parameter.missing, Callable[[Any], Any]),
-        Parameter('default', Parameter.KEYWORD_ONLY, Parameter.missing, Any)
+    'max': (Union[A, B], [
+        Parameter('args', Parameter.VAR_POSITIONAL, annotation=A),
+        Parameter('key', Parameter.KEYWORD_ONLY, Parameter.missing, Callable[[A], Any]),
+        Parameter('default', Parameter.KEYWORD_ONLY, Parameter.missing, B)
     ]),
     'memoryview': (memoryview, [
         Parameter('obj', Parameter.POSITIONAL_ONLY, annotation=Any)
     ]),
-    'min': (Any, [
-        Parameter('args', Parameter.VAR_POSITIONAL, annotation=Any),
-        Parameter('key', Parameter.KEYWORD_ONLY, Parameter.missing, Callable[[Any], Any]),
-        Parameter('default', Parameter.KEYWORD_ONLY, Parameter.missing, Any)
+    'min': (Union[A, B], [
+        Parameter('args', Parameter.VAR_POSITIONAL, annotation=A),
+        Parameter('key', Parameter.KEYWORD_ONLY, Parameter.missing, Callable[[A], Any]),
+        Parameter('default', Parameter.KEYWORD_ONLY, Parameter.missing, B)
     ]),
-    'next': (Any, [
-        Parameter('iterator', Parameter.POSITIONAL_ONLY, annotation=Iterator),
-        Parameter('default', Parameter.POSITIONAL_ONLY, Parameter.missing, Any)
+    'next': (Union[A, B], [
+        Parameter('iterator', Parameter.POSITIONAL_ONLY, annotation=Iterator[A]),
+        Parameter('default', Parameter.POSITIONAL_ONLY, Parameter.missing, B)
     ]),
     'object': (object, []),
     'oct': (str, [
         Parameter('x', Parameter.POSITIONAL_ONLY, annotation=int)
     ]),
-    'open': (io.IOBase, [
+    'open': (typing.IO, [
         Parameter('file', Parameter.POSITIONAL_ONLY, annotation=Union[str, bytes, os.PathLike]),
         Parameter('mode', Parameter.POSITIONAL_OR_KEYWORD, 'r', str),
         Parameter('buffering', Parameter.POSITIONAL_OR_KEYWORD, -1, int),
@@ -196,7 +201,7 @@ BUILTIN_SIGNATURES = {
         Parameter('errors', Parameter.POSITIONAL_OR_KEYWORD, Parameter.missing, str),
         Parameter('newline', Parameter.POSITIONAL_OR_KEYWORD, None, Optional[str]),
         Parameter('closefd', Parameter.POSITIONAL_OR_KEYWORD, True, bool),
-        Parameter('opener', Parameter.POSITIONAL_OR_KEYWORD, None, Optional[Callable[[Union[str, bytes, os.PathLike], int], io.IOBase]]),
+        Parameter('opener', Parameter.POSITIONAL_OR_KEYWORD, None, Optional[Callable[[Union[str, bytes, os.PathLike], int], typing.IO]]),
     ]),
     'ord': (int, [
         Parameter('c', Parameter.POSITIONAL_ONLY, annotation=str)
@@ -210,13 +215,13 @@ BUILTIN_SIGNATURES = {
         Parameter('objects', Parameter.VAR_POSITIONAL, annotation=Any),
         Parameter('sep', Parameter.KEYWORD_ONLY, ' ', str),
         Parameter('end', Parameter.KEYWORD_ONLY, '\n', str),
-        Parameter('file', Parameter.KEYWORD_ONLY, sys.stdout, io.IOBase),
+        Parameter('file', Parameter.KEYWORD_ONLY, sys.stdout, typing.TextIO),
         Parameter('flush', Parameter.KEYWORD_ONLY, False, bool),
     ]),
     'property': (property, [
-        Parameter('fget', Parameter.POSITIONAL_OR_KEYWORD, None, Optional[Callable[[Any], Any]]),
-        Parameter('fset', Parameter.POSITIONAL_OR_KEYWORD, None, Optional[Callable[[Any, Any], Any]]),
-        Parameter('fdel', Parameter.POSITIONAL_OR_KEYWORD, None, Optional[Callable[[Any], Any]]),
+        Parameter('fget', Parameter.POSITIONAL_OR_KEYWORD, None, Optional[Callable[[A], B]]),
+        Parameter('fset', Parameter.POSITIONAL_OR_KEYWORD, None, Optional[Callable[[A, B], Any]]),
+        Parameter('fdel', Parameter.POSITIONAL_OR_KEYWORD, None, Optional[Callable[[A], Any]]),
         Parameter('doc', Parameter.POSITIONAL_OR_KEYWORD, None, str),
     ]),
     'range': (range, [
@@ -227,15 +232,15 @@ BUILTIN_SIGNATURES = {
     'repr': (str, [
         Parameter('object', Parameter.POSITIONAL_ONLY, annotation=Any)
     ]),
-    'reversed': (Iterator, [
-        Parameter('seq', Parameter.POSITIONAL_ONLY, annotation=typing.Reversible)
+    'reversed': (Iterator[T], [
+        Parameter('seq', Parameter.POSITIONAL_ONLY, annotation=typing.Reversible[T])
     ]),
     'round': (Number, [
         Parameter('number', Parameter.POSITIONAL_ONLY, annotation=Number),
         Parameter('ndigits', Parameter.POSITIONAL_ONLY, Parameter.missing, int),
     ]),
-    'set': (set, [
-        Parameter('iterable', Parameter.POSITIONAL_ONLY, Parameter.missing, Iterable)
+    'set': (typing.Set[T], [
+        Parameter('iterable', Parameter.POSITIONAL_ONLY, Parameter.missing, Iterable[T])
     ]),
     'setattr': (None, [
         Parameter('object', Parameter.POSITIONAL_ONLY, annotation=Any),
@@ -246,9 +251,9 @@ BUILTIN_SIGNATURES = {
         Parameter('stop', Parameter.POSITIONAL_ONLY, Parameter.missing, int),
         Parameter('step', Parameter.POSITIONAL_ONLY, Parameter.missing, int)
     ]),
-    'sorted': (list, [
-        Parameter('iterable', Parameter.POSITIONAL_ONLY, annotation=Iterable),
-        Parameter('key', Parameter.KEYWORD_ONLY, None, Optional[Callable[[Any], Any]]),
+    'sorted': (List[T], [
+        Parameter('iterable', Parameter.POSITIONAL_ONLY, annotation=Iterable[T]),
+        Parameter('key', Parameter.KEYWORD_ONLY, None, Optional[Callable[[T], Any]]),
         Parameter('reverse', Parameter.KEYWORD_ONLY, False, bool),
     ]),
     'staticmethod': (staticmethod, [
@@ -279,7 +284,7 @@ BUILTIN_SIGNATURES = {
         Parameter('object', Parameter.POSITIONAL_ONLY, Parameter.missing, Any)
     ]),
     'zip': (Iterator[tuple], [
-        Parameter('iterables', Parameter.VAR_POSITIONAL, annotation=Any)
+        Parameter('iterables', Parameter.VAR_POSITIONAL, annotation=Iterable[Any])
     ]),
     '__import__': (types.ModuleType, [
         Parameter('name', Parameter.POSITIONAL_OR_KEYWORD, annotation=str),
@@ -311,6 +316,7 @@ class Signature(inspect.Signature):
     """
     An :class:`inspect.Signature` subclass that represents a function's parameter signature and return annotation.
     """
+    __slots__ = ()
 
     def __init__(self,
                  parameters: Union[List[Parameter], Dict[str, Parameter], None] = None,
@@ -336,7 +342,6 @@ class Signature(inspect.Signature):
         return cls(params, return_annotation=signature.return_annotation)
 
     @classmethod
-    @functools.lru_cache()
     def from_callable(cls,
                       callable_: Callable,
                       param_type: type = Parameter,
@@ -365,181 +370,252 @@ class Signature(inspect.Signature):
             ret_type, params = BUILTIN_SIGNATURES[callable_]
             params = [param_type.from_parameter(param) for param in params]
             return cls(params, ret_type)
-
+        
         try:
             sig = inspect.signature(callable_, follow_wrapped=False)
-        except ValueError:  # builtin types don't have an accessible signature
+        except ValueError:  # callables written in C don't have an accessible signature
             pass
         else:
             return cls.from_signature(sig, param_type=param_type)
+        
+        # builtin exceptions also need special handling, but we don't want to hard-code
+        # all of them in BUILTIN_SIGNATURES
+        if isinstance(callable_, type) and issubclass(callable_, BaseException):
+            return cls([
+                param_type('args', Parameter.VAR_POSITIONAL),
+                param_type('kwargs', Parameter.VAR_KEYWORD),
+            ])
 
         doc = callable_.__doc__
         if doc:
-            return cls.from_docstring(doc, param_type=param_type)
+            try:
+                return cls.from_docstring(doc, param_type=param_type)
+            except ValueError:
+                pass
 
         raise ValueError("Can't determine signature of {}".format(callable_))
 
     @classmethod
-    def from_docstring(cls, doc, param_type=Parameter):
-        TYPE_MAP = {
-            'object': object,
-            'dict': dict,
-            'dictionary': dict,
-            'list': list,
-            'tuple': tuple,
-            'set': set,
-            'str': str,
-            'bytes': bytes,
-            'text': str,
-            'int': int,
-            'integer': int,
-            'float': float,
-            'complex': complex,
-            'bool': bool,
-            'boolean': bool,
-            'range object': range,
-            'class': type,
-            'metaclass': Callable[[str, Tuple[type], dict], type],
-        }
+    def from_string(cls,
+                    string: str,
+                    *,
+                    param_type: typing.Type[Parameter] = Parameter,
+                    infer_annotations: bool = False,
+                    module=None,
+                    ):
+        """
+        Parses a string representation of a signature. This is essentially the opposite of ``repr``.
 
-        pattern = re.compile(r'[\w.]+\((.*)\)(?: -> (.+))?')
+        Examples::
 
+            >>> Signature.from_string('(x: int, *, y=3) -> range object')
+            <Signature (x: int, *, y=3) -> range>
+            >>> Signature.from_string('foo(a[, b])')
+            <Signature (a[, b])>
+        
+        :param string: The string to parse
+        :param param_type: The class to use for the function's parameters
+        :param infer_annotations: Whether to fill in missing annotations based on the default value and/or name of the parameter
+        """
+        
+        def parse_annotation(ann, empty):
+            if ann is None or ann == '':
+                return empty
+        
+            return eval_annotation(ann, module)
+
+        def split_and_verify(text, sep):
+            a, sep, b = text.partition(sep)
+            
+            a = a.strip()
+            b = b.strip()
+            
+            if sep and not b:
+                raise ValueError("Expected value after {!r}".format(sep))
+            
+            return a, b
+        
+        signature_re = re.compile(r'[\w.]*\((.*)\)(?: -> (.+))?')
+
+        match = signature_re.fullmatch(string)
+        if not match:
+            raise ValueError('{!r} is not a valid function signature'.format(string))
+
+        return_annotation = parse_annotation(match.group(2), Signature.empty)
+
+        parser = _parsers.param_list_parser(module)
+        try:
+            paramlist = parser(match.group(1))
+        except SyntaxError:
+            raise ValueError('{!r} is not a valid function signature'.format(string)) 
+        
         params = []
-        return_types = set()
-        for line_nr, line in enumerate(doc.strip().splitlines()):
-            match = pattern.match(line)
-            if not match:
-                break
+        paramlist = match.group(1)
+        paramlist = paramlist.replace('[, ', ', [')
+        param_kind = Parameter.POSITIONAL_OR_KEYWORD
+        for i, param_desc in enumerate(paramlist.split(', ')):
+            if param_desc == '/':
+                for param in params[:i]:
+                    param['kind'] = Parameter.POSITIONAL_ONLY
+                continue
+            elif param_desc == '*':
+                param_kind = Parameter.KEYWORD_ONLY
+                continue
 
-            return_type = match.group(2)
-            if return_type is None:
-                return_types.add(object)
+            param_desc, default = split_and_verify(param_desc, '=')
+            name, annotation = split_and_verify(param_desc, ':')
+            
+            kind = param_kind
+            
+            annotation = parse_annotation(annotation, Parameter.empty)
+
+            # a name in square brackets means it's optional
+            if name.startswith('['):
+                name = name[1:-1].strip()
+                default = Parameter.missing
+            # a name starting with * or ** means it's a vararg
+            elif name.startswith('**'):
+                name = name[2:].lstrip()
+                # var-kwargs must actually be listed last, but
+                # we'll let it slide and treat subsequent
+                # parameters as keyword-only
+                kind = Parameter.VAR_KEYWORD
+                param_kind = Parameter.KEYWORD_ONLY
+            elif name.startswith('*'):
+                name = name[1:].lstrip()
+                kind = Parameter.VAR_POSITIONAL
+                param_kind = Parameter.KEYWORD_ONLY
+
+            if default is Parameter.missing:
+                annotation = Parameter.empty
+            elif default:
+                default = ast.literal_eval(default)
             else:
-                try:
-                    return_type = TYPE_MAP[return_type]
-                except KeyError:
-                    pass
-                else:
-                    return_types.add(return_type)
-
-            paramlist = match.group(1)
-            paramlist = paramlist.replace('[, ', ', [')
-            param_kind = Parameter.POSITIONAL_OR_KEYWORD
-            for i, param_desc in enumerate(paramlist.split(', ')):
-                if param_desc == '/':
-                    for param in params[:i]:
-                        param['kind'] = Parameter.POSITIONAL_ONLY
-                    continue
-                elif param_desc == '*':
-                    param_kind = Parameter.KEYWORD_ONLY
-                    continue
-
-                try:
-                    param = params[i]
-                except IndexError:
-                    param = {
-                        'names': set(),
-                        'defaults': [],
-                        'types': set(),
-                        'kind': param_kind
-                    }
-                    params.append(param)
-
-                    # if there's a form with fewer arguments, then this
-                    # parameter must be optional
-                    if line_nr > 0:
-                        param['defaults'].append(Parameter.missing)
-
-                name, _, default = param_desc.partition('=')
-
-                # a name in square brackets means it's optional
-                if name.startswith('['):
-                    name = name[1:-1]
-                    default = Parameter.missing
-                # a name starting with * or ** means it's a vararg
-                elif name.startswith('**'):
-                    name = name[2:]
-                    # var-kwargs must actually be listed last, but
-                    # we'll let it slide and treat subsequent
-                    # parameters as keyword-only
-                    param['kind'] = Parameter.VAR_KEYWORD
-                    param_kind = Parameter.KEYWORD_ONLY
-                elif name.startswith('*'):
-                    name = name[1:]
-                    param['kind'] = Parameter.VAR_POSITIONAL
-                    param_kind = Parameter.KEYWORD_ONLY
-
-                param['names'].add(name)
-
-                if default is Parameter.missing:
-                    annotation = object
-                elif default:
-                    default = ast.literal_eval(default)
+                default = Parameter.empty
+            
+            if infer_annotations and annotation is Parameter.empty:
+                if default not in {Parameter.missing, Parameter.empty}:
                     annotation = type(default)
                 else:
-                    default = Parameter.empty
-                    annotation = TYPE_MAP.get(name, object)
-                param['defaults'].append(default)
-                param['types'].add(annotation)
+                    try:
+                        annotation = eval_annotation(name)
+                    except ValueError:
+                        pass
+            
+            param = {
+                'name': name,
+                'default': default,
+                'annotation': annotation,
+                'kind': kind
+            }
+            params.append(param)
 
-        parameters = []
-        for param in params:
-            if len(param['names']) == 1:
-                name = next(iter(param['names']))
-                kind = param['kind']
-            else:
-                name = '_or_'.join(sorted(param['names']))
-                kind = Parameter.POSITIONAL_ONLY
+        params = [param_type(**param) for param in params]            
 
-            defaults = []
-            for value in param['defaults']:
-                if value not in defaults:
-                    defaults.append(value)
-            if len(defaults) == 1:
-                default = defaults[0]
-            else:
-                default = Parameter.missing
+        return cls(params, return_annotation=return_annotation)
 
-            annotation = common_ancestor(param['types'])
-
-            parameter = param_type(name, kind, default, annotation)
-            parameters.append(parameter)
-
-        return_annotation = common_ancestor(return_types)
-
-        return cls(parameters, return_annotation=return_annotation)
+    @classmethod
+    def from_docstring(cls,
+                       doc,
+                       *,
+                       param_type=Parameter,
+                       infer_annotations=False,
+                       module=None,
+                       ):
+        signatures = []
+        
+        for line in doc.strip().splitlines():
+            try:
+                sig = cls.from_string(line, infer_annotations=infer_annotations, module=module)
+            except ValueError:
+                break
+            
+            signatures.append(sig)
+        
+        if not signatures:
+            raise ValueError("No signature found in docstring")
+        
+        sig = signatures.pop().union(*signatures)
+        
+        # FIXME: parse parameter descriptions
+        
+        return sig
 
     @classmethod
     def from_class(cls, class_):
-        """
-
-        :param class_:
-        :return:
-        """
         return cls.from_callable(class_)
 
     @property
     def has_return_annotation(self):
+        """
+        Returns whether the signature's return annotation is not :attr:`Signature.empty`.
+        """
         return self.return_annotation is not Signature.empty
 
     @property
     def num_required_arguments(self):
+        """
+        Returns the number of required arguments, i.e. arguments with a default value.
+        """
         return sum(not p.is_optional for p in self)
 
     def __iter__(self):
         return iter(self.parameters.values())
 
-    def merged_with(self, *signatures):
+    def union(self, *signatures):
         """
-        Merges multiple signatures into one, in such a way that
-        the resulting signature #FIXME
-
+        Merges multiple signatures into one, in such a way that any
+        set of arguments accepted by one of the input signatures is
+        also accepted by the resulting signature.
+        
+        Example::
+        
+            >>> sig1
+            <Signature (a) -> int>
+            >>> sig2
+            <Signature (*, b=3) -> float>
+            >>> sig1.merged_with(sig2)
+            <Signature (a, *, b=3) -> Union[int, float]>
+        
         :param signatures:
         :return:
         """
+        def merge_types(types_):
+            types_ = set(types_)
+            
+            if len(types_) == 1:
+                return types_.pop()
+            
+            # split the types into classes and stuff from the typing module
+            classes = set()
+            annotations = set()
+            
+            for type_ in types_:
+                if type_.__module__ == 'typing':
+                    annotations.add(type_)
+                else:
+                    classes.add(type_)
+            
+            # if any class is a subclass of another, remove it
+            classes_ = set()
+            while classes:
+                cls = classes.pop()
+                
+                if not issubclass(cls, tuple(classes)):
+                    classes_.add(cls)
+            
+            # TODO: do the same thing for typing annotations, e.g. filter out List[X] if list or List is present
+            
+            types_ = tuple(classes + annotations)
+            
+            if len(types_) == 1:
+                return types_[0]
+            else:
+                return typing.Union[types_]
+        
         # merge parameters
         params = []
-        
+        # FIXME
 
         # merge return annotations
         return_annotations = [
@@ -547,14 +623,65 @@ class Signature(inspect.Signature):
             if sig.has_return_annotation
         ]
         if return_annotations:
-            return_annotation = common_ancestor(return_annotations)
+            return_annotation = merge_types(return_annotations)
         else:
             return_annotation = Signature.empty
 
         cls = type(self)
         return cls(params, return_annotation=return_annotation)
 
+    def to_string(self):
+        param_list = list(self.parameters.values())
+        chunks = []
+        i = len(param_list) - 1
+        while i >= 0:
+            param = param_list[i]
+            
+            text = param._to_string_no_brackets()
+            
+            if i > 0:
+                text = ', ' + text
+            
+            if param.default is Parameter.missing:
+                text = '[{}]'.format(text)
+            
+                # these need special attention because their representation is nested, like e.g. [a[, b]]
+                if param.kind is Parameter.POSITIONAL_ONLY:
+                    while i > 0 and param_list[i-1].default is Parameter.missing:
+                        i -= 1
+                        
+                        param = param_list[i]
+                        t = param._to_string_no_brackets()
+                        
+                        if i > 0:
+                            t = ', ' + t
+                        
+                        text = '[{}{}]'.format(t, text)
+            
+            chunks.append(text)
+            i -= 1
+        
+        chunks.reverse()
+        params = ''.join(chunks)
+        
+        if self.has_return_annotation:
+            ann = annotation_to_string(self.return_annotation)
+            ann = ' -> {}'.format(ann)
+        else:
+            ann = ''
+        
+        return '({}){}'.format(params, ann)
+    
+    def __repr__(self):
+        cls_name = type(self).__name__
+        text = self.to_string()
+        
+        return '<{} {}>'.format(cls_name, text)
+
 
 @functools.wraps(Signature.from_callable)
 def signature(*args, **kwargs):
+    """
+    Shorthand for ``Signature.from_callable``.
+    """
     return Signature.from_callable(*args, **kwargs)
