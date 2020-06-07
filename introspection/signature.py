@@ -12,7 +12,7 @@ from numbers import Number
 from typing import Union, List, Dict, Callable, Any, Iterator, Iterable, Tuple, Optional, TypeVar
 
 from .parameter import Parameter
-from .misc import common_ancestor, eval_annotation, annotation_to_string
+from .misc import annotation_to_string
 
 __all__ = ['Signature', 'signature']
 
@@ -396,152 +396,6 @@ class Signature(inspect.Signature):
         raise ValueError("Can't determine signature of {}".format(callable_))
 
     @classmethod
-    def from_string(cls,
-                    string: str,
-                    *,
-                    param_type: typing.Type[Parameter] = Parameter,
-                    infer_annotations: bool = False,
-                    module=None,
-                    ):
-        """
-        Parses a string representation of a signature. This is essentially the opposite of ``repr``.
-
-        Examples::
-
-            >>> Signature.from_string('(x: int, *, y=3) -> range object')
-            <Signature (x: int, *, y=3) -> range>
-            >>> Signature.from_string('foo(a[, b])')
-            <Signature (a[, b])>
-        
-        :param string: The string to parse
-        :param param_type: The class to use for the function's parameters
-        :param infer_annotations: Whether to fill in missing annotations based on the default value and/or name of the parameter
-        """
-        
-        def parse_annotation(ann, empty):
-            if ann is None or ann == '':
-                return empty
-        
-            return eval_annotation(ann, module)
-
-        def split_and_verify(text, sep):
-            a, sep, b = text.partition(sep)
-            
-            a = a.strip()
-            b = b.strip()
-            
-            if sep and not b:
-                raise ValueError("Expected value after {!r}".format(sep))
-            
-            return a, b
-        
-        signature_re = re.compile(r'[\w.]*\((.*)\)(?: -> (.+))?')
-
-        match = signature_re.fullmatch(string)
-        if not match:
-            raise ValueError('{!r} is not a valid function signature'.format(string))
-
-        return_annotation = parse_annotation(match.group(2), Signature.empty)
-
-        parser = _parsers.param_list_parser(module)
-        try:
-            paramlist = parser(match.group(1))
-        except SyntaxError:
-            raise ValueError('{!r} is not a valid function signature'.format(string)) 
-        
-        params = []
-        paramlist = match.group(1)
-        paramlist = paramlist.replace('[, ', ', [')
-        param_kind = Parameter.POSITIONAL_OR_KEYWORD
-        for i, param_desc in enumerate(paramlist.split(', ')):
-            if param_desc == '/':
-                for param in params[:i]:
-                    param['kind'] = Parameter.POSITIONAL_ONLY
-                continue
-            elif param_desc == '*':
-                param_kind = Parameter.KEYWORD_ONLY
-                continue
-
-            param_desc, default = split_and_verify(param_desc, '=')
-            name, annotation = split_and_verify(param_desc, ':')
-            
-            kind = param_kind
-            
-            annotation = parse_annotation(annotation, Parameter.empty)
-
-            # a name in square brackets means it's optional
-            if name.startswith('['):
-                name = name[1:-1].strip()
-                default = Parameter.missing
-            # a name starting with * or ** means it's a vararg
-            elif name.startswith('**'):
-                name = name[2:].lstrip()
-                # var-kwargs must actually be listed last, but
-                # we'll let it slide and treat subsequent
-                # parameters as keyword-only
-                kind = Parameter.VAR_KEYWORD
-                param_kind = Parameter.KEYWORD_ONLY
-            elif name.startswith('*'):
-                name = name[1:].lstrip()
-                kind = Parameter.VAR_POSITIONAL
-                param_kind = Parameter.KEYWORD_ONLY
-
-            if default is Parameter.missing:
-                annotation = Parameter.empty
-            elif default:
-                default = ast.literal_eval(default)
-            else:
-                default = Parameter.empty
-            
-            if infer_annotations and annotation is Parameter.empty:
-                if default not in {Parameter.missing, Parameter.empty}:
-                    annotation = type(default)
-                else:
-                    try:
-                        annotation = eval_annotation(name)
-                    except ValueError:
-                        pass
-            
-            param = {
-                'name': name,
-                'default': default,
-                'annotation': annotation,
-                'kind': kind
-            }
-            params.append(param)
-
-        params = [param_type(**param) for param in params]            
-
-        return cls(params, return_annotation=return_annotation)
-
-    @classmethod
-    def from_docstring(cls,
-                       doc,
-                       *,
-                       param_type=Parameter,
-                       infer_annotations=False,
-                       module=None,
-                       ):
-        signatures = []
-        
-        for line in doc.strip().splitlines():
-            try:
-                sig = cls.from_string(line, infer_annotations=infer_annotations, module=module)
-            except ValueError:
-                break
-            
-            signatures.append(sig)
-        
-        if not signatures:
-            raise ValueError("No signature found in docstring")
-        
-        sig = signatures.pop().union(*signatures)
-        
-        # FIXME: parse parameter descriptions
-        
-        return sig
-
-    @classmethod
     def from_class(cls, class_):
         return cls.from_callable(class_)
 
@@ -606,7 +460,7 @@ class Signature(inspect.Signature):
             
             # TODO: do the same thing for typing annotations, e.g. filter out List[X] if list or List is present
             
-            types_ = tuple(classes + annotations)
+            types_ = tuple(classes | annotations)
             
             if len(types_) == 1:
                 return types_[0]

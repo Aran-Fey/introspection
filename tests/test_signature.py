@@ -69,21 +69,6 @@ def test_get_bool_signature():
     assert sig.parameters['x'].default is Parameter.missing
 
 
-def test_get_signature_c_function(monkeypatch):
-    fake_func = make_fake_c_function("""
-    __build_class__(func, name, /, *bases, [metaclass], **kwds) -> class
-    """, monkeypatch)
-
-    sig = Signature.from_callable(fake_func)
-    assert sig.return_annotation is type
-    assert len(sig.parameters) == 5
-    assert sig.parameters['func'].kind == Parameter.POSITIONAL_ONLY
-    assert sig.parameters['name'].kind == Parameter.POSITIONAL_ONLY
-    assert sig.parameters['bases'].kind == Parameter.VAR_POSITIONAL
-    assert sig.parameters['metaclass'].kind == Parameter.KEYWORD_ONLY
-    assert sig.parameters['kwds'].kind == Parameter.VAR_KEYWORD
-
-
 def test_get_signature_undoc_c_function(monkeypatch):
     fake_func = make_fake_c_function(None, monkeypatch)
 
@@ -114,74 +99,6 @@ def test_store_signature():
 
     s = inspect.signature(foo)
     assert s is sig
-
-
-@pytest.mark.parametrize('string, expected', [
-    ('(foo)', Signature([Parameter('foo')])),
-    ('(foo: None)', Signature([Parameter('foo', annotation=None)])),
-    ('(foo: Callable[..., None])', Signature([Parameter('foo', annotation=typing.Callable[..., None])])),
-    ('(foo: Callable[[int, str], None])', Signature([Parameter('foo', annotation=typing.Callable[[int, str], None])])),
-])
-def test_signature_from_string(string, expected):
-    signature = Signature.from_string(string)
-    
-    assert signature == expected
-
-
-def test_signature_from_docstring_with_optionals():
-    doc = '''range(stop) -> range object
-range(start, stop[, step]) -> range object
-
-Return an object that produces a sequence of integers from start (inclusive)
-to stop (exclusive) by step.'''
-
-    sig = Signature.from_docstring(doc)
-
-    parameters = list(sig.parameters.values())
-    assert len(parameters) == 3
-    # assert parameters[0].name == 'start_or_stop'
-    assert parameters[0].default is Parameter.empty
-    assert parameters[1].default is Parameter.missing
-    assert parameters[2].default is Parameter.missing
-    assert sig.return_annotation is range
-
-
-def test_signature_from_docstring_without_returntype():
-    doc = '''float(x=0)'''
-
-    sig = Signature.from_docstring(doc)
-
-    parameters = list(sig.parameters.values())
-    assert len(parameters) == 1
-    assert parameters[0].name == 'x'
-    assert parameters[0].default == 0
-    assert sig.return_annotation is object
-
-
-def test_signature_from_docstring_with_positional_only_args():
-    doc = '''float(x=0, /, y=1)'''
-
-    sig = Signature.from_docstring(doc)
-
-    parameters = list(sig.parameters.values())
-    assert len(parameters) == 2
-    assert parameters[0].name == 'x'
-    assert parameters[0].default == 0
-    assert parameters[0].kind is Parameter.POSITIONAL_ONLY
-    assert parameters[1].name == 'y'
-    assert parameters[1].default == 1
-    assert parameters[1].kind is Parameter.POSITIONAL_OR_KEYWORD
-
-
-def test_signature_from_docstring_with_varargs():
-    doc = '''foo(x, *, y) -> foo'''
-
-    sig = Signature.from_docstring(doc)
-
-    parameters = list(sig.parameters.values())
-    assert len(parameters) == 2
-    assert parameters[0].kind is Parameter.POSITIONAL_OR_KEYWORD
-    assert parameters[1].kind is Parameter.KEYWORD_ONLY
 
 
 def test_signature_from_class_with_init():
@@ -317,28 +234,36 @@ def test_iteration():
 
 
 @pytest.mark.parametrize('signatures, expected', [
-    (['() -> int', '() -> float'], '() -> Union[int, float]'),
-    (['() -> int', '() -> bool'], '() -> int'),
-    (['() -> int', '() -> float', '() -> bool'], '() -> Union[int, float]'),
-    (['(a) -> int', '(*, b=3) -> float'], '(a, *, b=3) -> Union[int, float]'),
+    ([Signature(return_annotation=int),
+      Signature(return_annotation=float)],
+     Signature(return_annotation=typing.Union[int, float])
+    ),
+    ([Signature(return_annotation=int),
+      Signature(return_annotation=bool)],
+     Signature(return_annotation=int)
+    ),
+    ([Signature(return_annotation=int),
+      Signature(return_annotation=float),
+      Signature(return_annotation=bool)],
+     Signature(return_annotation=typing.Union[int, float])
+    ),
+    ([Signature([Parameter('a')], return_annotation=int),
+      Signature([Parameter('b', Parameter.KEYWORD_ONLY, default=3)], return_annotation=float)],
+     Signature([Parameter('a'), Parameter('b', Parameter.KEYWORD_ONLY, default=3)], return_annotation=typing.Union[int, float])
+    ),
 ])
 def test_union(signatures, expected):
-    signatures = [Signature.from_string(sig) for sig in signatures]
-    expected = Signature.from_string(expected)
-    
     merged = signatures[0].union(*signatures[1:])
     assert merged == expected
 
 
-@pytest.mark.parametrize('signature', [
-    '([a])',
-    '(a[, b])',
-    '(x: int) -> str',
-    '(x: bool = False)',
-    '(x: tuple) -> Tuple',
-    '() -> Tuple[int, List]',
+@pytest.mark.parametrize('signature, expected', [
+    (Signature([Parameter('a', default=Parameter.missing)]), '([a])'),
+    (Signature([Parameter('a'), Parameter('b', default=Parameter.missing)]), '(a[, b])'),
+    (Signature([Parameter('x', annotation=int)], return_annotation=str), '(x: int) -> str'),
+    (Signature([Parameter('x', annotation=bool, default=False)]), '(x: bool = False)'),
+    (Signature([Parameter('x', annotation=tuple)], return_annotation=typing.Tuple), '(x: tuple) -> Tuple'),
+    (Signature(return_annotation=typing.Tuple[int, typing.List]), '() -> Tuple[int, List]'),
 ])
-def test_to_string(signature):
-    sig = Signature.from_string(signature)
-    
-    assert sig.to_string() == signature
+def test_to_string(signature, expected):
+    assert signature.to_string() == expected

@@ -2,7 +2,6 @@
 import inspect
 import typing
 
-from . import _parsers
 from .misc import annotation_to_string
 
 __all__ = ['Parameter']
@@ -12,11 +11,7 @@ class Parameter(inspect.Parameter):
     """
     An :class:`inspect.Parameter` subclass that represents a function parameter.
     
-    Instances of this class have an additional attribute: a :attr:`description`.
-    The description must be ``None`` or a string. Parameters with no description
-    compare equal to regular :class:`inspect.Parameter`s.
-    
-    This class also adds a new special value for the :attr:`default` attribute: :attr:`Parameter.missing`.
+    This class adds a new special value for the :attr:`default` attribute: :attr:`Parameter.missing`.
     This value indicates that the parameter is optional, but has no known default value.
     
     :ivar name: The parameter's name
@@ -36,11 +31,8 @@ class Parameter(inspect.Parameter):
                  kind=inspect.Parameter.POSITIONAL_OR_KEYWORD,
                  default=inspect.Parameter.empty,
                  annotation=inspect.Parameter.empty,
-                 description=None,
                  ):
         super().__init__(name, kind, default=default, annotation=annotation)
-        
-        self._description = description
 
     @classmethod
     def from_parameter(cls, parameter: inspect.Parameter) -> 'Parameter':
@@ -55,62 +47,8 @@ class Parameter(inspect.Parameter):
             kind=parameter.kind,
             default=parameter.default,
             annotation=parameter.annotation,
-            description=parameter.description if isinstance(parameter, __class__) else None,
         )
     
-    @classmethod
-    def from_string(cls, string, module=None) -> 'Parameter':
-        """
-        Parses the string representation of a Parameter. This is essentially the opposite of ``repr``.
-        
-        Examples::
-        
-            >>> Parameter.from_string('a')
-            <Parameter a>
-            >>> Parameter.from_string('a: int = 3')
-            <Parameter a: int = 3>
-        """
-        parser = _parsers.parameter_parser(module)
-        
-        try:
-            kwargs = parser(string)
-        except SyntaxError:
-            raise ValueError('{!r} is not a valid parameter string'.format(string)) from None
-        
-        return cls(**kwargs)
-    
-    def replace(self, **attrs):
-        kwargs = self._vars()
-        kwargs.update(attrs)
-        
-        return type(self)(**kwargs)
-    
-    @property
-    def description(self) -> typing.Optional[str]:
-        return self._description
-    
-    def __hash__(self):
-        # Because parameters with no description compare equal to inspect.Parameters,
-        # we must make sure to return the same hash value as well
-        if self.description is None:
-            return super().__hash__()
-        
-        return hash((self.name, self.kind, self.default, self.annotation, self.description))
-    
-    def __eq__(self, other):
-        if not isinstance(other, inspect.Parameter):
-            return NotImplemented
-
-        if isinstance(other, __class__):
-            if self.description != other.description:
-                return False
-        else:
-            # only compare equal to an inspect.Parameter if no description is set
-            if self.description is not None:
-                return False
-            
-        return super().__eq__(other)
-
     @property
     def has_annotation(self):
         """

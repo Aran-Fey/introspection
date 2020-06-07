@@ -3,18 +3,7 @@ from collections import defaultdict, deque
 
 from datatypes import is_qualified_generic, get_base_generic, get_subtypes, get_type_name
 
-from . import _parsers
-
-__all__ = ['annotation_to_string', 'common_ancestor', 'eval_annotation', 'static_vars']
-
-
-def eval_annotation(annotation, module=None):
-    parser = _parsers.annotation_parser(module)
-
-    try:
-        return parser(annotation)
-    except SyntaxError:
-        raise ValueError('{!r} is not a valid annotation'.format(annotation)) from None
+__all__ = ['annotation_to_string', 'common_ancestor', 'static_vars']
 
 
 def annotation_to_string(annotation):

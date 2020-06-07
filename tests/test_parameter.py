@@ -11,9 +11,7 @@ from introspection import Parameter
     (inspect.Parameter('a', Parameter.POSITIONAL_ONLY), Parameter('a', Parameter.POSITIONAL_ONLY), True),
     (Parameter('a', Parameter.POSITIONAL_ONLY), inspect.Parameter('a', Parameter.POSITIONAL_ONLY), True),
     (inspect.Parameter('not_a', Parameter.POSITIONAL_ONLY), Parameter('a', Parameter.POSITIONAL_ONLY), False),
-    (inspect.Parameter('a', Parameter.POSITIONAL_ONLY), Parameter('a', Parameter.POSITIONAL_ONLY, description='foo'), False),
     (inspect.Parameter('a', Parameter.VAR_KEYWORD), Parameter('a', Parameter.VAR_KEYWORD), True),
-    (Parameter('a', Parameter.POSITIONAL_ONLY, description='bar'), Parameter('a', Parameter.POSITIONAL_ONLY, description='foo'), False),
 ])
 def test_equality(param1, param2, expected):
     hash_equal = hash(param1) == hash(param2)
@@ -31,7 +29,7 @@ def test_from_inspect_parameter():
 
 
 def test_from_parameter():
-    in_param = Parameter('foo', Parameter.KEYWORD_ONLY, object(), int, description='hi')
+    in_param = Parameter('foo', Parameter.KEYWORD_ONLY, object(), int)
     param = Parameter.from_parameter(in_param)
     
     assert in_param == param
@@ -42,13 +40,14 @@ def test_from_parameter():
     {'kind': Parameter.VAR_KEYWORD},
     {'default': 3},
     {'annotation': list},
-    {'description': 'firetruck'},
-    {'default': 5, 'description': 'hello world'}
+    {'default': 5, 'annotation': complex}
 ])
 def test_replace(attrs):
     param = Parameter('foo')
     
     param = param.replace(**attrs)
+    
+    assert isinstance(param, Parameter)
     
     for key, value in attrs.items():
         assert getattr(param, key) == value
