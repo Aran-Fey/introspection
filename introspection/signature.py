@@ -452,15 +452,15 @@ class Signature(inspect.Signature):
             
             # if any class is a subclass of another, remove it
             classes_ = set()
-            while classes:
-                cls = classes.pop()
+            for cls in classes:
+                other_classes = tuple(classes - {cls})
                 
-                if not issubclass(cls, tuple(classes)):
+                if not issubclass(cls, other_classes):
                     classes_.add(cls)
             
             # TODO: do the same thing for typing annotations, e.g. filter out List[X] if list or List is present
             
-            types_ = tuple(classes | annotations)
+            types_ = tuple(classes_ | annotations)
             
             if len(types_) == 1:
                 return types_[0]
@@ -485,38 +485,107 @@ class Signature(inspect.Signature):
         return cls(params, return_annotation=return_annotation)
 
     def to_string(self):
+        # Because parameters with a default of Parameter.missing have a special bracket
+        # notation (like "[a[, b]]" for positional-only parameters and "[a][, b]" otherwise),
+        # we'll do this in 2 steps:
+        # 1) Create a list that contains 2 kinds of elements:
+        #     parameters = regular parameters, separated by ", "
+        #     lists of parameters = a sequence of parameters that needs to be enclosed in (nested) brackets
+        # 2) Join the list with the appropriate separator for each element
+        
+        # Step 1
         param_list = list(self.parameters.values())
-        chunks = []
-        i = len(param_list) - 1
-        while i >= 0:
+        num_params = len(param_list)
+        param_specs = []
+        i = 0
+        
+        while i < num_params:
             param = param_list[i]
             
-            text = param._to_string_no_brackets()
-            
-            if i > 0:
-                text = ', ' + text
-            
+            # Check if this parameter goes in square brackets
             if param.default is Parameter.missing:
-                text = '[{}]'.format(text)
-            
-                # these need special attention because their representation is nested, like e.g. [a[, b]]
+                group = [param]
+                
+                # Group sequences of positional-only bracket parameters
                 if param.kind is Parameter.POSITIONAL_ONLY:
-                    while i > 0 and param_list[i-1].default is Parameter.missing:
-                        i -= 1
+                    while True:
+                        i += 1
+                        if i >= num_params:
+                            break
                         
                         param = param_list[i]
-                        t = param._to_string_no_brackets()
                         
-                        if i > 0:
-                            t = ', ' + t
+                        if param.kind is not Parameter.POSITIONAL_ONLY or param.default is not Parameter.missing:
+                            break
                         
-                        text = '[{}{}]'.format(t, text)
+                        group.append(param)
+                        i += 1
+                    
+                    i -= 1
+                
+                param_specs.append(group)
+            else:
+                param_specs.append(param)
             
-            chunks.append(text)
-            i -= 1
+            i += 1
         
-        chunks.reverse()
+        # Step 2
+        chunks = []
+        is_first = True
+        for i, param_spec in enumerate(param_specs):
+            # insert "*" if necessary
+            first_param = param_spec[0] if isinstance(param_spec, list) else param_spec
+            if first_param.kind is Parameter.KEYWORD_ONLY:
+                if i == 0:
+                    prev_param = None
+                else:
+                    prev_param = param_specs[i-1]
+                    if isinstance(prev_param, list):
+                        prev_param = prev_param[-1]
+                
+                if prev_param is None or prev_param.kind not in {Parameter.KEYWORD_ONLY, Parameter.VAR_POSITIONAL}:
+                    if is_first:
+                        chunks.append('*')
+                        is_first = False
+                    else:
+                        chunks.append(', *')
+            
+            # If its a regular parameter, the separator is ", "
+            if isinstance(param_spec, inspect.Parameter):
+                if not is_first:
+                    chunks.append(', ')
+                
+                chunk = param_spec._to_string_no_brackets()
+            # otherwise, it's a group of bracket parameters
+            else:
+                chunk = [param._to_string_no_brackets() for param in param_spec]
+                chunk = '[, '.join(chunk) + ']'*(len(chunk)-1)
+
+                if is_first:
+                    template = '[{}]'
+                else:
+                    template = '[, {}]'
+                chunk = template.format(chunk)
+                
+            chunks.append(chunk)
+            
+            # insert "/" if necessary
+            last_param = param_spec[-1] if isinstance(param_spec, list) else param_spec
+            if last_param.kind is Parameter.POSITIONAL_ONLY:
+                if i == len(param_specs)-1:
+                    next_param = None
+                else:
+                    next_param = param_specs[i+1]
+                    if isinstance(next_param, list):
+                        next_param = next_param[0]
+                
+                if next_param is None or next_param.kind not in {Parameter.POSITIONAL_ONLY, Parameter.VAR_POSITIONAL}:
+                    chunks.append(', /')
+            
+            is_first = False
+            
         params = ''.join(chunks)
+        # Parameter list complete
         
         if self.has_return_annotation:
             ann = annotation_to_string(self.return_annotation)

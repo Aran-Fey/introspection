@@ -247,6 +247,15 @@ def test_iteration():
       Signature(return_annotation=bool)],
      Signature(return_annotation=typing.Union[int, float])
     ),
+    ([Signature(return_annotation=list),
+      Signature(return_annotation=typing.List)],
+     Signature(return_annotation=list)
+    ),
+    ([Signature(return_annotation=list),
+      Signature(return_annotation=typing.List[str]),
+      Signature(return_annotation=typing.List)],
+     Signature(return_annotation=list)
+    ),
     ([Signature([Parameter('a')], return_annotation=int),
       Signature([Parameter('b', Parameter.KEYWORD_ONLY, default=3)], return_annotation=float)],
      Signature([Parameter('a'), Parameter('b', Parameter.KEYWORD_ONLY, default=3)], return_annotation=typing.Union[int, float])
@@ -259,7 +268,17 @@ def test_union(signatures, expected):
 
 @pytest.mark.parametrize('signature, expected', [
     (Signature([Parameter('a', default=Parameter.missing)]), '([a])'),
+    (Signature([Parameter('a', Parameter.POSITIONAL_ONLY, default=Parameter.missing)]), '([a], /)'),
     (Signature([Parameter('a'), Parameter('b', default=Parameter.missing)]), '(a[, b])'),
+    (Signature([Parameter('a'), Parameter('b', Parameter.KEYWORD_ONLY)]), '(a, *, b)'),
+    (Signature([Parameter('a', Parameter.KEYWORD_ONLY)]), '(*, a)'),
+    (Signature([Parameter('a', Parameter.KEYWORD_ONLY, default=Parameter.missing)]), '(*[, a])'),
+    (Signature([Parameter('a', Parameter.VAR_POSITIONAL)]), '(*a)'),
+    (Signature([Parameter('a', Parameter.VAR_KEYWORD)]), '(**a)'),
+    (Signature([Parameter('a', Parameter.POSITIONAL_ONLY)]), '(a, /)'),
+    (Signature([Parameter('a', Parameter.POSITIONAL_ONLY), Parameter('b')]), '(a, /, b)'),
+    (Signature([Parameter('a', Parameter.POSITIONAL_ONLY), Parameter('b', Parameter.KEYWORD_ONLY)]), '(a, /, *, b)'),
+    (Signature([Parameter('a', Parameter.POSITIONAL_ONLY, default=Parameter.missing), Parameter('b', Parameter.KEYWORD_ONLY, default=Parameter.missing)]), '([a], /, *[, b])'),
     (Signature([Parameter('x', annotation=int)], return_annotation=str), '(x: int) -> str'),
     (Signature([Parameter('x', annotation=bool, default=False)]), '(x: bool = False)'),
     (Signature([Parameter('x', annotation=tuple)], return_annotation=typing.Tuple), '(x: tuple) -> Tuple'),
