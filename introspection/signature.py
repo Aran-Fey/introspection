@@ -579,7 +579,7 @@ class Signature(inspect.Signature):
                     if isinstance(next_param, list):
                         next_param = next_param[0]
                 
-                if next_param is None or next_param.kind not in {Parameter.POSITIONAL_ONLY, Parameter.VAR_POSITIONAL}:
+                if next_param is None or next_param.kind is not Parameter.POSITIONAL_ONLY:
                     chunks.append(', /')
             
             is_first = False

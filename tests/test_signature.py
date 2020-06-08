@@ -267,9 +267,12 @@ def test_union(signatures, expected):
 
 
 @pytest.mark.parametrize('signature, expected', [
+    (Signature([Parameter('a', Parameter.POSITIONAL_ONLY), Parameter('b', Parameter.VAR_POSITIONAL)]), '(a, /, *b)'),
     (Signature([Parameter('a', default=Parameter.missing)]), '([a])'),
     (Signature([Parameter('a', Parameter.POSITIONAL_ONLY, default=Parameter.missing)]), '([a], /)'),
+    (Signature([Parameter('a', Parameter.POSITIONAL_ONLY, default=Parameter.missing), Parameter('b', Parameter.POSITIONAL_ONLY, default=Parameter.missing)]), '([a[, b]], /)'),
     (Signature([Parameter('a'), Parameter('b', default=Parameter.missing)]), '(a[, b])'),
+    (Signature([Parameter('a', default=Parameter.missing), Parameter('b', default=Parameter.missing)]), '([a][, b])'),
     (Signature([Parameter('a'), Parameter('b', Parameter.KEYWORD_ONLY)]), '(a, *, b)'),
     (Signature([Parameter('a', Parameter.KEYWORD_ONLY)]), '(*, a)'),
     (Signature([Parameter('a', Parameter.KEYWORD_ONLY, default=Parameter.missing)]), '(*[, a])'),
