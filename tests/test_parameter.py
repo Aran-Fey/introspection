@@ -16,7 +16,7 @@ from introspection import Parameter
 def test_equality(param1, param2, expected):
     hash_equal = hash(param1) == hash(param2)
     assert hash_equal == expected
-    
+
     equal = param1 == param2
     assert equal == expected
 
@@ -24,14 +24,14 @@ def test_equality(param1, param2, expected):
 def test_from_inspect_parameter():
     in_param = inspect.Parameter('foo', Parameter.KEYWORD_ONLY, default=object(), annotation=int)
     param = Parameter.from_parameter(in_param)
-    
+
     assert in_param == param
 
 
 def test_from_parameter():
     in_param = Parameter('foo', Parameter.KEYWORD_ONLY, object(), int)
     param = Parameter.from_parameter(in_param)
-    
+
     assert in_param == param
 
 
@@ -44,11 +44,11 @@ def test_from_parameter():
 ])
 def test_replace(attrs):
     param = Parameter('foo')
-    
+
     param = param.replace(**attrs)
-    
+
     assert isinstance(param, Parameter)
-    
+
     for key, value in attrs.items():
         assert getattr(param, key) == value
 
@@ -62,7 +62,7 @@ def test_replace(attrs):
 ])
 def test_is_vararg(kind, expected):
     param = Parameter('foo', kind)
-    
+
     assert param.is_vararg == expected
 
 
@@ -84,9 +84,18 @@ def test_is_optional(param, expected):
     (Parameter('foo', Parameter.VAR_POSITIONAL), '*foo'),
     (Parameter('foo', Parameter.VAR_KEYWORD), '**foo'),
     (Parameter('foo', default=3), 'foo=3'),
+    (Parameter('foo', default=Parameter.missing), '[foo]'),
     (Parameter('foo', annotation=int), 'foo: int'),
     (Parameter('foo', annotation=typing.List[int]), 'foo: List[int]'),
     (Parameter('foo', default=5, annotation=int), 'foo: int = 5'),
+    (Parameter('foo', default=Parameter.missing, annotation=int), '[foo: int]'),
 ])
 def test_to_string(param, expected):
     assert param.to_string() == expected
+
+
+@pytest.mark.parametrize('param, expected', [
+    (Parameter('foo', Parameter.VAR_KEYWORD), '<Parameter **foo>'),
+])
+def test_repr(param, expected):
+    assert repr(param) == expected

@@ -101,81 +101,6 @@ def test_store_signature():
     assert s is sig
 
 
-def test_signature_from_class_with_init():
-    class Foo:
-        def __init__(self, x, y=3):
-            pass
-
-    sig = Signature.from_class(Foo)
-    assert list(sig.parameters) == ['x', 'y']
-
-
-def test_signature_from_class_with_new():
-    class Foo:
-        def __new__(cls, x, y=3):
-            pass
-
-    sig = Signature.from_class(Foo)
-    assert list(sig.parameters) == ['x', 'y']
-
-
-def test_signature_from_class_with_new_and_init():
-    class Foo:
-        def __new__(cls, *args, y, **kwargs):
-            pass
-
-        def __init__(self, x, y):
-            pass
-
-    sig = Signature.from_class(Foo)
-    assert list(sig.parameters) == ['x', 'y']
-    assert sig.parameters['y'].kind == Parameter.KEYWORD_ONLY
-
-
-def test_signature_from_class_with_new_and_init_and_meta():
-    class Meta(type):
-        def __call__(cls, x, *args):
-            pass
-
-    class Foo(metaclass=Meta):
-        def __new__(cls, *args):
-            pass
-
-        def __init__(self, x, y):
-            pass
-
-    sig = Signature.from_class(Foo)
-    assert list(sig.parameters) == ['x', 'y']
-    assert sig.parameters['x'].kind == Parameter.POSITIONAL_ONLY
-    assert sig.parameters['y'].kind == Parameter.POSITIONAL_ONLY
-
-
-def test_signature_from_class_with_new_and_init_positional_only():
-    class Foo:
-        def __new__(cls, *args, y):
-            pass
-
-        def __init__(self, x, y):
-            pass
-
-    sig = Signature.from_class(Foo)
-    assert list(sig.parameters) == ['x', 'y']
-    assert sig.parameters['x'].kind == Parameter.POSITIONAL_ONLY
-    assert sig.parameters['y'].kind == Parameter.KEYWORD_ONLY
-
-
-def test_signature_from_class_with_conflicting_new_and_init():
-    class Foo:
-        def __new__(cls, x, y):
-            pass
-
-        def __init__(self):
-            pass
-
-    with pytest.raises(ValueError):
-        _ = Signature.from_class(Foo)
-
-
 def test_builtin_signatures():
     import builtins
 
@@ -215,6 +140,33 @@ def test_dont_follow_wrapped():
     assert list(sig.parameters) == ['args', 'kwargs']
 
 
+def test_replace():
+    sig = Signature([
+        Parameter('foo')
+    ], return_annotation=int)
+
+    expected = Signature(return_annotation=str)
+
+    result = sig.replace(parameters=[], return_annotation=str)
+    assert isinstance(result, Signature)
+    assert result == expected
+
+
+def test_without_parameters():
+    sig = Signature([
+        Parameter('foo'),
+        Parameter('bar'),
+        Parameter('baz')
+    ])
+
+    expected = Signature([
+        Parameter('bar')
+    ])
+
+    result = sig.without_parameters(0, 'baz')
+    assert result == expected
+
+
 def test_num_required_arguments():
     sig = Signature([
         Parameter('a', Parameter.POSITIONAL_ONLY),
@@ -233,58 +185,114 @@ def test_iteration():
     assert list(sig) == [param]
 
 
-@pytest.mark.parametrize('signatures, expected', [
-    ([Signature(return_annotation=int),
-      Signature(return_annotation=float)],
-     Signature(return_annotation=typing.Union[int, float])
-    ),
-    ([Signature(return_annotation=int),
-      Signature(return_annotation=bool)],
-     Signature(return_annotation=int)
-    ),
-    ([Signature(return_annotation=int),
-      Signature(return_annotation=float),
-      Signature(return_annotation=bool)],
-     Signature(return_annotation=typing.Union[int, float])
-    ),
-    ([Signature(return_annotation=list),
-      Signature(return_annotation=typing.List)],
-     Signature(return_annotation=list)
-    ),
-    ([Signature(return_annotation=list),
-      Signature(return_annotation=typing.List[str]),
-      Signature(return_annotation=typing.List)],
-     Signature(return_annotation=list)
-    ),
-    ([Signature([Parameter('a')], return_annotation=int),
-      Signature([Parameter('b', Parameter.KEYWORD_ONLY, default=3)], return_annotation=float)],
-     Signature([Parameter('a'), Parameter('b', Parameter.KEYWORD_ONLY, default=3)], return_annotation=typing.Union[int, float])
-    ),
-])
-def test_union(signatures, expected):
-    merged = signatures[0].union(*signatures[1:])
-    assert merged == expected
-
-
 @pytest.mark.parametrize('signature, expected', [
-    (Signature([Parameter('a', Parameter.POSITIONAL_ONLY), Parameter('b', Parameter.VAR_POSITIONAL)]), '(a, /, *b)'),
-    (Signature([Parameter('a', default=Parameter.missing)]), '([a])'),
-    (Signature([Parameter('a', Parameter.POSITIONAL_ONLY, default=Parameter.missing)]), '([a], /)'),
-    (Signature([Parameter('a', Parameter.POSITIONAL_ONLY, default=Parameter.missing), Parameter('b', Parameter.POSITIONAL_ONLY, default=Parameter.missing)]), '([a[, b]], /)'),
-    (Signature([Parameter('a'), Parameter('b', default=Parameter.missing)]), '(a[, b])'),
-    (Signature([Parameter('a', default=Parameter.missing), Parameter('b', default=Parameter.missing)]), '([a][, b])'),
-    (Signature([Parameter('a'), Parameter('b', Parameter.KEYWORD_ONLY)]), '(a, *, b)'),
-    (Signature([Parameter('a', Parameter.KEYWORD_ONLY)]), '(*, a)'),
-    (Signature([Parameter('a', Parameter.KEYWORD_ONLY, default=Parameter.missing)]), '(*[, a])'),
-    (Signature([Parameter('a', Parameter.VAR_POSITIONAL)]), '(*a)'),
-    (Signature([Parameter('a', Parameter.VAR_KEYWORD)]), '(**a)'),
-    (Signature([Parameter('a', Parameter.POSITIONAL_ONLY)]), '(a, /)'),
-    (Signature([Parameter('a', Parameter.POSITIONAL_ONLY), Parameter('b')]), '(a, /, b)'),
-    (Signature([Parameter('a', Parameter.POSITIONAL_ONLY), Parameter('b', Parameter.KEYWORD_ONLY)]), '(a, /, *, b)'),
-    (Signature([Parameter('a', Parameter.POSITIONAL_ONLY, default=Parameter.missing), Parameter('b', Parameter.KEYWORD_ONLY, default=Parameter.missing)]), '([a], /, *[, b])'),
-    (Signature([Parameter('x', annotation=int)], return_annotation=str), '(x: int) -> str'),
-    (Signature([Parameter('x', annotation=bool, default=False)]), '(x: bool = False)'),
-    (Signature([Parameter('x', annotation=tuple)], return_annotation=typing.Tuple), '(x: tuple) -> Tuple'),
+    (Signature([
+        Parameter('a', Parameter.POSITIONAL_ONLY),
+        Parameter('b', Parameter.VAR_POSITIONAL)]
+     ), '(a, /, *b)'
+    ),
+    (Signature([
+        Parameter('a', Parameter.POSITIONAL_ONLY),
+        Parameter('b', Parameter.POSITIONAL_ONLY)]
+    ), '(a, b, /)'
+    ),
+    (Signature([
+        Parameter('a', default=Parameter.missing)
+     ]), '([a])'
+    ),
+    (Signature([
+        Parameter('a', Parameter.POSITIONAL_ONLY, default=Parameter.missing)
+     ]), '([a], /)'
+    ),
+    (Signature([
+        Parameter('a', Parameter.POSITIONAL_ONLY, default=Parameter.missing),
+        Parameter('b', default=Parameter.missing)
+    ]), '([a], /[, b])'
+    ),
+    (Signature([
+        Parameter('a', Parameter.POSITIONAL_ONLY, default=Parameter.missing),
+        Parameter('b', Parameter.POSITIONAL_ONLY, default=Parameter.missing)
+     ]), '([a[, b]], /)'
+    ),
+    (Signature([
+        Parameter('a', Parameter.POSITIONAL_ONLY, default=Parameter.missing),
+        Parameter('b', Parameter.POSITIONAL_ONLY, default=Parameter.missing),
+        Parameter('c', Parameter.POSITIONAL_ONLY, default=3)
+     ]), '([a[, b]], c=3, /)'
+    ),
+    (Signature([
+        Parameter('a', Parameter.POSITIONAL_ONLY, default=Parameter.missing),
+        Parameter('b', Parameter.POSITIONAL_ONLY, default=Parameter.missing),
+        Parameter('c', Parameter.POSITIONAL_OR_KEYWORD, default=Parameter.missing)
+     ]), '([a[, b]], /[, c])'
+    ),
+    (Signature([
+        Parameter('a'),
+        Parameter('b', default=Parameter.missing)
+     ]), '(a[, b])'
+    ),
+    (Signature([
+        Parameter('a', default=Parameter.missing),
+        Parameter('b', default=Parameter.missing)
+     ]), '([a][, b])'
+    ),
+    (Signature([
+        Parameter('a'),
+        Parameter('b', Parameter.KEYWORD_ONLY)
+     ]), '(a, *, b)'
+    ),
+    (Signature([
+        Parameter('a', Parameter.KEYWORD_ONLY)
+     ]), '(*, a)'
+    ),
+    (Signature([
+        Parameter('a', Parameter.KEYWORD_ONLY),
+        Parameter('b', Parameter.KEYWORD_ONLY)
+     ]), '(*, a, b)'
+    ),
+    (Signature([
+        Parameter('a', Parameter.KEYWORD_ONLY, default=Parameter.missing)
+     ]), '(*[, a])'
+    ),
+    (Signature([
+        Parameter('a', Parameter.VAR_POSITIONAL)
+     ]), '(*a)'
+    ),
+    (Signature([
+        Parameter('a', Parameter.VAR_KEYWORD)
+     ]), '(**a)'
+    ),
+    (Signature([
+        Parameter('a', Parameter.POSITIONAL_ONLY)
+     ]), '(a, /)'
+    ),
+    (Signature([
+        Parameter('a', Parameter.POSITIONAL_ONLY),
+        Parameter('b')
+     ]), '(a, /, b)'
+    ),
+    (Signature([
+        Parameter('a', Parameter.POSITIONAL_ONLY),
+        Parameter('b', Parameter.KEYWORD_ONLY)
+     ]), '(a, /, *, b)'
+    ),
+    (Signature([
+        Parameter('a', Parameter.POSITIONAL_ONLY, default=Parameter.missing),
+        Parameter('b', Parameter.KEYWORD_ONLY, default=Parameter.missing)
+     ]), '([a], /, *[, b])'
+    ),
+    (Signature([
+        Parameter('x', annotation=int)
+     ], return_annotation=str), '(x: int) -> str'
+    ),
+    (Signature([
+        Parameter('x', annotation=bool, default=False)
+     ]), '(x: bool = False)'
+    ),
+    (Signature([
+        Parameter('x', annotation=tuple)
+     ], return_annotation=typing.Tuple), '(x: tuple) -> Tuple'
+    ),
     (Signature(return_annotation=typing.Tuple[int, typing.List]), '() -> Tuple[int, List]'),
 ])
 def test_to_string(signature, expected):

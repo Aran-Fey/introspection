@@ -10,7 +10,9 @@ author = "Paul Pinterits"
 description-file = "README.md"
 home-page = "https://github.com/Aran-Fey/introspection"
 requires-python = ">=3.5,<4"
-requires = []
+requires = [
+    "datatypes"
+]
 
 [tool.flit.metadata.requires-extra]
 test = ["pytest"]

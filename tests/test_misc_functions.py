@@ -1,7 +1,15 @@
 
 import pytest
 
-from introspection import common_ancestor, static_vars
+from introspection import *
+
+
+def test_get_parameters():
+    def func(a: int, b=True):
+        pass
+
+    sig = Signature.from_callable(func)
+    assert get_parameters(func) == list(sig)
 
 
 def test_static_vars():

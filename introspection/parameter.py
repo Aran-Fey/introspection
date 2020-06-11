@@ -1,8 +1,7 @@
 
 import inspect
-import typing
 
-from .misc import annotation_to_string
+from datatypes import annotation_to_string, annotation_union, annotation_intersection
 
 __all__ = ['Parameter']
 
@@ -10,16 +9,16 @@ __all__ = ['Parameter']
 class Parameter(inspect.Parameter):
     """
     An :class:`inspect.Parameter` subclass that represents a function parameter.
-    
+
     This class adds a new special value for the :attr:`default` attribute: :attr:`Parameter.missing`.
     This value indicates that the parameter is optional, but has no known default value.
-    
+
     :ivar name: The parameter's name
     :type name: str
     :ivar kind: The parameter's kind. See :attr:`inspect.Parameter.kind` for details.
     :ivar default: The parameter's default value or :attr:`inspect.Parameter.empty`
     :ivar annotation: The parameter's type annotation
-    :ivar description: 
+    :ivar description:
     :type description: Optional[str]
     """
     __slots__ = ('_description',)
@@ -48,14 +47,14 @@ class Parameter(inspect.Parameter):
             default=parameter.default,
             annotation=parameter.annotation,
         )
-    
+
     @property
     def has_annotation(self):
         """
         Returns whether the parameter's :attr:`annotation` is not :attr:`Parameter.empty`.
         """
         return self.annotation is not Parameter.empty
-    
+
     @property
     def is_vararg(self) -> bool:
         """
@@ -78,14 +77,10 @@ class Parameter(inspect.Parameter):
             self.default is not self.empty or
             self.is_vararg
         )
-    
-    def _vars(self):
-        attrs = ('name', 'kind', 'default', 'annotation', 'description')
-        return {attr: getattr(self, attr) for attr in attrs}
-    
+
     def _to_string_no_brackets(self):
         text = self.name
-        
+
         if self.kind is __class__.VAR_POSITIONAL:
             text = '*' + text
         elif self.kind is __class__.VAR_KEYWORD:
@@ -94,29 +89,29 @@ class Parameter(inspect.Parameter):
         if self.has_annotation:
             ann = annotation_to_string(self.annotation)
             text += ': {}'.format(ann)
-        
+
         if self.default not in {__class__.empty, __class__.missing}:
             if self.has_annotation:
                 template = '{} = {}'
             else:
                 template = '{}={}'
-            
+
             default = repr(self.default)
-            
+
             text = template.format(text, default)
-        
+
         return text
-    
+
     def to_string(self):
         text = self._to_string_no_brackets()
-        
+
         if self.default is __class__.missing:
             text = '[{}]'.format(text)
-        
+
         return text
-    
+
     def __repr__(self):
         cls_name = type(self).__name__
         text = self.to_string()
-        
+
         return '<{} {}>'.format(cls_name, text)

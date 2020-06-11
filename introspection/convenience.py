@@ -1,11 +1,19 @@
 
-from typing import List, Callable
+import functools
+from typing import Callable, List
 
-from .parameter import Parameter
 from .signature import Signature
+from .parameter import Parameter
+
+__all__ = ['signature', 'get_parameters']
 
 
-__all__ = ['get_parameters']
+@functools.wraps(Signature.from_callable)
+def signature(*args, **kwargs):
+    """
+    Shorthand for ``Signature.from_callable``.
+    """
+    return Signature.from_callable(*args, **kwargs)
 
 
 def get_parameters(callable_: Callable) -> List[Parameter]:

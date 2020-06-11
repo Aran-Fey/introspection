@@ -1,47 +1,27 @@
 
 from collections import defaultdict, deque
 
-from datatypes import is_qualified_generic, get_base_generic, get_subtypes, get_type_name
-
-__all__ = ['annotation_to_string', 'common_ancestor', 'static_vars']
-
-
-def annotation_to_string(annotation):
-    def process_nested(prefix, elems):
-        elems = ', '.join(map(annotation_to_string, elems))
-        return '{}[{}]'.format(prefix, elems)
-    
-    if isinstance(annotation, list):
-        return process_nested('', annotation)
-    
-    if is_qualified_generic(annotation):
-        base = get_base_generic(annotation)
-        subtypes = get_subtypes(annotation)
-        
-        prefix = annotation_to_string(base)
-        return process_nested(prefix, subtypes)
-
-    if hasattr(annotation, '__module__'):
-        if annotation.__module__ == 'builtins':
-            return annotation.__qualname__
-        elif annotation.__module__ == 'typing':
-            return get_type_name(annotation)
-        else:
-            return '{}.{}'.format(annotation.__module__, annotation.__qualname__)
-    
-    return repr(annotation)
+__all__ = ['common_ancestor', 'static_vars']
 
 
 def static_vars(obj):
+    """
+    Like :func:`vars`, but bypasses overridden ``__getattribute__`` methods.
+
+    :param obj: Any object
+    :return: The object's ``__dict__``
+    :raises:
+        TypeError: If the object has no ``__dict__``
+    """
     return object.__getattribute__(obj, '__dict__')
 
 
 def common_ancestor(classes):
     """
     Finds the closest common parent class of the given classes.
-    If called with no arguments, :class:`object` is returned.
+    If called with an empty iterable, :class:`object` is returned.
 
-    :param cls_list: Any number of classes
+    :param classes: An iterable of classes
     :return: The given classes' shared parent class
     """
 

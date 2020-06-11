@@ -27,6 +27,13 @@ def test_class_implements_dundermethod():
     assert class_implements_dundermethod(Class, '__len__')
 
 
+def test_class_implements_hash():
+    class Class:
+        __hash__ = None
+
+    assert not class_implements_dundermethod(Class, '__hash__')
+
+
 def test_class_implements_dundermethod_handles_meta():
     class Meta(type):
         def __len__(self):
@@ -38,6 +45,62 @@ def test_class_implements_dundermethod_handles_meta():
     assert not class_implements_dundermethod(Class, '__len__')
 
 
+def test_class_implements_dundermethod_with_bound():
+    class Class:
+        pass
+
+    assert not class_implements_dundermethod(Class, '__init__', bound=object)
+
+
 def test_class_implements_dundermethod_with_nonclass():
     with pytest.raises(TypeError):
         class_implements_dundermethod(3, '__len__')
+
+
+def test_class_implements_dundermethods():
+    class Foo:
+        def __lt__(self, other):
+            return False
+
+        def __gt__(self, other):
+            return False
+
+    assert class_implements_dundermethods(Foo, ['__lt__', '__init__'])
+
+
+def test_class_implements_dundermethods_hash():
+    class Foo:
+        __hash__ = None
+
+    assert not class_implements_dundermethods(Foo, ['__hash__', '__init__'])
+
+
+def test_class_implements_any_dundermethod():
+    class Foo:
+        def __lt__(self, other):
+            return False
+
+        def __gt__(self, other):
+            return False
+
+    assert class_implements_any_dundermethod(Foo, ['__gt__', '__getitem__'])
+
+
+def test_class_implements_any_dundermethod_hash():
+    class Foo:
+        __hash__ = None
+
+    assert not class_implements_any_dundermethod(Foo, ['__hash__'])
+
+
+def test_get_class_dundermethod():
+    class Foo:
+        def __init__(self):
+            pass
+
+    assert get_class_dundermethod(Foo, '__init__') is Foo.__init__
+
+
+def test_get_class_dundermethod_error():
+    with pytest.raises(AttributeError):
+        get_class_dundermethod(object, '__len__')

@@ -9,7 +9,7 @@ from .signature import *
 from .call_stack import *
 from .call_frame import *
 
-from .callables import *
+from .convenience import *
 from .classes import *
 from .dundermethods import *
 from .misc import *

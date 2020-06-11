@@ -1,20 +1,19 @@
 
-import ast
 import builtins
 import inspect
-import functools
+import math
 import os
-import re
 import sys
 import types
 import typing
 from numbers import Number
 from typing import Union, List, Dict, Callable, Any, Iterator, Iterable, Tuple, Optional, TypeVar
 
-from .parameter import Parameter
-from .misc import annotation_to_string
+from datatypes import annotation_to_string, annotation_union, annotation_intersection
 
-__all__ = ['Signature', 'signature']
+from .parameter import Parameter
+
+__all__ = ['Signature']
 
 
 T = TypeVar('T')
@@ -306,7 +305,7 @@ for key in list(BUILTIN_SIGNATURES):
 
     try:
         key = getattr(builtins, key)
-    except AttributeError:
+    except AttributeError:  # pragma: no cover
         continue
 
     BUILTIN_SIGNATURES[key] = value
@@ -370,14 +369,14 @@ class Signature(inspect.Signature):
             ret_type, params = BUILTIN_SIGNATURES[callable_]
             params = [param_type.from_parameter(param) for param in params]
             return cls(params, ret_type)
-        
+
         try:
             sig = inspect.signature(callable_, follow_wrapped=False)
         except ValueError:  # callables written in C don't have an accessible signature
             pass
         else:
             return cls.from_signature(sig, param_type=param_type)
-        
+
         # builtin exceptions also need special handling, but we don't want to hard-code
         # all of them in BUILTIN_SIGNATURES
         if isinstance(callable_, type) and issubclass(callable_, BaseException):
@@ -386,18 +385,38 @@ class Signature(inspect.Signature):
                 param_type('kwargs', Parameter.VAR_KEYWORD),
             ])
 
-        doc = callable_.__doc__
-        if doc:
-            try:
-                return cls.from_docstring(doc, param_type=param_type)
-            except ValueError:
-                pass
-
         raise ValueError("Can't determine signature of {}".format(callable_))
 
-    @classmethod
-    def from_class(cls, class_):
-        return cls.from_callable(class_)
+    def without_parameters(self, *params):
+        """
+        Returns a copy of this signature with some parameters removed.
+
+        Parameters can be referenced by their name or index.
+
+        Example::
+
+            >>> sig = Signature([
+            ...     Parameter('foo'),
+            ...     Parameter('bar'),
+            ...     Parameter('baz')
+            ... ])
+            >>> sig.without_parameters(0, 'baz')
+            <Signature (bar)>
+
+        :param params: The parameters to remove
+        :return: A copy of this signature without the given parameters
+        """
+        params = set(params)
+
+        parameters = []
+
+        for i, param in enumerate(self):
+            if i in params or param.name in params:
+                continue
+
+            parameters.append(param)
+
+        return self.replace(parameters=parameters)
 
     @property
     def has_return_annotation(self):
@@ -416,75 +435,17 @@ class Signature(inspect.Signature):
     def __iter__(self):
         return iter(self.parameters.values())
 
-    def union(self, *signatures):
-        """
-        Merges multiple signatures into one, in such a way that any
-        set of arguments accepted by one of the input signatures is
-        also accepted by the resulting signature.
-        
-        Example::
-        
-            >>> sig1
-            <Signature (a) -> int>
-            >>> sig2
-            <Signature (*, b=3) -> float>
-            >>> sig1.merged_with(sig2)
-            <Signature (a, *, b=3) -> Union[int, float]>
-        
-        :param signatures:
-        :return:
-        """
-        def merge_types(types_):
-            types_ = set(types_)
-            
-            if len(types_) == 1:
-                return types_.pop()
-            
-            # split the types into classes and stuff from the typing module
-            classes = set()
-            annotations = set()
-            
-            for type_ in types_:
-                if type_.__module__ == 'typing':
-                    annotations.add(type_)
-                else:
-                    classes.add(type_)
-            
-            # if any class is a subclass of another, remove it
-            classes_ = set()
-            for cls in classes:
-                other_classes = tuple(classes - {cls})
-                
-                if not issubclass(cls, other_classes):
-                    classes_.add(cls)
-            
-            # TODO: do the same thing for typing annotations, e.g. filter out List[X] if list or List is present
-            
-            types_ = tuple(classes_ | annotations)
-            
-            if len(types_) == 1:
-                return types_[0]
-            else:
-                return typing.Union[types_]
-        
-        # merge parameters
-        params = []
-        # FIXME
-
-        # merge return annotations
-        return_annotations = [
-            sig.return_annotation for sig in signatures
-            if sig.has_return_annotation
-        ]
-        if return_annotations:
-            return_annotation = merge_types(return_annotations)
-        else:
-            return_annotation = Signature.empty
-
-        cls = type(self)
-        return cls(params, return_annotation=return_annotation)
-
     def to_string(self):
+        """
+        Returns a string representation of this signature.
+
+        Example::
+
+            >>> Signature([
+            ...    Parameter('nums', Parameter.VAR_POSITIONAL, annotation=int)
+            ... ], return_annotation=int).to_string()
+            '(*nums: int) -> int'
+        """
         # Because parameters with a default of Parameter.missing have a special bracket
         # notation (like "[a[, b]]" for positional-only parameters and "[a][, b]" otherwise),
         # we'll do this in 2 steps:
@@ -492,43 +453,43 @@ class Signature(inspect.Signature):
         #     parameters = regular parameters, separated by ", "
         #     lists of parameters = a sequence of parameters that needs to be enclosed in (nested) brackets
         # 2) Join the list with the appropriate separator for each element
-        
+
         # Step 1
         param_list = list(self.parameters.values())
         num_params = len(param_list)
         param_specs = []
         i = 0
-        
+
         while i < num_params:
             param = param_list[i]
-            
+
             # Check if this parameter goes in square brackets
             if param.default is Parameter.missing:
                 group = [param]
-                
+
                 # Group sequences of positional-only bracket parameters
                 if param.kind is Parameter.POSITIONAL_ONLY:
                     while True:
                         i += 1
                         if i >= num_params:
                             break
-                        
+
                         param = param_list[i]
-                        
-                        if param.kind is not Parameter.POSITIONAL_ONLY or param.default is not Parameter.missing:
+
+                        if (param.kind is not Parameter.POSITIONAL_ONLY or
+                           param.default is not Parameter.missing):
                             break
-                        
+
                         group.append(param)
-                        i += 1
-                    
+
                     i -= 1
-                
+
                 param_specs.append(group)
             else:
                 param_specs.append(param)
-            
+
             i += 1
-        
+
         # Step 2
         chunks = []
         is_first = True
@@ -542,19 +503,23 @@ class Signature(inspect.Signature):
                     prev_param = param_specs[i-1]
                     if isinstance(prev_param, list):
                         prev_param = prev_param[-1]
-                
-                if prev_param is None or prev_param.kind not in {Parameter.KEYWORD_ONLY, Parameter.VAR_POSITIONAL}:
+
+                if (prev_param is None or
+                   prev_param.kind not in {
+                            Parameter.KEYWORD_ONLY,
+                            Parameter.VAR_POSITIONAL
+                   }):
                     if is_first:
                         chunks.append('*')
                         is_first = False
                     else:
                         chunks.append(', *')
-            
+
             # If its a regular parameter, the separator is ", "
             if isinstance(param_spec, inspect.Parameter):
                 if not is_first:
                     chunks.append(', ')
-                
+
                 chunk = param_spec._to_string_no_brackets()
             # otherwise, it's a group of bracket parameters
             else:
@@ -566,9 +531,9 @@ class Signature(inspect.Signature):
                 else:
                     template = '[, {}]'
                 chunk = template.format(chunk)
-                
+
             chunks.append(chunk)
-            
+
             # insert "/" if necessary
             last_param = param_spec[-1] if isinstance(param_spec, list) else param_spec
             if last_param.kind is Parameter.POSITIONAL_ONLY:
@@ -578,33 +543,26 @@ class Signature(inspect.Signature):
                     next_param = param_specs[i+1]
                     if isinstance(next_param, list):
                         next_param = next_param[0]
-                
-                if next_param is None or next_param.kind is not Parameter.POSITIONAL_ONLY:
+
+                if (next_param is None or
+                   next_param.kind is not Parameter.POSITIONAL_ONLY):
                     chunks.append(', /')
-            
+
             is_first = False
-            
+
         params = ''.join(chunks)
         # Parameter list complete
-        
+
         if self.has_return_annotation:
             ann = annotation_to_string(self.return_annotation)
             ann = ' -> {}'.format(ann)
         else:
             ann = ''
-        
+
         return '({}){}'.format(params, ann)
-    
+
     def __repr__(self):
         cls_name = type(self).__name__
         text = self.to_string()
-        
+
         return '<{} {}>'.format(cls_name, text)
-
-
-@functools.wraps(Signature.from_callable)
-def signature(*args, **kwargs):
-    """
-    Shorthand for ``Signature.from_callable``.
-    """
-    return Signature.from_callable(*args, **kwargs)
