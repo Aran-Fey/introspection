@@ -2,12 +2,11 @@
 import collections
 import inspect
 
-from typing import Dict, Any, Iterable, Set, Iterator
+from typing import Dict, Any, Set, Iterator
 
-from .signature import Signature
 from .misc import static_vars
 
-__all__ = ['get_subclasses', 'get_attributes', 'get_configurable_attributes',
+__all__ = ['get_subclasses', 'get_attributes',
            'iter_slots', 'get_slot_names', 'get_slots']
 
 
@@ -34,7 +33,7 @@ def get_subclasses(cls: type, include_abstract: bool = False) -> Set[type]:
 
 
 def iter_slots(cls: type) -> Iterator:
-    for cls in cls.__mro__:  # pragma: no cover
+    for cls in cls.__mro__:  # pragma: no branch
         cls_vars = static_vars(cls)
 
         try:
@@ -85,15 +84,22 @@ def get_slots(cls: type) -> Dict[str, Any]:
     return slots_dict
 
 
-def get_attributes(obj: Any) -> Dict[str, Any]:
+def get_attributes(obj: Any, include_weakref: bool = False) -> Dict[str, Any]:
     """
     Returns a dictionary of all of ``obj``'s attributes.
 
     :param obj: The object whose attributes will be returned
+    :param include_weakref: Whether the ``__weakref__`` slot should be included in the result
     :return: A dict of ``{attr_name: attr_value}``
     """
     cls = type(obj)
     slots = get_slots(cls)
+
+    slots.pop('__dict__', None)
+
+    if not include_weakref:
+        slots.pop('__weakref__', None)
+
     attrs = {name: slot.__get__(obj, cls) for name, slot in slots.items()}
 
     try:
@@ -102,32 +108,5 @@ def get_attributes(obj: Any) -> Dict[str, Any]:
         pass
     else:
         attrs.update(dict_)
-
-    return attrs
-
-
-def get_configurable_attributes(cls: type) -> Iterable[str]:
-    """
-    Returns a collection of all of *configurable* attributes of *cls* instances.
-
-    An attribute is considered configurable if any of the following conditions apply:
-
-    * It's a descriptor with a :code:`__set__` method
-    * The class's constructor accepts a parameter with the same name
-
-    :param cls: The class whose attributes will be returned
-    :return: An iterable of attribute names
-    """
-
-    params = Signature.from_class(cls).parameters.values()
-    attrs = {param.name for param in params}
-
-    # iterate through all the class's descriptors and find those with a __set__ method
-    for attr, value in get_attributes(cls).items():
-        if hasattr(value, '__get__'):
-            if not hasattr(value, '__set__') or (isinstance(value, property) and value.fset is None):
-                pass
-            else:
-                attrs.add(attr)
 
     return attrs

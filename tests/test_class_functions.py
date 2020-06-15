@@ -66,3 +66,55 @@ def test_get_slot_names_omitted():
         pass
 
     assert get_slot_names(Foo) == {'__weakref__': 1, '__dict__': 1}
+
+
+def test_get_slots_inheritance():
+    class Foo:
+        __slots__ = 'foo'
+
+    class Bar(Foo):
+        __slots__ = ['foo', 'bar']
+
+    class Baz(Bar):
+        __slots__ = ('baz',)
+
+    slots = get_slots(Baz)
+    assert len(slots) == 3
+    assert slots['foo'] is Baz.foo
+    assert slots['bar'] is Baz.bar
+    assert slots['baz'] is Baz.baz
+
+
+def test_get_attributes_slots_and_dict():
+    class Foo:
+        __slots__ = 'foo'
+
+    class Bar(Foo):
+        pass
+
+    obj = Bar()
+    obj.foo = 3
+    obj.bar = 5
+
+    assert get_attributes(obj) == {'foo': 3, 'bar': 5}
+
+
+def test_get_attributes_slots():
+    class Foo:
+        __slots__ = 'foo'
+
+    obj = Foo()
+    obj.foo = 3
+
+    assert get_attributes(obj) == {'foo': 3}
+
+
+def test_get_attributes_with_weakref():
+    class Foo:
+        pass
+
+    obj = Foo()
+    obj.foo = 3
+
+    attrs = get_attributes(obj, include_weakref=True)
+    assert attrs == {'foo': 3, '__weakref__': None}

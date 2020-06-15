@@ -297,3 +297,14 @@ def test_iteration():
 ])
 def test_to_string(signature, expected):
     assert signature.to_string() == expected
+
+
+@pytest.mark.parametrize('signature, expected', [
+    (Signature([
+        Parameter('a', Parameter.POSITIONAL_ONLY),
+        Parameter('b', Parameter.VAR_POSITIONAL)
+     ], return_annotation=str), '<Signature (a, /, *b) -> str>'
+    ),
+])
+def test_repr(signature, expected):
+    assert repr(signature) == expected

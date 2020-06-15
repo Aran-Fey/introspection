@@ -13,7 +13,10 @@ def static_vars(obj):
     :raises:
         TypeError: If the object has no ``__dict__``
     """
-    return object.__getattribute__(obj, '__dict__')
+    try:
+        return object.__getattribute__(obj, '__dict__')
+    except AttributeError:
+        raise TypeError("{!r} object has no __dict__".format(obj)) from None
 
 
 def common_ancestor(classes):
