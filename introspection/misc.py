@@ -1,7 +1,33 @@
 
 from collections import defaultdict, deque
 
-__all__ = ['common_ancestor', 'static_vars']
+__all__ = ['common_ancestor', 'resolve_bases', 'static_vars']
+
+
+def resolve_bases(bases):
+    """
+    Clone/backport of :func:`types.resolve_bases`.
+
+    :param bases:
+    :return:
+    """
+    result = []
+
+    for base in bases:
+        if isinstance(base, type):
+            result.append(base)
+            continue
+
+        try:
+            mro_entries = base.__mro_entries__
+        except AttributeError:
+            result.append(base)
+            continue
+
+        new_bases = mro_entries(bases)
+        result.extend(new_bases)
+
+    return tuple(result)
 
 
 def static_vars(obj):

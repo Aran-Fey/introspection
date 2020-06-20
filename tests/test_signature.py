@@ -189,111 +189,135 @@ def test_iteration():
     (Signature([
         Parameter('a', Parameter.POSITIONAL_ONLY),
         Parameter('b', Parameter.VAR_POSITIONAL)]
-     ), '(a, /, *b)'
+     ),
+     '(a, /, *b)'
     ),
     (Signature([
         Parameter('a', Parameter.POSITIONAL_ONLY),
         Parameter('b', Parameter.POSITIONAL_ONLY)]
-    ), '(a, b, /)'
+    ),
+     '(a, b, /)'
     ),
     (Signature([
         Parameter('a', default=Parameter.missing)
-     ]), '([a])'
+     ]),
+     '([a])'
     ),
     (Signature([
         Parameter('a', Parameter.POSITIONAL_ONLY, default=Parameter.missing)
-     ]), '([a], /)'
+     ]),
+     '([a], /)'
     ),
     (Signature([
         Parameter('a', Parameter.POSITIONAL_ONLY, default=Parameter.missing),
         Parameter('b', default=Parameter.missing)
-    ]), '([a], /[, b])'
+    ]),
+     '([a], /[, b])'
     ),
     (Signature([
         Parameter('a', Parameter.POSITIONAL_ONLY, default=Parameter.missing),
         Parameter('b', Parameter.POSITIONAL_ONLY, default=Parameter.missing)
-     ]), '([a[, b]], /)'
+     ]),
+     '([a[, b]], /)'
     ),
     (Signature([
         Parameter('a', Parameter.POSITIONAL_ONLY, default=Parameter.missing),
         Parameter('b', Parameter.POSITIONAL_ONLY, default=Parameter.missing),
         Parameter('c', Parameter.POSITIONAL_ONLY, default=3)
-     ]), '([a[, b]], c=3, /)'
+     ]),
+     '([a[, b]], c=3, /)'
     ),
     (Signature([
         Parameter('a', Parameter.POSITIONAL_ONLY, default=Parameter.missing),
         Parameter('b', Parameter.POSITIONAL_ONLY, default=Parameter.missing),
         Parameter('c', Parameter.POSITIONAL_OR_KEYWORD, default=Parameter.missing)
-     ]), '([a[, b]], /[, c])'
+     ]),
+     '([a[, b]], /[, c])'
     ),
     (Signature([
         Parameter('a'),
         Parameter('b', default=Parameter.missing)
-     ]), '(a[, b])'
+     ]),
+     '(a[, b])'
     ),
     (Signature([
         Parameter('a', default=Parameter.missing),
         Parameter('b', default=Parameter.missing)
-     ]), '([a][, b])'
+     ]),
+     '([a][, b])'
     ),
     (Signature([
         Parameter('a'),
         Parameter('b', Parameter.KEYWORD_ONLY)
-     ]), '(a, *, b)'
+     ]),
+     '(a, *, b)'
     ),
     (Signature([
         Parameter('a', Parameter.KEYWORD_ONLY)
-     ]), '(*, a)'
+     ]),
+     '(*, a)'
     ),
     (Signature([
         Parameter('a', Parameter.KEYWORD_ONLY),
         Parameter('b', Parameter.KEYWORD_ONLY)
-     ]), '(*, a, b)'
+     ]),
+     '(*, a, b)'
     ),
     (Signature([
         Parameter('a', Parameter.KEYWORD_ONLY, default=Parameter.missing)
-     ]), '(*[, a])'
+     ]),
+     '(*[, a])'
     ),
     (Signature([
         Parameter('a', Parameter.VAR_POSITIONAL)
-     ]), '(*a)'
+     ]),
+     '(*a)'
     ),
     (Signature([
         Parameter('a', Parameter.VAR_KEYWORD)
-     ]), '(**a)'
+     ]),
+     '(**a)'
     ),
     (Signature([
         Parameter('a', Parameter.POSITIONAL_ONLY)
-     ]), '(a, /)'
+     ]),
+     '(a, /)'
     ),
     (Signature([
         Parameter('a', Parameter.POSITIONAL_ONLY),
         Parameter('b')
-     ]), '(a, /, b)'
+     ]),
+     '(a, /, b)'
     ),
     (Signature([
         Parameter('a', Parameter.POSITIONAL_ONLY),
         Parameter('b', Parameter.KEYWORD_ONLY)
-     ]), '(a, /, *, b)'
+     ]),
+     '(a, /, *, b)'
     ),
     (Signature([
         Parameter('a', Parameter.POSITIONAL_ONLY, default=Parameter.missing),
         Parameter('b', Parameter.KEYWORD_ONLY, default=Parameter.missing)
-     ]), '([a], /, *[, b])'
+     ]),
+     '([a], /, *[, b])'
     ),
     (Signature([
         Parameter('x', annotation=int)
-     ], return_annotation=str), '(x: int) -> str'
+     ], return_annotation=str),
+     '(x: int) -> str'
     ),
     (Signature([
         Parameter('x', annotation=bool, default=False)
-     ]), '(x: bool = False)'
+     ]),
+     '(x: bool = False)'
     ),
     (Signature([
         Parameter('x', annotation=tuple)
-     ], return_annotation=typing.Tuple), '(x: tuple) -> Tuple'
+     ], return_annotation=typing.Tuple),
+     '(x: tuple) -> typing.Tuple'
     ),
-    (Signature(return_annotation=typing.Tuple[int, typing.List]), '() -> Tuple[int, List]'),
+    (Signature(return_annotation=typing.Tuple[int, typing.List]),
+     '() -> typing.Tuple[int, typing.List]'),
 ])
 def test_to_string(signature, expected):
     assert signature.to_string() == expected

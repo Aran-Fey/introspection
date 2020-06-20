@@ -36,3 +36,16 @@ def test_static_vars():
 def test_common_ancestor(classes, ancestor):
     anc = common_ancestor(classes)
     assert anc is ancestor
+
+
+def test_resolve_bases():
+    class Fake:
+        def __init__(self, mro_entries):
+            self.mro_entries = mro_entries
+
+        def __mro_entries__(self, bases):
+            return self.mro_entries
+
+    bases = (Fake(()), Fake([list]), int, 5)
+
+    assert resolve_bases(bases) == (list, int, 5)

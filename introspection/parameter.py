@@ -1,7 +1,7 @@
 
 import inspect
 
-from datatypes import annotation_to_string, annotation_union, annotation_intersection
+from ._utils import _annotation_to_string
 
 __all__ = ['Parameter']
 
@@ -87,7 +87,7 @@ class Parameter(inspect.Parameter):
             text = '**' + text
 
         if self.has_annotation:
-            ann = annotation_to_string(self.annotation)
+            ann = _annotation_to_string(self.annotation)
             text += ': {}'.format(ann)
 
         if self.default not in {__class__.empty, __class__.missing}:

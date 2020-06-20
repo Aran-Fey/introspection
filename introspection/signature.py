@@ -1,7 +1,6 @@
 
 import builtins
 import inspect
-import math
 import os
 import sys
 import types
@@ -9,9 +8,8 @@ import typing
 from numbers import Number
 from typing import Union, List, Dict, Callable, Any, Iterator, Iterable, Tuple, Optional, TypeVar
 
-from datatypes import annotation_to_string, annotation_union, annotation_intersection
-
 from .parameter import Parameter
+from ._utils import _annotation_to_string
 
 __all__ = ['Signature']
 
@@ -554,7 +552,7 @@ class Signature(inspect.Signature):
         # Parameter list complete
 
         if self.has_return_annotation:
-            ann = annotation_to_string(self.return_annotation)
+            ann = _annotation_to_string(self.return_annotation)
             ann = ' -> {}'.format(ann)
         else:
             ann = ''
