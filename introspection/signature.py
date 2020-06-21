@@ -20,6 +20,11 @@ B = TypeVar('B')
 K = TypeVar('K')
 V = TypeVar('V')
 
+if hasattr(os, 'PathLike'):
+    FilePath = Union[str, bytes, os.PathLike]
+else:  # pragma: no cover
+    FilePath = Union[str, bytes]
+
 BUILTIN_SIGNATURES = {
     'abs': (Any, [
         Parameter('x', Parameter.POSITIONAL_ONLY, annotation=Any)
@@ -191,14 +196,14 @@ BUILTIN_SIGNATURES = {
         Parameter('x', Parameter.POSITIONAL_ONLY, annotation=int)
     ]),
     'open': (typing.IO, [
-        Parameter('file', Parameter.POSITIONAL_ONLY, annotation=Union[str, bytes, os.PathLike]),
+        Parameter('file', Parameter.POSITIONAL_ONLY, annotation=FilePath),
         Parameter('mode', Parameter.POSITIONAL_OR_KEYWORD, 'r', str),
         Parameter('buffering', Parameter.POSITIONAL_OR_KEYWORD, -1, int),
         Parameter('encoding', Parameter.POSITIONAL_OR_KEYWORD, Parameter.missing, str),
         Parameter('errors', Parameter.POSITIONAL_OR_KEYWORD, Parameter.missing, str),
         Parameter('newline', Parameter.POSITIONAL_OR_KEYWORD, None, Optional[str]),
         Parameter('closefd', Parameter.POSITIONAL_OR_KEYWORD, True, bool),
-        Parameter('opener', Parameter.POSITIONAL_OR_KEYWORD, None, Optional[Callable[[Union[str, bytes, os.PathLike], int], typing.IO]]),
+        Parameter('opener', Parameter.POSITIONAL_OR_KEYWORD, None, Optional[Callable[[FilePath, int], typing.IO]]),
     ]),
     'ord': (int, [
         Parameter('c', Parameter.POSITIONAL_ONLY, annotation=str)

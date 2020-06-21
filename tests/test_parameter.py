@@ -87,6 +87,7 @@ def test_is_optional(param, expected):
     (Parameter('foo', default=Parameter.missing), '[foo]'),
     (Parameter('foo', annotation=int), 'foo: int'),
     (Parameter('foo', annotation=typing.List[int]), 'foo: typing.List[int]'),
+    (Parameter('foo', annotation=None), 'foo: None'),
     (Parameter('foo', default=5, annotation=int), 'foo: int = 5'),
     (Parameter('foo', default=Parameter.missing, annotation=int), '[foo: int]'),
 ])

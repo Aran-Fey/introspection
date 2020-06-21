@@ -13,8 +13,15 @@ def copy_signature(source_func):
     return deco
 
 
+def _is_typing_type(annotation):
+    return getattr(annotation, '__module__', None) == 'typing'
+
+
 def _annotation_to_string(annotation):
-    if isinstance(annotation, type):
+    if _is_typing_type(annotation):
+        return repr(annotation)
+
+    if hasattr(annotation, '__qualname__'):
         return annotation.__qualname__
 
     return repr(annotation)
