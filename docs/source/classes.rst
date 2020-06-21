@@ -1,5 +1,7 @@
-Functions related to Classes
+
+.. currentmodule:: introspection
+
+Functions related to classes
 ========================================
 
 .. automodule:: introspection.classes
-    :members:

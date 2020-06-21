@@ -9,7 +9,7 @@ def test_get_parameters():
         pass
 
     sig = Signature.from_callable(func)
-    assert get_parameters(func) == list(sig)
+    assert get_parameters(func) == sig.param_list
 
 
 def test_static_vars():

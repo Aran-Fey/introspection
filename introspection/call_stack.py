@@ -12,11 +12,22 @@ class CallStack:
     """
     Represents the call stack - a series of :class:`CallFrame` instances.
 
-    This class can be used like a read-only list. It supports iteration, indexing, membership testing, etc.
+    This class can be used like a read-only list. It supports iteration, indexing, membership testing, etc. The root frame is first in the list, at index 0.
+
+    Because holding references to call frames can result in reference cycles,
+    it's recommended to use CallStack objects as context managers. Upon exit,
+    the frame objects are released and the CallStack becomes empty::
+
+        with CallStack.current() as stack:
+            ...  # do something with the stack
+        # at this point, len(stack) is 0
     """
     __slots__ = ('__frames',)
 
     def __init__(self, frames: Iterable[Union[CallFrame, types.FrameType]]):
+        """
+        Creates a new ``CallStack`` from the given frame objects.
+        """
         self.__frames = [CallFrame.from_frame(frame) for frame in frames]
 
     @classmethod
@@ -30,12 +41,11 @@ class CallStack:
     @classmethod
     def from_frame(cls, frame) -> 'CallStack':
         """
-        Creates a :class:`CallStack` containing ``frame`` and all its parents.
+        Creates a ``CallStack`` containing ``frame`` and all its parents.
 
         :param frame: The last frame in the call stack
-        :return: A new :class:`CallStack` instance
+        :return: A new ``CallStack`` instance
         """
-
         frames = [frame]
         while True:
             frame = frame.f_back

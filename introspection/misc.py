@@ -1,15 +1,13 @@
 
 from collections import defaultdict, deque
+from typing import Any, Iterable
 
 __all__ = ['common_ancestor', 'resolve_bases', 'static_vars']
 
 
-def resolve_bases(bases):
+def resolve_bases(bases: Iterable) -> tuple:
     """
     Clone/backport of :func:`types.resolve_bases`.
-
-    :param bases:
-    :return:
     """
     result = []
 
@@ -30,14 +28,13 @@ def resolve_bases(bases):
     return tuple(result)
 
 
-def static_vars(obj):
+def static_vars(obj: Any):
     """
     Like :func:`vars`, but bypasses overridden ``__getattribute__`` methods.
 
     :param obj: Any object
     :return: The object's ``__dict__``
-    :raises:
-        TypeError: If the object has no ``__dict__``
+    :raises TypeError: If the object has no ``__dict__``
     """
     try:
         return object.__getattribute__(obj, '__dict__')
@@ -45,7 +42,7 @@ def static_vars(obj):
         raise TypeError("{!r} object has no __dict__".format(obj)) from None
 
 
-def common_ancestor(classes):
+def common_ancestor(classes: Iterable[type]):
     """
     Finds the closest common parent class of the given classes.
     If called with an empty iterable, :class:`object` is returned.

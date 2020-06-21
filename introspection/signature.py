@@ -312,14 +312,23 @@ for key in list(BUILTIN_SIGNATURES):
 class Signature(inspect.Signature):
     """
     An :class:`inspect.Signature` subclass that represents a function's parameter signature and return annotation.
+
+    Instances of this class are immutable.
+
+    :ivar parameters: An :class:`OrderedDict` of :class:`Parameter` objects
+    :ivar return_annotation: The annotation for the function's return value
     """
     __slots__ = ()
 
     def __init__(self,
-                 parameters: Union[List[Parameter], Dict[str, Parameter], None] = None,
-                 return_annotation: object = inspect.Signature.empty,
+                 parameters: Union[Iterable[Parameter], Dict[str, Parameter], None] = None,
+                 return_annotation: Any = inspect.Signature.empty,
                  validate_parameters: bool = True,
                  ):
+        """
+        :param parameters: A list or dict of :class:`Parameter` objects
+        :param return_annotation: The annotation for the function's return value
+        """
         super().__init__(
             parameters,
             return_annotation=return_annotation,
@@ -329,11 +338,11 @@ class Signature(inspect.Signature):
     @classmethod
     def from_signature(cls, signature: inspect.Signature, param_type: type = Parameter) -> 'Signature':
         """
-        Creates a new `Signature` instance from an :class:`inspect.Signature` instance.
+        Creates a new ``Signature`` instance from an :class:`inspect.Signature` instance.
 
         :param signature: An :class:`inspect.Signature` instance
         :param param_type: The class to use for the signature's parameters
-        :return: A new :class:`Signature` instance
+        :return: A new ``Signature`` instance
         """
         params = [param_type.from_parameter(param) for param in signature.parameters.values()]
         return cls(params, return_annotation=signature.return_annotation)
@@ -345,17 +354,18 @@ class Signature(inspect.Signature):
                       follow_wrapped: bool = True,
                       ) -> 'Signature':
         """
-        Returns a matching `Signature` instance for the given *callable_*.
+        Returns a matching ``Signature`` instance for the given ``callable_``.
 
         :param callable_: A function or any other callable object
+        :type callable_: Callable
         :param param_type: The class to use for the signature's parameters
+        :type param_type: Type[Parameter]
         :param follow_wrapped: Whether to unwrap decorated callables
-        :return: A corresponding `Signature` instance
-        :raises:
-            TypeError: If ``callable_`` isn't a callable
-            ValueError: If the signature can't be determined (can happen for functions defined in C extensions)
+        :type follow_wrapped: bool
+        :return: A corresponding ``Signature`` instance
+        :raises TypeError: If ``callable_`` isn't a callable object
+        :raises ValueError: If the signature can't be determined (can happen for functions defined in C extensions)
         """
-
         if follow_wrapped:
             while hasattr(callable_, '__wrapped__'):
                 callable_ = callable_.__wrapped__
@@ -401,20 +411,27 @@ class Signature(inspect.Signature):
             >>> sig.without_parameters(0, 'baz')
             <Signature (bar)>
 
-        :param params: The parameters to remove
+        :param params: Names or indices of the parameters to remove
         :return: A copy of this signature without the given parameters
         """
         params = set(params)
 
         parameters = []
 
-        for i, param in enumerate(self):
+        for i, param in enumerate(self.parameters.values()):
             if i in params or param.name in params:
                 continue
 
             parameters.append(param)
 
         return self.replace(parameters=parameters)
+
+    @property
+    def param_list(self):
+        """
+        Returns a list of the signature's parameters.
+        """
+        return list(self.parameters.values())
 
     @property
     def has_return_annotation(self):
@@ -428,10 +445,7 @@ class Signature(inspect.Signature):
         """
         Returns the number of required arguments, i.e. arguments with a default value.
         """
-        return sum(not p.is_optional for p in self)
-
-    def __iter__(self):
-        return iter(self.parameters.values())
+        return sum(not p.is_optional for p in self.parameters.values())
 
     def to_string(self):
         """

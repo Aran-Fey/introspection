@@ -1,5 +1,8 @@
-Functions related to Scopes and the Call Stack
+
+.. currentmodule:: introspection
+
+The call stack
 ==============================================
 
-.. automodule:: introspection.call_stack
-    :members:
+.. autoclass:: introspection.CallStack
+.. autoclass:: introspection.CallFrame

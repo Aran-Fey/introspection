@@ -2,12 +2,12 @@
 import collections
 import inspect
 
-from typing import Dict, Any, Set, Iterator
+from typing import Dict, Any, Set, Iterator, Tuple
 
 from .misc import static_vars
 
 __all__ = ['get_subclasses', 'get_attributes',
-           'iter_slots', 'get_slot_names', 'get_slots']
+           'iter_slots', 'get_slot_names', 'get_slot_counts', 'get_slots']
 
 
 def get_subclasses(cls: type, include_abstract: bool = False) -> Set[type]:
@@ -32,7 +32,21 @@ def get_subclasses(cls: type, include_abstract: bool = False) -> Set[type]:
     return subclasses
 
 
-def iter_slots(cls: type) -> Iterator:
+def iter_slots(cls: type) -> Iterator[Tuple[str, Any]]:
+    """
+    Iterates over all ``__slots__`` of the given class, yielding
+    ``(slot_name, slot_descriptor)`` tuples.
+
+    If a slot name is used more than once, *all* of them will be
+    yielded in the order they appear in the class's MRO.
+
+    Note that this function relies on the class-level ``__slots__``
+    attribute - deleting or altering this attribute in any way may
+    yield incorrect results.
+
+    :param cls: The class whose slots to yield
+    :return: An iterator yielding ``(slot_name, slot_descriptor)`` tuples
+    """
     for cls in cls.__mro__:  # pragma: no branch
         cls_vars = static_vars(cls)
 
@@ -51,12 +65,16 @@ def iter_slots(cls: type) -> Iterator:
                 slots = (slots,)
 
         for slot_name in slots:
+            # apply name mangling if necessary
+            if slot_name.startswith('__') and not slot_name.endswith('__'):
+                slot_name = '_{}{}'.format(cls.__name__, slot_name)
+
             slot = cls_vars[slot_name]
 
             yield slot_name, slot
 
 
-def get_slot_names(cls: type) -> Dict[str, int]:
+def get_slot_counts(cls: type) -> Dict[str, int]:
     """
     Collects all of the given class's ``__slots__``, returning a
     dict of the form ``{slot_name: count}``.
@@ -68,10 +86,24 @@ def get_slot_names(cls: type) -> Dict[str, int]:
     return collections.Counter(slot_names)
 
 
+def get_slot_names(cls: type) -> Set[str]:
+    """
+    Collects all of the given class's ``__slots__``, returning a
+    set of slot names.
+
+    :param cls: The class whose slots to collect
+    :return: A set containing the names of all slots
+    """
+    return set(get_slot_counts(cls))
+
+
 def get_slots(cls: type) -> Dict[str, Any]:
     """
     Collects all of the given class's ``__slots__``, returning a
     dict of the form ``{slot_name: slot_descriptor}``.
+
+    If a slot name is used more than once, only the descriptor
+    that shadows all other descriptors of the same name is returned.
 
     :param cls: The class whose slots to collect
     :return: A dict mapping slot names to descriptors
@@ -86,10 +118,11 @@ def get_slots(cls: type) -> Dict[str, Any]:
 
 def get_attributes(obj: Any, include_weakref: bool = False) -> Dict[str, Any]:
     """
-    Returns a dictionary of all of ``obj``'s attributes.
+    Returns a dictionary of all of ``obj``'s attributes. This includes
+    attributes stored in the object's ``__dict__`` as well as in ``__slots__``.
 
     :param obj: The object whose attributes will be returned
-    :param include_weakref: Whether the ``__weakref__`` slot should be included in the result
+    :param include_weakref: Whether the value of the ``__weakref__`` slot should be included in the result
     :return: A dict of ``{attr_name: attr_value}``
     """
     cls = type(obj)

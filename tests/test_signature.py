@@ -178,13 +178,6 @@ def test_num_required_arguments():
     assert sig.num_required_arguments == 2
 
 
-def test_iteration():
-    param = Parameter('foo')
-    sig = Signature([param])
-
-    assert list(sig) == [param]
-
-
 @pytest.mark.parametrize('signature, expected', [
     (Signature([
         Parameter('a', Parameter.POSITIONAL_ONLY),

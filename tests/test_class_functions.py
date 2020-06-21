@@ -37,35 +37,52 @@ def test_get_subclasses_include_abstract():
     assert get_subclasses(A, include_abstract=True) == {B, C, D}
 
 
-def test_get_slot_names_tuple():
+def test_get_slot_counts_tuple():
     class Foo:
         __slots__ = ('foo', 'bar')
 
-    assert get_slot_names(Foo) == {'foo': 1, 'bar': 1}
+    assert get_slot_counts(Foo) == {'foo': 1, 'bar': 1}
 
 
-def test_get_slot_names_str():
+def test_get_slot_counts_str():
     class Foo:
         __slots__ = 'foo'
 
-    assert get_slot_names(Foo) == {'foo': 1}
+    assert get_slot_counts(Foo) == {'foo': 1}
 
 
-def test_get_slot_names_inheritance():
+def test_get_slot_counts_mangled():
+    class Foo:
+        __slots__ = ('__foo', '__bar__')
+
+    assert get_slot_counts(Foo) == {'_Foo__foo': 1, '__bar__': 1}
+
+
+def test_get_slot_counts_inheritance():
     class Foo:
         __slots__ = 'foo'
 
     class Bar(Foo):
         __slots__ = ['foo', 'bar']
 
-    assert get_slot_names(Bar) == {'foo': 2, 'bar': 1}
+    assert get_slot_counts(Bar) == {'foo': 2, 'bar': 1}
 
 
-def test_get_slot_names_omitted():
+def test_get_slot_counts_omitted():
     class Foo:
         pass
 
-    assert get_slot_names(Foo) == {'__weakref__': 1, '__dict__': 1}
+    assert get_slot_counts(Foo) == {'__weakref__': 1, '__dict__': 1}
+
+
+def test_get_slot_names():
+    class Foo:
+        __slots__ = 'foo'
+
+    class Bar(Foo):
+        __slots__ = ['foo', 'bar']
+
+    assert get_slot_names(Bar) == {'foo', 'bar'}
 
 
 def test_get_slots_inheritance():

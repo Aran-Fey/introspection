@@ -1,39 +1,18 @@
 
-Welcome to introspection's documentation!
-=========================================
-
-|
+Introspection
+=============
 
 This module is a collection of new or improved introspection functions.
-
-Some functions are improved versions of the functions found in the `inspect module <https://docs.python.org/3/library/inspect.html>`_, others are completely new.
-
-|
-
-The two fundamental concepts are modeled by the :class:`Signature` and :class:`Parameter` classes.
-
-Most functions will return instances of these classes, so it's important to know about them.
-
-|
+Some functions are improved versions of the functions found in the :mod:`inspect` module, others are completely new.
 
 The available functions have been roughly categorized by what they return or what kind of objects they operate on.
-
-|
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   signatures_and_parameters
-   callables
-   classes
-   call_stack
-   misc
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   function_signatures.rst
+   call_stack.rst
+   classes.rst
+   dundermethods.rst
+   misc.rst

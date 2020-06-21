@@ -10,7 +10,9 @@ class Parameter(inspect.Parameter):
     """
     An :class:`inspect.Parameter` subclass that represents a function parameter.
 
-    This class adds a new special value for the :attr:`default` attribute: :attr:`Parameter.missing`.
+    Instances of this class are immutable.
+
+    This class adds a new special value for the ``default`` attribute: :attr:`Parameter.missing`.
     This value indicates that the parameter is optional, but has no known default value.
 
     :ivar name: The parameter's name
@@ -18,11 +20,12 @@ class Parameter(inspect.Parameter):
     :ivar kind: The parameter's kind. See :attr:`inspect.Parameter.kind` for details.
     :ivar default: The parameter's default value or :attr:`inspect.Parameter.empty`
     :ivar annotation: The parameter's type annotation
-    :ivar description:
-    :type description: Optional[str]
     """
     __slots__ = ('_description',)
 
+    # A special class-level marker that can be used to specify
+    # that the parameter is optional, but doesn't have a (known)
+    # default value.
     missing = type('_missing', (), {})
 
     def __init__(self,
@@ -31,6 +34,13 @@ class Parameter(inspect.Parameter):
                  default=inspect.Parameter.empty,
                  annotation=inspect.Parameter.empty,
                  ):
+        """
+        :param name: The parameter's name
+        :type name: str
+        :param kind: The parameter's kind. See :attr:`inspect.Parameter.kind` for details.
+        :param default: The parameter's default value or :attr:`inspect.Parameter.empty`
+        :param annotation: The parameter's type annotation
+        """
         super().__init__(name, kind, default=default, annotation=annotation)
 
     @classmethod
@@ -103,6 +113,17 @@ class Parameter(inspect.Parameter):
         return text
 
     def to_string(self):
+        """
+        Returns a string representation of this parameter, similar to
+        how parameters are written in function signatures.
+
+        Examples::
+
+            >>> Parameter('foo', Parameter.VAR_POSITIONAL).to_string()
+            '*foo'
+            >>> Parameter('foo', annotation=int, default=3).to_string()
+            'foo: int = 3'
+        """
         text = self._to_string_no_brackets()
 
         if self.default is __class__.missing:

@@ -10,6 +10,9 @@ class CallFrame:
     Represents a call frame - an element of the call stack.
     It keeps track of local and closure variables.
 
+    Although ``CallFrame`` does not inherit from :data:`types.FrameType`,
+    they can be used just like regular frame objects.
+
     Note that storing CallFrames in variables can create reference
     cycles where a frame contains a reference to itself. To avoid
     this, CallFrames can be used as context managers - upon exit,
@@ -22,6 +25,10 @@ class CallFrame:
     __slots__ = ('__frame',)
 
     def __init__(self, frame):
+        """
+        Creates a new ``CallFrame`` from a ``CallFrame`` or :data:`types.FrameType` object.
+        """
+
         if isinstance(frame, __class__):
             frame = frame.__frame
 
@@ -31,13 +38,16 @@ class CallFrame:
     def current(cls) -> 'CallFrame':
         """
         Retrieves the current call frame.
-
-        :return: The current call frame
         """
         return cls(inspect.currentframe().f_back)
 
     @classmethod
     def from_frame(cls, frame):
+        """
+        Creates a new ``CallFrame`` from a ``CallFrame`` or :data:`types.FrameType` object.
+
+        This is equivalent to calling ``CallFrame(frame)``.
+        """
         return cls(frame)
 
     def __getattr__(self, attr):
@@ -114,7 +124,7 @@ class CallFrame:
         """
         return self.code_object.co_name
 
-    def resolve_name(self, name):
+    def resolve_name(self, name: str):
         """
         Resolves a variable name, returning the variable's value.
 
@@ -150,7 +160,7 @@ class CallFrame:
 
         If the function can't be found, ``None`` is returned.
 
-        :return: The calling function object or None if it can't be found
+        :return: The calling function object or ``None`` if it can't be found
         """
         parent = self.parent
         if parent is None:

@@ -1,17 +1,17 @@
 
-import functools
 from typing import Callable, List
 
 from .signature import Signature
 from .parameter import Parameter
+from ._utils import copy_signature
 
 __all__ = ['signature', 'get_parameters']
 
 
-@functools.wraps(Signature.from_callable)
+@copy_signature(Signature.from_callable)
 def signature(*args, **kwargs):
     """
-    Shorthand for ``Signature.from_callable``.
+    Shorthand for :meth:`Signature.from_callable`.
     """
     return Signature.from_callable(*args, **kwargs)
 
