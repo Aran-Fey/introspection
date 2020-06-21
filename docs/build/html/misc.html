@@ -1,0 +1,116 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Misc. functions &#8212; introspection 1.0 documentation</title>
+    <link rel="stylesheet" href="_static/nightsky.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Functions related to dundermethods" href="dundermethods.html" /> 
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="misc-functions">
+<h1>Misc. functions<a class="headerlink" href="#misc-functions" title="Permalink to this headline">¶</a></h1>
+<dl class="py function">
+<dt id="introspection.get_parameters">
+<code class="sig-prename descclassname"></code><code class="sig-name descname">get_parameters</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">callable_</span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.get_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of parameters accepted by <em>callable_</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>callable</strong> – The callable whose parameters to retrieve</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A list of <a class="reference internal" href="function_signatures.html#introspection.Parameter" title="introspection.Parameter"><code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code></a> instances</p>
+</dd>
+</dl>
+</dd></dl>
+
+<span class="target" id="module-introspection.misc"></span><dl class="py function">
+<dt id="introspection.misc.common_ancestor">
+<code class="sig-prename descclassname"></code><code class="sig-name descname">common_ancestor</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">classes</span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.misc.common_ancestor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds the closest common parent class of the given classes.
+If called with an empty iterable, <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a> is returned.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>classes</strong> – An iterable of classes</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The given classes’ shared parent class</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="introspection.misc.resolve_bases">
+<code class="sig-prename descclassname"></code><code class="sig-name descname">resolve_bases</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">bases</span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.misc.resolve_bases" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clone/backport of <a class="reference external" href="https://docs.python.org/3/library/types.html#types.resolve_bases" title="(in Python v3.8)"><code class="xref py py-func docutils literal notranslate"><span class="pre">types.resolve_bases</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="introspection.misc.static_vars">
+<code class="sig-prename descclassname"></code><code class="sig-name descname">static_vars</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obj</span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.misc.static_vars" title="Permalink to this definition">¶</a></dt>
+<dd><p>Like <a class="reference external" href="https://docs.python.org/3/library/functions.html#vars" title="(in Python v3.8)"><code class="xref py py-func docutils literal notranslate"><span class="pre">vars</span></code></a>, but bypasses overridden <code class="docutils literal notranslate"><span class="pre">__getattribute__</span></code> methods.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>obj</strong> – Any object</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The object’s <code class="docutils literal notranslate"><span class="pre">__dict__</span></code></p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.8)"><strong>TypeError</strong></a> – If the object has no <code class="docutils literal notranslate"><span class="pre">__dict__</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+    <div class="nav">
+        <h3>Navigation</h3>
+        
+        <a class="homepage-link" href="index.html" title="home page">introspection 1.0 documentation</a>
+            <a class="prev-link" href="dundermethods.html" title="previous chapter">
+                Functions related to dundermethods
+            </a>
+    </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    </div>
+  </body>
+</html>

@@ -11,5 +11,5 @@ The documentation can be found [here](https://Aran-Fey.github.io/introspection/b
 ## Installation
 
 ```bash
-python3 -m pip install git+https://github.com/Aran-Fey/introspection.git@master
+python3 -m pip install introspection
 ```

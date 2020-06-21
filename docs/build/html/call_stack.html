@@ -1,0 +1,223 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The call stack &#8212; introspection 1.0 documentation</title>
+    <link rel="stylesheet" href="_static/nightsky.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Functions related to classes" href="classes.html" />
+    <link rel="prev" title="Function Signatures" href="function_signatures.html" /> 
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="the-call-stack">
+<h1>The call stack<a class="headerlink" href="#the-call-stack" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="introspection.CallStack">
+<em class="property">class </em><code class="sig-prename descclassname"></code><code class="sig-name descname">CallStack</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">frames</span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.CallStack" title="Permalink to this definition">¶</a></dt>
+<dd><p>Represents the call stack - a series of <a class="reference internal" href="#introspection.CallFrame" title="introspection.CallFrame"><code class="xref py py-class docutils literal notranslate"><span class="pre">CallFrame</span></code></a> instances.</p>
+<p>This class can be used like a read-only list. It supports iteration, indexing, membership testing, etc. The root frame is first in the list, at index 0.</p>
+<p>Because holding references to call frames can result in reference cycles,
+it’s recommended to use CallStack objects as context managers. Upon exit,
+the frame objects are released and the CallStack becomes empty:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">CallStack</span><span class="o">.</span><span class="n">current</span><span class="p">()</span> <span class="k">as</span> <span class="n">stack</span><span class="p">:</span>
+    <span class="o">...</span>  <span class="c1"># do something with the stack</span>
+<span class="c1"># at this point, len(stack) is 0</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt id="introspection.CallStack.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">frames</span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.CallStack.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a new <code class="docutils literal notranslate"><span class="pre">CallStack</span></code> from the given frame objects.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="introspection.CallStack.current">
+<em class="property">classmethod </em><code class="sig-name descname">current</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#introspection.CallStack.current" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the current call stack.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="introspection.CallStack.from_frame">
+<em class="property">classmethod </em><code class="sig-name descname">from_frame</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">frame</span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.CallStack.from_frame" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a <code class="docutils literal notranslate"><span class="pre">CallStack</span></code> containing <code class="docutils literal notranslate"><span class="pre">frame</span></code> and all its parents.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>frame</strong> – The last frame in the call stack</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A new <code class="docutils literal notranslate"><span class="pre">CallStack</span></code> instance</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="introspection.CallFrame">
+<em class="property">class </em><code class="sig-prename descclassname"></code><code class="sig-name descname">CallFrame</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">frame</span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.CallFrame" title="Permalink to this definition">¶</a></dt>
+<dd><p>Represents a call frame - an element of the call stack.
+It keeps track of local and closure variables.</p>
+<p>Although <code class="docutils literal notranslate"><span class="pre">CallFrame</span></code> does not inherit from <a class="reference external" href="https://docs.python.org/3/library/types.html#types.FrameType" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">types.FrameType</span></code></a>,
+they can be used just like regular frame objects.</p>
+<p>Note that storing CallFrames in variables can create reference
+cycles where a frame contains a reference to itself. To avoid
+this, CallFrames can be used as context managers - upon exit,
+the reference to the underlying frame object is released:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">CallFrame</span><span class="o">.</span><span class="n">current</span><span class="p">()</span> <span class="k">as</span> <span class="n">frame</span><span class="p">:</span>
+    <span class="o">...</span>  <span class="c1"># do stuff with the frame</span>
+<span class="c1"># at this point, the frame has become unusable</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt id="introspection.CallFrame.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">frame</span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.CallFrame.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a new <code class="docutils literal notranslate"><span class="pre">CallFrame</span></code> from a <code class="docutils literal notranslate"><span class="pre">CallFrame</span></code> or <a class="reference external" href="https://docs.python.org/3/library/types.html#types.FrameType" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">types.FrameType</span></code></a> object.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="introspection.CallFrame.current">
+<em class="property">classmethod </em><code class="sig-name descname">current</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#introspection.CallFrame.current" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves the current call frame.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="introspection.CallFrame.from_frame">
+<em class="property">classmethod </em><code class="sig-name descname">from_frame</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">frame</span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.CallFrame.from_frame" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a new <code class="docutils literal notranslate"><span class="pre">CallFrame</span></code> from a <code class="docutils literal notranslate"><span class="pre">CallFrame</span></code> or <a class="reference external" href="https://docs.python.org/3/library/types.html#types.FrameType" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">types.FrameType</span></code></a> object.</p>
+<p>This is equivalent to calling <code class="docutils literal notranslate"><span class="pre">CallFrame(frame)</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="introspection.CallFrame.parent">
+<em class="property">property </em><code class="sig-name descname">parent</code><a class="headerlink" href="#introspection.CallFrame.parent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the next frame one level higher on the call stack.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="introspection.CallFrame.builtins">
+<em class="property">property </em><code class="sig-name descname">builtins</code><a class="headerlink" href="#introspection.CallFrame.builtins" title="Permalink to this definition">¶</a></dt>
+<dd><p>The builtins seen by this frame</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="introspection.CallFrame.globals">
+<em class="property">property </em><code class="sig-name descname">globals</code><a class="headerlink" href="#introspection.CallFrame.globals" title="Permalink to this definition">¶</a></dt>
+<dd><p>The global scope seen by this frame</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="introspection.CallFrame.locals">
+<em class="property">property </em><code class="sig-name descname">locals</code><a class="headerlink" href="#introspection.CallFrame.locals" title="Permalink to this definition">¶</a></dt>
+<dd><p>The frame’s local variable scope</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="introspection.CallFrame.code_object">
+<em class="property">property </em><code class="sig-name descname">code_object</code><a class="headerlink" href="#introspection.CallFrame.code_object" title="Permalink to this definition">¶</a></dt>
+<dd><p>The code object being executed in this frame</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="introspection.CallFrame.file_name">
+<em class="property">property </em><code class="sig-name descname">file_name</code><a class="headerlink" href="#introspection.CallFrame.file_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>The name of the file in which this frame’s code was defined</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="introspection.CallFrame.scope_name">
+<em class="property">property </em><code class="sig-name descname">scope_name</code><a class="headerlink" href="#introspection.CallFrame.scope_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>The name of the scope in which this frame’s code was defined.
+In case of a function, the function’s name.
+In case of a class, the class’s name.
+In any other case, whichever name the interpreter assigned to that scope.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="introspection.CallFrame.resolve_name">
+<code class="sig-name descname">resolve_name</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.CallFrame.resolve_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resolves a variable name, returning the variable’s value.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Closure variables don’t have a named associated with them,
+which means they cannot be looked up with this function.</p>
+<p>This includes variables marked as <code class="docutils literal notranslate"><span class="pre">nonlocal</span></code>.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The value mapped to the given name</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#NameError" title="(in Python v3.8)"><strong>NameError</strong></a> – If no matching variable is found</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="introspection.CallFrame.get_surrounding_function">
+<code class="sig-name descname">get_surrounding_function</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#introspection.CallFrame.get_surrounding_function" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds and returns the function in which the code of this frame was defined.</p>
+<p>If the function can’t be found, <code class="docutils literal notranslate"><span class="pre">None</span></code> is returned.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The calling function object or <code class="docutils literal notranslate"><span class="pre">None</span></code> if it can’t be found</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+    <div class="nav">
+        <h3>Navigation</h3>
+        
+        <a class="homepage-link" href="index.html" title="home page">introspection 1.0 documentation</a>
+            <a class="prev-link" href="function_signatures.html" title="previous chapter">
+                Function Signatures
+            </a>
+            <a class="next-link" href="classes.html" title="next chapter">
+                Functions related to classes
+            </a>
+    </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    </div>
+  </body>
+</html>

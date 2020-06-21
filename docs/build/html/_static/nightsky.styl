@@ -1,0 +1,476 @@
+
+lightness_difference(color1, color2)
+    l1 = lightness(color1)
+    l2 = lightness(color2)
+    return abs(l1 - l2)
+
+
+invert_color_aspect(color, aspect)
+    value = aspect(color)
+    value = 50% - (value - 50%)
+    return aspect(color, value)
+
+
+invert_font_color(font_color)
+    light = lightness(font_color)
+    
+    if light > 0.5
+        light = 0.3
+    else
+        light = 0.7
+    
+    return lightness(font_color, light)
+
+
+highest_lightness_difference(ref_color, color1, color2)
+    r1 = lightness_difference(ref_color, color1)
+    r2 = lightness_difference(ref_color, color2)
+    if r1 > r2
+        return color1
+    else
+        return color2
+
+
+make_font_color_for_background(bg_color, font_color_regular, bg_color_regular)
+    threshold = lightness_difference(font_color_regular, bg_color_regular)
+    
+    fg_color = font_color_regular
+    
+    bg_light = lightness(bg_color)
+    fg_light = lightness(fg_color)
+    
+    if abs(bg_light - fg_light) < threshold
+        if bg_light < threshold
+            fg_light = bg_light + threshold
+        else
+            fg_light = bg_light - threshold
+    
+    return lightness(fg_color, fg_light)
+
+
+hover_effect()
+    filter: brightness(1.1)
+
+
+content_width = 40rem
+
+
+define_theme_vars(bg_color_regular, font_color_regular, accent_color)
+    increments = 10%
+    
+    --bg_color_regular: bg_color_regular
+    --font_color_regular: font_color_regular
+    --accent_color: accent_color
+    
+    --bg_color_dark4: darken(bg_color_regular, 4*increments)
+    --bg_color_dark3: darken(bg_color_regular, 3*increments)
+    --bg_color_dark2: darken(bg_color_regular, 2*increments)
+    --bg_color_dark: darken(bg_color_regular, increments)
+    --bg_color_light: lighten(bg_color_regular, increments)
+    --bg_color_light2: lighten(bg_color_regular, 2*increments)
+        
+    --font_color_dark: darken(font_color_regular, increments)
+    --font_color_light: lighten(font_color_regular, increments)
+    --font_color_light2: lighten(font_color_regular, 2*increments)
+    
+    --code_color: mix(font_color_regular, accent_color, 75%)
+            
+    --font_color_placeholder: #aaa
+            
+    --info_bg: #506977
+    --info_fg: var(--font_color_light)
+    
+    warning_bg = #c8ba70
+    --warning_bg: warning_bg
+    --warning_fg: make_font_color_for_background(warning_bg, font_color_regular, bg_color_regular)
+            
+    --border_color: var(--accent_color)
+
+    --accent_color2: darken(accent_color, 15%)
+    accent_font_color = make_font_color_for_background(accent_color, font_color_regular, bg_color_regular)
+    --accent_font_color: accent_font_color
+
+    --accent_color_disabled: saturation(accent_color, 10%)
+    --accent_font_color_disabled: darken(accent_font_color, 3*increments)
+
+
+dark_theme()
+    define_theme_vars(#252525, #ccc, #a34da3)
+
+light_theme()
+    define_theme_vars(#fff, #000, #a34da3)
+
+/* ===================================
+ * === END OF VAR/FUNC DEFINITIONS ===
+ * ===================================
+ */
+
+// === COLOR THEME ===
+
+body
+body.dark-theme
+    dark_theme()
+
+body.light-theme
+    light_theme()
+
+@media (prefers-color-scheme: light)
+    body
+        light_theme()
+
+// === DESIGN ===
+
+html
+    font-family: Verdana
+    font-size: 1.1em
+
+body
+    background-color: var(--bg_color_regular)
+    color: var(--font_color_regular)
+
+a
+    &
+    & code
+        color: var(--accent_color)
+        
+        &:hover
+        &:focus
+            color: var(--accent_color)
+            hover_effect()
+
+details > summary
+    background: var(--accent_color)
+    color: var(--accent_font_color)
+    padding: 0 0.2em
+
+button
+input[type="submit"]
+    background: var(--bg_color_light2);
+    color: var(--font_color_regular);
+    
+    border-radius: 3px;
+    border: 1px solid var(--accent_color);
+    
+    &:hover
+        hover_effect()
+
+input[type="text"]
+textarea
+.ace-github
+select
+    background: var(--bg_color_dark) !important
+    border: 1px solid var(--accent_color) !important
+    color: var(--font_color_dark) !important
+
+input[type="text"]:focus
+textarea:focus 
+select:focus
+    box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(196, 196, 196, 0.4)
+
+::-webkit-input-placeholder
+:-moz-placeholder
+::-moz-placeholder
+:-ms-input-placeholder
+    color: var(--font_color_placeholder)
+
+.ace-github
+    .ace_gutter 
+        background: var(--bg_color_light)
+        color: var(--font_color_dark)
+    
+    .ace_marker-layer .ace_active-line 
+        background: var(--bg_color_light)
+    
+    .ace_print-margin 
+        background: var(--bg_color_light)
+    
+    .ace_cursor 
+        color: var(--accent_color)
+
+
+blockquote 
+    border-left: 5px solid var(--bg_color_light2)
+    
+blockquote.epigraph
+    p:first-child
+        &::before
+            content: '"'
+        &::after
+            content: '"'
+    
+    .attribution
+        color: var(--font_color_dark)
+        font-style: italic
+
+
+code
+    color: var(--code_color)
+    
+    font-size: 1rem
+    
+
+pre 
+    background: var(--bg_color_dark2)
+    color: var(--font_color_regular)
+    
+    border: 1px solid var(--border_color)
+    padding: 0.5em
+    
+    overflow: auto
+    
+    font-size: 0.9rem
+
+
+// make inline code the same size as all other text
+h1
+    &
+    code
+        font-size: 2rem
+
+h2
+    &
+    code
+        font-size: 1.6rem
+
+h3
+    &
+    code
+        font-size: 1.3rem
+
+// === SITE LAYOUT ===
+
+// alignments/locations
+
+.document
+    display: grid
+    grid-template-columns: auto 1fr
+
+.sphinxsidebar
+    grid-column: 1
+    grid-row: 1
+
+.documentwrapper
+    grid-column: 2
+    grid-row: 1
+
+// borders, colors, etc
+
+body
+    margin: 0
+
+.sphinxsidebar
+    // background: var(--bg_color_light)
+    // border-right: var(--border_color) solid thin
+    
+    width: 15em
+    min-height: 100vh
+    
+    .sphinxsidebarwrapper
+        padding: 0.3em
+        padding-left: 1em
+        padding-right: 0.5em
+        
+        position: sticky
+        top: 1px
+
+.documentwrapper
+    padding: 0.3em
+    margin-left: 1em
+    
+    max-width: 45em
+
+// === END OF SITE LAYOUT ===
+
+// === SIDEBAR WIDGETS ===
+
+// search bar
+
+.searchformwrapper form.search
+    display: flex
+    
+    input[type="text"]
+        min-width: 0  // required to prevent it from growing beyond the sidebar
+        box-sizing: border-box
+    
+    input[type="submit"]
+        box-sizing: border-box
+
+// navigation
+
+.nav
+    display: flex
+    flex-direction: column
+
+    a.homepage-link
+    a.prev-link
+    a.next-link
+        text-decoration: none
+
+    a.homepage-link
+        &::before
+            content: "⌂"
+            margin-right: 0.3em
+        
+        margin-bottom: 0.5em
+        
+    a.prev-link
+        &::before
+            content: "◁"
+            margin-right: 0.3em
+        
+        margin-bottom: 0.5em
+
+    a.next-link
+        &::after
+            content: "▷"
+            margin-left: 0.3em
+
+// === END OF SIDEBAR WIDGETS ===
+
+// increase space above toctrees
+.toctree-wrapper
+    margin-top: 2em
+
+// reduce spacing between list items that contain paragraphs
+li
+    p:first-child
+        margin-top: 0
+    
+    p:last-child
+        margin-bottom: 0
+
+li + li
+.toctree-wrapper + ul
+    margin-top: 0.3em
+
+
+// increase spacing between lines
+.body p
+    line-height: 1.3em
+
+
+// section permalinks
+.toctree-wrapper a.headerlink
+    display: none
+
+
+// blockquotes
+blockquote
+    padding-left: 0.5em
+
+
+// notes, warnings, etc
+admonition(color)
+    border-color: color
+    background: alpha(color, 20%)
+
+.admonition
+    border: thin solid
+    padding: 0.5em
+    
+    .admonition-title
+        margin-top: 0
+        
+        &::after
+            content: ":"
+        
+        display: inline
+        & + p
+            display: inline
+    
+    & *:last-child
+        margin-bottom: 0
+    
+    &.note
+        admonition(#62629b)
+
+
+// rubrics, usually used for footnotes
+.rubric
+    font-size: 1.3em
+    margin-top: 2em
+
+
+// footnote markers
+.footnote-reference
+    font-size: 0.6em
+    text-align: start
+    vertical-align: super
+    
+
+// footnote listing
+dl.footnote
+    display: grid
+    grid-template-columns: max-content auto
+    
+    dt
+        grid-column: 1
+    
+    
+    dd
+        grid-column: 2
+        
+        margin-left: 1em
+        
+        p
+            margin-top: 0
+
+// section headings
+h1
+    margin-bottom: 1.5em
+
+// permalinks
+h1
+    a.headerlink
+        display: none
+
+h2
+h3
+h4
+h5
+dl dt
+    a.headerlink
+        margin-left: 0.3em
+        text-decoration: none
+
+    &:not(:hover)
+        a.headerlink
+            display: none
+
+// === class/function definitions ===
+
+.section
+    // increase spacing between definitions
+    dl + dl
+        margin-top: 2em
+    
+    // add an overline for clear separation between two definitions
+    & > dl > dt
+        border-top: thin dotted var(--border_color)
+        padding-top: 0.3em
+    
+    // make class/function names bold
+    code.sig-name
+        font-weight: bold
+    
+    // highlight class/function definitions' and their sub-sections' headers
+    dl.class > dt
+        background: #342a37
+        
+    dl.method > dt
+        background: #302a30
+        
+    dl.field-list > dt
+        background: #2e2a2f
+    
+    // adjust spacing between parameters, etc
+    dl.field-list
+        dt
+            margin-top: 0.5em
+    
+        dd
+            & > p:first-child
+                margin-top: 0.5em
+            
+            & > p:last-child
+                margin-bottom: 0.5em
