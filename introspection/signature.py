@@ -22,7 +22,7 @@ V = TypeVar('V')
 
 if hasattr(os, 'PathLike'):
     FilePath = Union[str, bytes, os.PathLike]
-else:  # pragma: no cover
+else:
     FilePath = Union[str, bytes]
 
 BUILTIN_SIGNATURES = {
@@ -308,7 +308,7 @@ for key in list(BUILTIN_SIGNATURES):
 
     try:
         key = getattr(builtins, key)
-    except AttributeError:  # pragma: no cover
+    except AttributeError:
         continue
 
     BUILTIN_SIGNATURES[key] = value
