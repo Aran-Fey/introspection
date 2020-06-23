@@ -15,20 +15,54 @@ class MyGeneric(typing.Generic[E]):
 
 
 @pytest.mark.parametrize('type_, expected', [
-    (int, False),
-    (list, False),
-    (typing.Any, False),
+    (int, True),
+    (list, True),
+    (None, False),
+    (..., False),
+    (T_co, True),
+    (E, True),
+    (typing.Any, True),
     (typing.List, True),
     (typing.Union, True),
     (typing.Callable, True),
     (typing.Optional, True),
     (MyGeneric, True),
+    (typing.TypeVar, True),
+    (typing.List[int], True),
+    (typing.Union[int, str], True),
+    (typing.Callable[[], int], True),
+    (typing.Optional[int], True),
+    (typing.ByteString, True),
+    (typing.List[E], True),
+    (MyGeneric[E], True),
+    (MyGeneric[int], True),
+    (typing.List[typing.Tuple[E]], True),
+    (typing.List[typing.Tuple], True),
+    (typing.List[typing.Callable[[E], int]], True),
+    (typing.List[typing.Callable], True),
+])
+def test_is_type(type_, expected):
+    assert is_type(type_) == expected
+
+
+@pytest.mark.parametrize('type_, expected', [
+    (int, False),
+    (list, False),
+    (typing.Any, False),
+    (typing.List, True),
+    (typing.Union, True),
+    (typing.Tuple, True),
+    (typing.Callable, True),
+    (typing.Optional, True),
+    (MyGeneric, True),
     (typing.List[int], False),
     (typing.Union[int, str], False),
+    (typing.Tuple[int], False),
     (typing.Callable[[], int], False),
     (typing.Optional[int], False),
     (typing.ByteString, False),
     (typing.List[E], True),
+    (typing.Tuple[E], True),
     (MyGeneric[E], True),
     (MyGeneric[int], False),
     (typing.List[typing.Tuple[E]], True),
@@ -67,7 +101,6 @@ def test_is_generic_error(type_):
     (typing.Union, True),
     (typing.Callable, True),
     (typing.Optional, True),
-    (typing.Literal, True),
     (MyGeneric, True),
     (typing.List[int], False),
     (typing.Union[int, str], False),
@@ -199,6 +232,8 @@ def test_get_generic_base_class_error(type_):
     (typing.Generator[E, int, E][str], (str, int, str)),
     (typing.Tuple[E, int, E][str], (str, int, str)),
     (typing.Callable[[E, int], E][str], ([str, int], str)),
+    (typing.Tuple[typing.List[E]][str], (typing.List[str],)),
+    (typing.Tuple[typing.List[typing.Type[E]]][str], (typing.List[typing.Type[str]],)),
 ])
 def test_get_type_args(type_, expected):
     assert get_type_args(type_) == expected

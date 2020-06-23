@@ -21,12 +21,21 @@ THIS_MODULE = sys.modules[__name__]
     'Tuple[List[int], bool]',
     '...',
     'Callable[[int], None]',
-    "Literal[1, 3, 'foo']",
 ])
 def test_annotation_to_string(expected):
     annotation = eval(expected)
 
     assert annotation_to_string(annotation) == expected
+
+
+if hasattr(typing, 'Literal'):
+    @pytest.mark.parametrize('expected', [
+        "Literal[1, 3, 'foo']",
+    ])
+    def test_literal_to_string(expected):
+        annotation = eval(expected)
+
+        assert annotation_to_string(annotation) == expected
 
 
 @pytest.mark.parametrize('var, expected', [

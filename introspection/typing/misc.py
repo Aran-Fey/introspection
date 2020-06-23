@@ -91,7 +91,7 @@ def resolve_forward_refs(annotation, module=None, eval_=True, strict=True):
 
     base = get_generic_base_class(annotation)
 
-    if base == typing.Literal:
+    if base == getattr(typing, 'Literal', None):
         return annotation
 
     type_args = get_type_args(annotation)

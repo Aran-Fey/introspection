@@ -1,62 +1,123 @@
 
 import typing
 
-__all__ = ['is_generic', 'is_generic_class', 'is_qualified_generic', 'is_fully_qualified_generic', 'get_generic_base_class', 'get_type_args', 'get_type_params', 'get_type_name']
+__all__ = ['is_type', 'is_generic', 'is_generic_class', 'is_qualified_generic', 'is_fully_qualified_generic', 'get_generic_base_class', 'get_type_args', 'get_type_params', 'get_type_name']
 
 
-def _is_generic(cls):
-    if isinstance(cls, typing._VariadicGenericAlias):
-        return True
+if hasattr(typing, '_VariadicGenericAlias'):
+    def _is_generic(cls):
+        if isinstance(cls, typing._VariadicGenericAlias):
+            return True
 
-    try:
-        return bool(cls.__parameters__)
-    except AttributeError:
-        pass
+        try:
+            return bool(cls.__parameters__)
+        except AttributeError:
+            pass
 
-    return cls in {typing.Union, typing.Optional, typing.Literal}
+        return cls in {typing.Union, typing.Optional, typing.Literal}
 
-
-def _is_generic_class(cls):
-    if isinstance(cls, typing._GenericAlias):
-        if not cls._special:
+    def _is_generic_class(cls):
+        if isinstance(cls, typing._GenericAlias):
+            if not cls._special:
+                return False
+        elif not isinstance(cls, (type, typing._SpecialForm)):
             return False
-    elif not isinstance(cls, (type, typing._SpecialForm)):
+
+        return _is_generic(cls)
+
+    def _is_qualified_generic(cls):
+        if isinstance(cls, typing._GenericAlias):
+            return not cls._special
+
         return False
 
-    return is_generic(cls)
+    def _is_fully_qualified_generic(cls):
+        if isinstance(cls, typing._VariadicGenericAlias):
+            return False
 
+        if not isinstance(cls, typing._GenericAlias):
+            return False
 
-def _is_fully_qualified_generic(cls):
-    if isinstance(cls, typing._VariadicGenericAlias):
+        return not cls.__parameters__
+
+    def _is_typing_type(cls):
+        if isinstance(cls, typing._GenericAlias):
+            return True
+
+        try:
+            module = cls.__module__
+        except AttributeError:
+            raise TypeError
+
+        return module == 'typing'
+
+    def _get_generic_base_class(cls):
+        if cls._name is not None:
+            return getattr(typing, cls._name)
+
+        return cls.__origin__
+
+    def _to_python(cls):
+        return getattr(cls, '__origin__', None)
+
+    def _get_name(cls):
+        try:
+            return cls.__name__
+        except AttributeError:
+            return cls._name
+else:  # python 3.5
+    def _is_generic(cls):
+        try:
+            params = cls.__parameters__
+        except AttributeError:
+            pass
+        else:
+            if params:
+                return True
+
+        if isinstance(cls, (typing.CallableMeta, typing.TupleMeta, typing._Union)):
+            return cls.__args__ is None
+
+        return cls in {typing.Optional}
+
+    def _is_generic_class(cls):
+        if isinstance(cls, (typing.CallableMeta, typing._Union)):
+            return cls.__args__ is None
+
+        if isinstance(cls, typing.GenericMeta):
+            return cls.__args__ is None and bool(cls.__parameters__)
+
+        return cls in {typing.Union, typing.Optional}
+
+    def _is_qualified_generic(cls):
+        if isinstance(cls, (typing.GenericMeta, typing._Union)):
+            return cls.__args__ is not None
+
         return False
 
-    if not isinstance(cls, typing._GenericAlias):
+    def _is_fully_qualified_generic(cls):
+        if isinstance(cls, (typing.GenericMeta, typing._Union)):
+            return cls.__args__ is not None and not cls.__parameters__
+
         return False
 
-    return not cls.__parameters__
+    def _is_typing_type(cls):
+        return isinstance(cls, (typing.TypingMeta, typing._TypingBase))
 
+    def _get_generic_base_class(cls):
+        return cls.__origin__
 
-def _is_typing_type(cls):
-    if isinstance(cls, typing._GenericAlias):
-        return True
+    def _to_python(cls):
+        return getattr(cls, '__extra__', None)
 
-    try:
-        module = cls.__module__
-    except AttributeError:
-        raise TypeError
+    def _get_name(cls):
+        try:
+            return cls.__name__
+        except AttributeError:
+            pass
 
-    return module == 'typing'
-
-
-def _get_name(cls):
-    try:
-        return cls.__name__
-    except AttributeError:
-        return cls._name
-
-
-def _to_python(cls):
-    return getattr(cls, '__origin__', None)
+        typing_, _, name = repr(cls).partition('.')
+        return name
 
 
 if hasattr(typing, 'get_args'):
@@ -65,24 +126,36 @@ if hasattr(typing, 'get_args'):
         return typing.get_args(cls)
 else:
     def _get_type_args(cls):
-        subtypes = cls.__args__
+        # In older python versions, generics only store the
+        # last pair of arguments. For instance,
+        #    >>> Tuple[List[T]][int].__args__
+        #    (int,)
+        # The output we want is (List[int],).
+        # The _subs_tree() method can help us out: It
+        # returns a tuple that we can use to construct
+        # the output we want:
+        #    >>> Tuple[List[T]][int]._subs_tree()
+        #    (typing.Tuple, (typing.List, <class 'int'>))
+        base_generic, *subtypes = cls._subs_tree()
 
-        if get_generic_base_class(cls) == typing.Callable:
+        def tree_to_type(tree):
+            if isinstance(tree, tuple):
+                subtypes = tuple(tree_to_type(t) for t in tree[1:])
+                return tree[0][subtypes]
+
+            return tree
+
+        subtypes = tuple(map(tree_to_type, subtypes))
+
+        if base_generic == typing.Callable:
             if subtypes[0] is not ...:
-                subtypes = (subtypes[:-1], subtypes[-1])
+                subtypes = (list(subtypes[:-1]), subtypes[-1])
 
         return subtypes
 
 
 def _get_type_params(cls):
     return cls.__parameters__
-
-
-def _get_generic_base_class(cls):
-    if cls._name is not None:
-        return getattr(typing, cls._name)
-
-    return cls.__origin__
 
 
 def _is_protocol(cls):
@@ -101,7 +174,10 @@ def is_type(type_: typing.Any) -> bool:
     :param type_: The object to examine
     :return: Whether the object is a class or type
     """
-    return isinstance(type_, type) or is_typing_type(type_, raising=False)
+    if isinstance(type_, (type, typing.TypeVar)):
+        return True
+
+    return is_typing_type(type_, raising=False)
 
 
 def is_typing_type(type_, raising=True) -> bool:
@@ -194,14 +270,14 @@ def is_base_generic(type_, raising=True):
 
 
 def is_qualified_generic(type_, raising=True):
-    if isinstance(type_, typing._GenericAlias):
-        return not type_._special
+    if not is_type(type_):
+        if raising:
+            msg = "Expected a class or type, not {!r}"
+            raise TypeError(msg.format(type_)) from None
+        else:
+            return False
 
-    if raising and not is_type(type_):
-        msg = "Expected a class or type, not {!r}"
-        raise TypeError(msg.format(type_)) from None
-    else:
-        return False
+    return _is_qualified_generic(type_)
 
 
 def is_fully_qualified_generic(type_, raising=True):
