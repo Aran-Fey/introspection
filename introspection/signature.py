@@ -1,4 +1,5 @@
 
+import ast
 import builtins
 import inspect
 import os
@@ -6,7 +7,7 @@ import sys
 import types
 import typing
 from numbers import Number
-from typing import Union, List, Dict, Callable, Any, Iterator, Iterable, Tuple, Optional, TypeVar
+from typing import Union, List, Dict, Callable, Any, Iterator, Iterable, Mapping, Tuple, Optional, TypeVar, ByteString
 
 from .parameter import Parameter
 from ._utils import _annotation_to_string
@@ -19,6 +20,7 @@ A = TypeVar('A')
 B = TypeVar('B')
 K = TypeVar('K')
 V = TypeVar('V')
+IntOrFloatVar = TypeVar('T', int, float)
 
 if hasattr(os, 'PathLike'):
     FilePath = Union[str, bytes, os.PathLike]
@@ -27,7 +29,7 @@ else:
 
 BUILTIN_SIGNATURES = {
     'abs': (Any, [
-        Parameter('x', Parameter.POSITIONAL_ONLY, annotation=Any)
+        Parameter('x', Parameter.POSITIONAL_ONLY, annotation=typing.SupportsAbs)
     ]),
     'all': (bool, [
         Parameter('iterable', Parameter.POSITIONAL_ONLY, annotation=Iterable)
@@ -38,8 +40,8 @@ BUILTIN_SIGNATURES = {
     'ascii': (str, [
         Parameter('object', Parameter.POSITIONAL_ONLY, annotation=Any)
     ]),
-    'bin': (int, [
-        Parameter('x', Parameter.POSITIONAL_ONLY, annotation=Any)
+    'bin': (str, [
+        Parameter('x', Parameter.POSITIONAL_ONLY, annotation=int)
     ]),
     'bool': (bool, [
         Parameter('x', Parameter.POSITIONAL_ONLY, Parameter.missing, Any)
@@ -49,12 +51,12 @@ BUILTIN_SIGNATURES = {
         Parameter('kwargs', Parameter.VAR_KEYWORD, annotation=Any)
     ]),
     'bytearray': (bytearray, [
-        Parameter('source', Parameter.POSITIONAL_OR_KEYWORD, Parameter.missing, str),
+        Parameter('source', Parameter.POSITIONAL_OR_KEYWORD, Parameter.missing, Union[str, ByteString]),
         Parameter('encoding', Parameter.POSITIONAL_OR_KEYWORD, Parameter.missing, str),
         Parameter('errors', Parameter.POSITIONAL_OR_KEYWORD, Parameter.missing, str)
     ]),
     'bytes': (bytes, [
-        Parameter('source', Parameter.POSITIONAL_OR_KEYWORD, Parameter.missing, str),
+        Parameter('source', Parameter.POSITIONAL_OR_KEYWORD, Parameter.missing, Union[str, ByteString, typing.SupportsBytes]),
         Parameter('encoding', Parameter.POSITIONAL_OR_KEYWORD, Parameter.missing, str),
         Parameter('errors', Parameter.POSITIONAL_OR_KEYWORD, Parameter.missing, str)
     ]),
@@ -65,12 +67,12 @@ BUILTIN_SIGNATURES = {
         Parameter('i', Parameter.POSITIONAL_ONLY, annotation=int)
     ]),
     'classmethod': (classmethod, [
-        Parameter('method', Parameter.POSITIONAL_ONLY, annotation=Any)
+        Parameter('method', Parameter.POSITIONAL_ONLY, annotation=Callable)
     ]),
     'compile': (types.CodeType, [
-        Parameter('source', Parameter.POSITIONAL_OR_KEYWORD, annotation=str),
+        Parameter('source', Parameter.POSITIONAL_OR_KEYWORD, annotation=Union[str, ByteString, ast.AST]),
         Parameter('filename', Parameter.POSITIONAL_OR_KEYWORD, annotation=str),
-        Parameter('mode', Parameter.POSITIONAL_OR_KEYWORD, annotation=str),
+        Parameter('mode', Parameter.POSITIONAL_OR_KEYWORD, annotation=typing.Literal['eval', 'exec'] if hasattr(typing, 'Literal') else str),
         Parameter('flags', Parameter.POSITIONAL_OR_KEYWORD, 0, int),
         Parameter('dont_inherit', Parameter.POSITIONAL_OR_KEYWORD, False, bool),
         Parameter('optimize', Parameter.POSITIONAL_OR_KEYWORD, -1, int),
@@ -84,19 +86,19 @@ BUILTIN_SIGNATURES = {
         Parameter('name', Parameter.POSITIONAL_ONLY, annotation=str),
     ]),
     'dict': (Dict[K, V], [
-        Parameter('mapping_or_iterable', Parameter.POSITIONAL_ONLY, Parameter.missing, Iterable[Tuple[K, V]]),
+        Parameter('mapping_or_iterable', Parameter.POSITIONAL_ONLY, Parameter.missing, Union[Mapping[K, V], Iterable[Tuple[K, V]]]),
         Parameter('kwargs', Parameter.VAR_KEYWORD, annotation=V),
     ]),
     'dir': (List[str], [
         Parameter('object', Parameter.POSITIONAL_ONLY, Parameter.missing, Any)
     ]),
-    'divmod': (Tuple[Union[int, float], Union[int, float]], [
-        Parameter('a', Parameter.POSITIONAL_ONLY, annotation=Union[int, float]),
-        Parameter('b', Parameter.POSITIONAL_ONLY, annotation=Union[int, float]),
+    'divmod': (Tuple[IntOrFloatVar, IntOrFloatVar], [
+        Parameter('a', Parameter.POSITIONAL_ONLY, annotation=IntOrFloatVar),
+        Parameter('b', Parameter.POSITIONAL_ONLY, annotation=IntOrFloatVar),
     ]),
     'enumerate': (Iterator[Tuple[int, T]], [
         Parameter('iterable', Parameter.POSITIONAL_OR_KEYWORD, annotation=Iterable[T]),
-        Parameter('start', Parameter.POSITIONAL_OR_KEYWORD, 1, int),
+        Parameter('start', Parameter.POSITIONAL_OR_KEYWORD, 0, int),
     ]),
     'eval': (Any, [
         Parameter('expression', Parameter.POSITIONAL_ONLY, annotation=Union[str, types.CodeType]),
@@ -145,10 +147,10 @@ BUILTIN_SIGNATURES = {
         Parameter('object', Parameter.POSITIONAL_ONLY, annotation=Any)
     ]),
     'input': (str, [
-        Parameter('prompt', Parameter.POSITIONAL_ONLY, Parameter.missing, str)
+        Parameter('prompt', Parameter.POSITIONAL_ONLY, Parameter.missing, Any)
     ]),
     'int': (int, [
-        Parameter('x', Parameter.POSITIONAL_ONLY, Parameter.missing, Union[str, typing.SupportsInt]),
+        Parameter('x', Parameter.POSITIONAL_ONLY, Parameter.missing, Union[str, ByteString, typing.SupportsInt]),
         Parameter('base', Parameter.POSITIONAL_ONLY, 10, int)
     ]),
     'isinstance': (bool, [
@@ -170,20 +172,20 @@ BUILTIN_SIGNATURES = {
         Parameter('iterable', Parameter.POSITIONAL_ONLY, Parameter.missing, Iterable[T])
     ]),
     'locals': (dict, []),
-    'map': (Iterator, [
-        Parameter('function', Parameter.POSITIONAL_ONLY, annotation=Callable),
+    'map': (Iterator[T], [
+        Parameter('function', Parameter.POSITIONAL_ONLY, annotation=Callable[..., T]),
         Parameter('iterables', Parameter.VAR_POSITIONAL, annotation=Iterable)
     ]),
     'max': (Union[A, B], [
-        Parameter('args', Parameter.VAR_POSITIONAL, annotation=A),
+        Parameter('args', Parameter.VAR_POSITIONAL, annotation=Union[A, Iterable[A]]),
         Parameter('key', Parameter.KEYWORD_ONLY, Parameter.missing, Callable[[A], Any]),
         Parameter('default', Parameter.KEYWORD_ONLY, Parameter.missing, B)
     ]),
     'memoryview': (memoryview, [
-        Parameter('obj', Parameter.POSITIONAL_ONLY, annotation=Any)
+        Parameter('obj', Parameter.POSITIONAL_ONLY, annotation=ByteString)
     ]),
     'min': (Union[A, B], [
-        Parameter('args', Parameter.VAR_POSITIONAL, annotation=A),
+        Parameter('args', Parameter.VAR_POSITIONAL, annotation=Union[A, Iterable[A]]),
         Parameter('key', Parameter.KEYWORD_ONLY, Parameter.missing, Callable[[A], Any]),
         Parameter('default', Parameter.KEYWORD_ONLY, Parameter.missing, B)
     ]),
@@ -215,8 +217,8 @@ BUILTIN_SIGNATURES = {
     ]),
     'print': (None, [
         Parameter('objects', Parameter.VAR_POSITIONAL, annotation=Any),
-        Parameter('sep', Parameter.KEYWORD_ONLY, ' ', str),
-        Parameter('end', Parameter.KEYWORD_ONLY, '\n', str),
+        Parameter('sep', Parameter.KEYWORD_ONLY, ' ', Optional[str]),
+        Parameter('end', Parameter.KEYWORD_ONLY, '\n', Optional[str]),
         Parameter('file', Parameter.KEYWORD_ONLY, sys.stdout, typing.TextIO),
         Parameter('flush', Parameter.KEYWORD_ONLY, False, bool),
     ]),
@@ -247,6 +249,7 @@ BUILTIN_SIGNATURES = {
     'setattr': (None, [
         Parameter('object', Parameter.POSITIONAL_ONLY, annotation=Any),
         Parameter('name', Parameter.POSITIONAL_ONLY, annotation=str),
+        Parameter('value', Parameter.POSITIONAL_ONLY, annotation=Any),
     ]),
     'slice': (slice, [
         Parameter('start_or_stop', Parameter.POSITIONAL_ONLY, annotation=int),
@@ -286,7 +289,7 @@ BUILTIN_SIGNATURES = {
         Parameter('object', Parameter.POSITIONAL_ONLY, Parameter.missing, Any)
     ]),
     'zip': (Iterator[tuple], [
-        Parameter('iterables', Parameter.VAR_POSITIONAL, annotation=Iterable[Any])
+        Parameter('iterables', Parameter.VAR_POSITIONAL, annotation=Iterable)
     ]),
     '__import__': (types.ModuleType, [
         Parameter('name', Parameter.POSITIONAL_OR_KEYWORD, annotation=str),
@@ -360,6 +363,10 @@ class Signature(inspect.Signature):
                       ) -> 'Signature':
         """
         Returns a matching ``Signature`` instance for the given ``callable_``.
+
+        .. versionchanged:: 1.1
+           Returns more accurate signatures for builtin functions.
+           Added missing "value" parameter for ``setattr``.
 
         :param callable_: A function or any other callable object
         :type callable_: Callable
