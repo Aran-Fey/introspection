@@ -80,6 +80,10 @@ light_theme()
 
     --accent_font_color: make_font_color_for_background(accent_color, font_color_regular, bg_color_regular)
 
+    --header_highlight_bg1: #cfa9da
+    --header_highlight_bg2: #dcc5dc
+    --header_highlight_bg3: #fae9fe
+
 
 dark_theme()
     bg_color_regular = #252525
@@ -105,6 +109,10 @@ dark_theme()
     --border_color: var(--accent_color)
 
     --accent_font_color: make_font_color_for_background(accent_color, font_color_regular, bg_color_regular)
+
+    --header_highlight_bg1: #342a37
+    --header_highlight_bg2: #302a30
+    --header_highlight_bg3: #2e2a2f
 
 
 /* ===================================
@@ -532,13 +540,14 @@ dl dt
     
     // highlight class/function definitions' and their sub-sections' headers
     dl.class > dt
-        background: #342a37
+    dl.function > dt
+        background: var(--header_highlight_bg1)
         
     dl.method > dt
-        background: #302a30
+        background: var(--header_highlight_bg2)
         
     dl.field-list > dt
-        background: #2e2a2f
+        background: var(--header_highlight_bg3)
     
     // adjust spacing between parameters, etc
     dl.field-list

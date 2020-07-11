@@ -16,6 +16,9 @@ body.light-theme {
   --info_fg: var(--font_color_regular);
   --border_color: var(--accent_color);
   --accent_font_color: #fff;
+  --header_highlight_bg1: #cfa9da;
+  --header_highlight_bg2: #dcc5dc;
+  --header_highlight_bg3: #fae9fe;
 }
 body.dark-theme {
   --bg_color_regular: #252525;
@@ -30,6 +33,9 @@ body.dark-theme {
   --info_fg: var(--font_color_regular);
   --border_color: var(--accent_color);
   --accent_font_color: #fff;
+  --header_highlight_bg1: #342a37;
+  --header_highlight_bg2: #302a30;
+  --header_highlight_bg3: #2e2a2f;
 }
 @media (prefers-color-scheme: dark) {
   body {
@@ -45,6 +51,9 @@ body.dark-theme {
     --info_fg: var(--font_color_regular);
     --border_color: var(--accent_color);
     --accent_font_color: #fff;
+    --header_highlight_bg1: #342a37;
+    --header_highlight_bg2: #302a30;
+    --header_highlight_bg3: #2e2a2f;
   }
 }
 :root {
@@ -363,14 +372,15 @@ dl dt:not(:hover) a.headerlink {
 .section code.sig-name {
   font-weight: bold;
 }
-.section dl.class > dt {
-  background: #342a37;
+.section dl.class > dt,
+.section dl.function > dt {
+  background: var(--header_highlight_bg1);
 }
 .section dl.method > dt {
-  background: #302a30;
+  background: var(--header_highlight_bg2);
 }
 .section dl.field-list > dt {
-  background: #2e2a2f;
+  background: var(--header_highlight_bg3);
 }
 .section dl.field-list dt {
   margin-top: 0.5em;
