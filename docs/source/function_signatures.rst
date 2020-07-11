@@ -12,13 +12,5 @@ Signatures can be created through the :func:`signature` function or the ``Signat
 |
 
 .. autoclass:: introspection.Signature
-
 .. autoclass:: introspection.Parameter
-
-    .. autoattribute:: missing
-
-        A special class-level marker that can be used to specify
-        that the parameter is optional, but doesn't have a (known)
-        default value.
-
 .. autofunction:: introspection.signature

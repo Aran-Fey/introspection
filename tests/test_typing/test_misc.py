@@ -16,15 +16,24 @@ THIS_MODULE = sys.modules[__name__]
 @pytest.mark.parametrize('expected', [
     'int',
     'List',
+    'io.IOBase',
     'List[str]',
     "List['Foo']",
     'Tuple[List[int], bool]',
     '...',
     'Callable[[int], None]',
 ])
-def test_annotation_to_string(expected):
+def test_annotation_to_string_simple(expected):
     annotation = eval(expected)
 
+    assert annotation_to_string(annotation) == expected
+
+
+@pytest.mark.parametrize('annotation, expected', [
+    (None, 'None'),
+    (type(None), 'None'),
+])
+def test_annotation_to_string(annotation, expected):
     assert annotation_to_string(annotation) == expected
 
 
@@ -75,6 +84,7 @@ if hasattr(typing, 'Literal'):
     (List['str'], List[str]),
     (Tuple[Dict['str', 'int']], Tuple[Dict[str, int]]),
     (Tuple['Dict[str, int]'], Tuple[Dict[str, int]]),
+    (Callable[['int'], str], Callable[[int], str]),
     ('ellipsis', type(...)),
     ('int if False else float', float),
     ('List["int"]', List[int]),
@@ -114,6 +124,7 @@ def test_resolve_forward_refs_no_eval(annotation, module, expected):
 
 @pytest.mark.parametrize('annotation, kwargs', [
     ('ThisClassDoesntExist', {'eval_': False}),
+    ('ThisClassDoesntExist', {'module': 'sys'}),
     ('this is a syntax error', {}),
 ])
 def test_resolve_forward_refs_error(annotation, kwargs):

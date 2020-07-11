@@ -5,17 +5,19 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Functions related to dundermethods &#8212; introspection 1.0 documentation</title>
+    <title>Functions related to dundermethods &#8212; Introspection documentation</title>
     <link rel="stylesheet" href="_static/nightsky.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link id="pygments_dark_css" media="(prefers-color-scheme: dark)" rel="stylesheet" type="text/css" href="_static/pygments_dark.css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/language_data.js"></script>
+    <script src="_static/theme_switcher.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Misc. functions" href="misc.html" />
+    <link rel="next" title="Introspecting the typing module" href="typing.html" />
     <link rel="prev" title="Functions related to classes" href="classes.html" /> 
   </head><body>
   
@@ -25,17 +27,62 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="module-introspection.dundermethods">
-<span id="functions-related-to-dundermethods"></span><h1>Functions related to dundermethods<a class="headerlink" href="#module-introspection.dundermethods" title="Permalink to this headline">¶</a></h1>
-<dl class="py data">
-<dt id="introspection.dundermethods.DUNDERMETHOD_NAMES">
-<code class="sig-prename descclassname"></code><code class="sig-name descname">DUNDERMETHOD_NAMES</code><em class="property"> = {'__abs__', '__add__', '__aenter__', '__aexit__', '__aiter__', '__and__', '__anext__', '__await__', '__bool__', '__bytes__', '__call__', '__ceil__', '__class_getitem__', '__complex__', '__contains__', '__del__', '__delattr__', '__delete__', '__delitem__', '__delslice__', '__dir__', '__div__', '__divmod__', '__enter__', '__eq__', '__exit__', '__float__', '__floor__', '__floordiv__', '__format__', '__fspath__', '__ge__', '__get__', '__getattr__', '__getattribute__', '__getitem__', '__getnewargs__', '__getslice__', '__gt__', '__hash__', '__iadd__', '__iand__', '__ifloordiv__', '__ilshift__', '__imatmul__', '__imod__', '__imul__', '__index__', '__init__', '__init_subclass__', '__instancecheck__', '__int__', '__invert__', '__ior__', '__ipow__', '__irshift__', '__isub__', '__iter__', '__itruediv__', '__ixor__', '__le__', '__len__', '__length_hint__', '__lshift__', '__lt__', '__matmul__', '__mod__', '__mul__', '__ne__', '__neg__', '__new__', '__next__', '__or__', '__pos__', '__pow__', '__prepare__', '__radd__', '__rand__', '__rdiv__', '__rdivmod__', '__reduce__', '__reduce_ex__', '__repr__', '__reversed__', '__rfloordiv__', '__rlshift__', '__rmatmul__', '__rmod__', '__rmul__', '__ror__', '__round__', '__rpow__', '__rrshift__', '__rshift__', '__rsub__', '__rtruediv__', '__rxor__', '__set__', '__set_name__', '__setattr__', '__setitem__', '__sizeof__', '__str__', '__sub__', '__subclasscheck__', '__subclasses__', '__truediv__', '__trunc__', '__xor__'}</em><a class="headerlink" href="#introspection.dundermethods.DUNDERMETHOD_NAMES" title="Permalink to this definition">¶</a></dt>
+  <div class="section" id="functions-related-to-dundermethods">
+<h1>Functions related to dundermethods<a class="headerlink" href="#functions-related-to-dundermethods" title="Permalink to this headline">¶</a></h1>
+<p>Working with dundermethods can be tricky, because when python searches
+for a dundermethod, it doesn’t use the same mechanism as it does for
+normal attribute access. Normal attribute access like <code class="docutils literal notranslate"><span class="pre">obj.attr</span></code> will
+look for <code class="docutils literal notranslate"><span class="pre">attr</span></code> in the instance’s namespace (i.e. <code class="docutils literal notranslate"><span class="pre">obj.__dict__</span></code>)
+and the class’s namespace (i.e. <code class="docutils literal notranslate"><span class="pre">type(obj).__dict__</span></code> plus the <code class="docutils literal notranslate"><span class="pre">__dict__</span></code>
+of every parent class). Dundermethods, on the other hand, are only
+searched for in the class namespace - not the instance namespace.
+Defining a dundermethod in the instance namespace won’t work:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Demo</span><span class="p">:</span>
+    <span class="k">pass</span>
+
+<span class="n">obj</span> <span class="o">=</span> <span class="n">Demo</span><span class="p">()</span>
+<span class="n">obj</span><span class="o">.</span><span class="fm">__len__</span> <span class="o">=</span> <span class="k">lambda</span> <span class="bp">self</span><span class="p">:</span> <span class="mi">0</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>  <span class="c1"># throws TypeError: object of type &#39;Demo&#39; has no len()</span>
+</pre></div>
+</div>
+<p>And neither will defining a dundermethod in a metaclass:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">DemoMeta</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+<span class="k">class</span> <span class="nc">Demo</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">DemoMeta</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+<span class="n">obj</span> <span class="o">=</span> <span class="n">Demo</span><span class="p">()</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>  <span class="c1"># throws TypeError: object of type &#39;Demo&#39; has no len()</span>
+</pre></div>
+</div>
+<p>So if you wanted to implement your own <code class="docutils literal notranslate"><span class="pre">len</span></code> function, you wouldn’t have an
+easy way of accessing the relevant <code class="docutils literal notranslate"><span class="pre">__len__</span></code> method - <code class="docutils literal notranslate"><span class="pre">obj.__len__</span></code> would
+be incorrect because it would search the instance namespace, and <code class="docutils literal notranslate"><span class="pre">type(obj).__len__</span></code>
+would be incorrect because it would search the metaclass namespace. That’s where
+these functions come in - <code class="docutils literal notranslate"><span class="pre">get_bound_dundermethod(obj)</span></code> or <code class="docutils literal notranslate"><span class="pre">get_class_dundermethod(type(obj))</span></code>
+would do the work for you.</p>
+<span class="target" id="module-introspection.dundermethods"></span><dl class="py data">
+<dt id="introspection.DUNDERMETHOD_NAMES">
+<span id="introspection.dundermethods.DUNDERMETHOD_NAMES"></span><code class="sig-prename descclassname">introspection.</code><code class="sig-name descname">DUNDERMETHOD_NAMES</code><em class="property"> = {'__abs__', '__add__', '__aenter__', '__aexit__', '__aiter__', '__and__', '__anext__', '__await__', '__bool__', '__bytes__', '__call__', '__ceil__', '__class_getitem__', '__complex__', '__contains__', '__del__', '__delattr__', '__delete__', '__delitem__', '__delslice__', '__dir__', '__div__', '__divmod__', '__enter__', '__eq__', '__exit__', '__float__', '__floor__', '__floordiv__', '__format__', '__fspath__', '__ge__', '__get__', '__getattr__', '__getattribute__', '__getitem__', '__getnewargs__', '__getslice__', '__gt__', '__hash__', '__iadd__', '__iand__', '__ifloordiv__', '__ilshift__', '__imatmul__', '__imod__', '__imul__', '__index__', '__init__', '__init_subclass__', '__instancecheck__', '__int__', '__invert__', '__ior__', '__ipow__', '__irshift__', '__isub__', '__iter__', '__itruediv__', '__ixor__', '__le__', '__len__', '__length_hint__', '__lshift__', '__lt__', '__matmul__', '__mod__', '__mul__', '__ne__', '__neg__', '__new__', '__next__', '__or__', '__pos__', '__pow__', '__prepare__', '__radd__', '__rand__', '__rdiv__', '__rdivmod__', '__reduce__', '__reduce_ex__', '__repr__', '__reversed__', '__rfloordiv__', '__rlshift__', '__rmatmul__', '__rmod__', '__rmul__', '__ror__', '__round__', '__rpow__', '__rrshift__', '__rshift__', '__rsub__', '__rtruediv__', '__rxor__', '__set__', '__set_name__', '__setattr__', '__setitem__', '__sizeof__', '__str__', '__sub__', '__subclasscheck__', '__subclasses__', '__truediv__', '__trunc__', '__xor__'}</em><a class="headerlink" href="#introspection.DUNDERMETHOD_NAMES" title="Permalink to this definition">¶</a></dt>
 <dd><p>A set containing the names of all dundermethods.</p>
 </dd></dl>
 
+<dl class="py data">
+<dt id="introspection.AUGMENTED_ASSIGNMENT_DUNDERMETHOD_NAMES">
+<span id="introspection.dundermethods.AUGMENTED_ASSIGNMENT_DUNDERMETHOD_NAMES"></span><code class="sig-prename descclassname">introspection.</code><code class="sig-name descname">AUGMENTED_ASSIGNMENT_DUNDERMETHOD_NAMES</code><em class="property"> = {'__iadd__', '__iand__', '__ifloordiv__', '__ilshift__', '__imatmul__', '__imod__', '__imul__', '__ior__', '__ipow__', '__irshift__', '__isub__', '__itruediv__', '__ixor__'}</em><a class="headerlink" href="#introspection.AUGMENTED_ASSIGNMENT_DUNDERMETHOD_NAMES" title="Permalink to this definition">¶</a></dt>
+<dd><p>A set containing the names of all augmented assignment dundermethods.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version 1.1.</span></p>
+</div>
+</dd></dl>
+
 <dl class="py function">
-<dt id="introspection.dundermethods.iter_class_dundermethods">
-<code class="sig-prename descclassname"></code><code class="sig-name descname">iter_class_dundermethods</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cls</span></em>, <em class="sig-param"><span class="n">bound</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.dundermethods.iter_class_dundermethods" title="Permalink to this definition">¶</a></dt>
+<dt id="introspection.iter_class_dundermethods">
+<span id="introspection.dundermethods.iter_class_dundermethods"></span><code class="sig-prename descclassname">introspection.</code><code class="sig-name descname">iter_class_dundermethods</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cls</span></em>, <em class="sig-param"><span class="n">bound</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.iter_class_dundermethods" title="Permalink to this definition">¶</a></dt>
 <dd><p>Yields all dundermethods implemented by the given class as
 <code class="docutils literal notranslate"><span class="pre">(method_name,</span> <span class="pre">method)</span></code> tuples.</p>
 <p>(For the purpose of this function, “implemented” simply
@@ -66,8 +113,8 @@ useful for excluding dundermethods implemented in <a class="reference external" 
 </dd></dl>
 
 <dl class="py function">
-<dt id="introspection.dundermethods.class_implements_dundermethod">
-<code class="sig-prename descclassname"></code><code class="sig-name descname">class_implements_dundermethod</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cls</span></em>, <em class="sig-param"><span class="n">method_name</span></em>, <em class="sig-param"><span class="n">bound</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.dundermethods.class_implements_dundermethod" title="Permalink to this definition">¶</a></dt>
+<dt id="introspection.class_implements_dundermethod">
+<span id="introspection.dundermethods.class_implements_dundermethod"></span><code class="sig-prename descclassname">introspection.</code><code class="sig-name descname">class_implements_dundermethod</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cls</span></em>, <em class="sig-param"><span class="n">method_name</span></em>, <em class="sig-param"><span class="n">bound</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.class_implements_dundermethod" title="Permalink to this definition">¶</a></dt>
 <dd><p>Checks whether the given class implements a certain dundermethod.</p>
 <p>The method is considered implemented if any of the classes in the
 MRO have an entry for <code class="docutils literal notranslate"><span class="pre">method_name</span></code> in their <code class="docutils literal notranslate"><span class="pre">__dict__</span></code>. The
@@ -94,8 +141,8 @@ in <code class="docutils literal notranslate"><span class="pre">bound=object</sp
 </dd></dl>
 
 <dl class="py function">
-<dt id="introspection.dundermethods.class_implements_any_dundermethod">
-<code class="sig-prename descclassname"></code><code class="sig-name descname">class_implements_any_dundermethod</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cls</span></em>, <em class="sig-param"><span class="n">methods</span></em>, <em class="sig-param"><span class="n">bound</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.dundermethods.class_implements_any_dundermethod" title="Permalink to this definition">¶</a></dt>
+<dt id="introspection.class_implements_any_dundermethod">
+<span id="introspection.dundermethods.class_implements_any_dundermethod"></span><code class="sig-prename descclassname">introspection.</code><code class="sig-name descname">class_implements_any_dundermethod</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cls</span></em>, <em class="sig-param"><span class="n">methods</span></em>, <em class="sig-param"><span class="n">bound</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.class_implements_any_dundermethod" title="Permalink to this definition">¶</a></dt>
 <dd><p>Checks whether the given class implements at least one of the
 given dundermethods.</p>
 <dl class="field-list simple">
@@ -116,8 +163,8 @@ given dundermethods.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="introspection.dundermethods.class_implements_dundermethods">
-<code class="sig-prename descclassname"></code><code class="sig-name descname">class_implements_dundermethods</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cls</span></em>, <em class="sig-param"><span class="n">methods</span></em>, <em class="sig-param"><span class="n">bound</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.dundermethods.class_implements_dundermethods" title="Permalink to this definition">¶</a></dt>
+<dt id="introspection.class_implements_dundermethods">
+<span id="introspection.dundermethods.class_implements_dundermethods"></span><code class="sig-prename descclassname">introspection.</code><code class="sig-name descname">class_implements_dundermethods</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cls</span></em>, <em class="sig-param"><span class="n">methods</span></em>, <em class="sig-param"><span class="n">bound</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.class_implements_dundermethods" title="Permalink to this definition">¶</a></dt>
 <dd><p>Checks whether the given class implements all given dundermethods.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -137,8 +184,8 @@ given dundermethods.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="introspection.dundermethods.collect_class_dundermethods">
-<code class="sig-prename descclassname"></code><code class="sig-name descname">collect_class_dundermethods</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cls</span></em>, <em class="sig-param"><span class="n">bound</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.dundermethods.collect_class_dundermethods" title="Permalink to this definition">¶</a></dt>
+<dt id="introspection.collect_class_dundermethods">
+<span id="introspection.dundermethods.collect_class_dundermethods"></span><code class="sig-prename descclassname">introspection.</code><code class="sig-name descname">collect_class_dundermethods</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cls</span></em>, <em class="sig-param"><span class="n">bound</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.collect_class_dundermethods" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates a dict of the form <code class="docutils literal notranslate"><span class="pre">{method_name:</span> <span class="pre">method}</span></code>
 containing all dundermethods implemented by the given class.</p>
 <p>If multiple classes in the MRO implement the same dundermethod,
@@ -160,8 +207,8 @@ only the first implementation is included in the result.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="introspection.dundermethods.get_class_dundermethod">
-<code class="sig-prename descclassname"></code><code class="sig-name descname">get_class_dundermethod</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cls</span></em>, <em class="sig-param"><span class="n">method_name</span></em>, <em class="sig-param"><span class="n">bound</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.dundermethods.get_class_dundermethod" title="Permalink to this definition">¶</a></dt>
+<dt id="introspection.get_class_dundermethod">
+<span id="introspection.dundermethods.get_class_dundermethod"></span><code class="sig-prename descclassname">introspection.</code><code class="sig-name descname">get_class_dundermethod</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cls</span></em>, <em class="sig-param"><span class="n">method_name</span></em>, <em class="sig-param"><span class="n">bound</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.get_class_dundermethod" title="Permalink to this definition">¶</a></dt>
 <dd><p>Retrieves a class’s implementation of the given dundermethod.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -172,7 +219,34 @@ only the first implementation is included in the result.</p>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>The function object for that name</p>
+<dd class="field-even"><p>The function object for the given <code class="docutils literal notranslate"><span class="pre">method_name</span></code></p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.8)"><strong>TypeError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">cls</span></code> is not a class</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#AttributeError" title="(in Python v3.8)"><strong>AttributeError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">cls</span></code> does not implement that dundermethod</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="introspection.get_bound_dundermethod">
+<span id="introspection.dundermethods.get_bound_dundermethod"></span><code class="sig-prename descclassname">introspection.</code><code class="sig-name descname">get_bound_dundermethod</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">instance</span></em>, <em class="sig-param"><span class="n">method_name</span></em>, <em class="sig-param"><span class="n">bound</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.get_bound_dundermethod" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves a class’s implementation of the given dundermethod.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version 1.1.</span></p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>instance</strong> – Any object</p></li>
+<li><p><strong>method_name</strong> – The name of a dundermethod</p></li>
+<li><p><strong>bound</strong> – Where to stop searching through the class’s MRO</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A bound method for the given <code class="docutils literal notranslate"><span class="pre">method_name</span></code></p>
 </dd>
 <dt class="field-odd">Raises</dt>
 <dd class="field-odd"><ul class="simple">
@@ -192,17 +266,6 @@ only the first implementation is included in the result.</p>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-    <div class="nav">
-        <h3>Navigation</h3>
-        
-        <a class="homepage-link" href="index.html" title="home page">introspection 1.0 documentation</a>
-            <a class="prev-link" href="classes.html" title="previous chapter">
-                Functions related to classes
-            </a>
-            <a class="next-link" href="misc.html" title="next chapter">
-                Misc. functions
-            </a>
-    </div>
 <div id="searchbox" style="display: none" role="search">
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
@@ -212,7 +275,7 @@ only the first implementation is included in the result.</p>
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>$('#searchbox').show(0);</script><div id="theme-switcher"></div>
         </div>
       </div>
       <div class="clearer"></div>

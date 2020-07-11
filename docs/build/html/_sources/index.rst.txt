@@ -15,4 +15,5 @@ The available functions have been roughly categorized by what they return or wha
    call_stack.rst
    classes.rst
    dundermethods.rst
+   typing.rst
    misc.rst

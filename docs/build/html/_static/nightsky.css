@@ -3,84 +3,51 @@
  * ===================================
  */
 body,
-body.dark-theme {
-  --bg_color_regular: #252525;
-  --font_color_regular: #ccc;
-  --accent_color: #a34da3;
-  --bg_color_dark4: #161616;
-  --bg_color_dark3: #1a1a1a;
-  --bg_color_dark2: #1e1e1e;
-  --bg_color_dark: #212121;
-  --bg_color_light: #3b3b3b;
-  --bg_color_light2: #515151;
-  --font_color_dark: #b8b8b8;
-  --font_color_light: #d1d1d1;
-  --font_color_light2: #d6d6d6;
-  --code_color: #c1acc1;
-  --font_color_placeholder: #aaa;
-  --info_bg: #506977;
-  --info_fg: var(--font_color_light);
-  --warning_bg: #c8ba70;
-  --warning_fg: #fff;
-  --border_color: var(--accent_color);
-  --accent_color2: #8b418b;
-  --accent_font_color: #fff;
-  --accent_color_disabled: #846c84;
-  --accent_font_color_disabled: #b3b3b3;
-}
 body.light-theme {
   --bg_color_regular: #fff;
   --font_color_regular: #000;
   --accent_color: #a34da3;
-  --bg_color_dark4: #999;
-  --bg_color_dark3: #b3b3b3;
-  --bg_color_dark2: #ccc;
-  --bg_color_dark: #e6e6e6;
-  --bg_color_light: #fff;
-  --bg_color_light2: #fff;
-  --font_color_dark: #000;
-  --font_color_light: #1a1a1a;
-  --font_color_light2: #333;
-  --code_color: #281328;
-  --font_color_placeholder: #aaa;
+  --textbox_bg: #ccc;
+  --button_bg: #e6e6e6;
+  --placeholder_fg: #444;
+  --less_important_fg: #333;
+  --code_color: #572857;
   --info_bg: #506977;
-  --info_fg: var(--font_color_light);
-  --warning_bg: #c8ba70;
-  --warning_fg: #fff;
+  --info_fg: var(--font_color_regular);
   --border_color: var(--accent_color);
-  --accent_color2: #8b418b;
   --accent_font_color: #fff;
-  --accent_color_disabled: #846c84;
-  --accent_font_color_disabled: #b3b3b3;
 }
-@media (prefers-color-scheme: light) {
+body.dark-theme {
+  --bg_color_regular: #252525;
+  --font_color_regular: #ccc;
+  --accent_color: #a34da3;
+  --textbox_bg: #212121;
+  --button_bg: #515151;
+  --placeholder_fg: #aaa;
+  --less_important_fg: #b8b8b8;
+  --code_color: #c1acc1;
+  --info_bg: #506977;
+  --info_fg: var(--font_color_regular);
+  --border_color: var(--accent_color);
+  --accent_font_color: #fff;
+}
+@media (prefers-color-scheme: dark) {
   body {
-    --bg_color_regular: #fff;
-    --font_color_regular: #000;
+    --bg_color_regular: #252525;
+    --font_color_regular: #ccc;
     --accent_color: #a34da3;
-    --bg_color_dark4: #999;
-    --bg_color_dark3: #b3b3b3;
-    --bg_color_dark2: #ccc;
-    --bg_color_dark: #e6e6e6;
-    --bg_color_light: #fff;
-    --bg_color_light2: #fff;
-    --font_color_dark: #000;
-    --font_color_light: #1a1a1a;
-    --font_color_light2: #333;
-    --code_color: #281328;
-    --font_color_placeholder: #aaa;
+    --textbox_bg: #212121;
+    --button_bg: #515151;
+    --placeholder_fg: #aaa;
+    --less_important_fg: #b8b8b8;
+    --code_color: #c1acc1;
     --info_bg: #506977;
-    --info_fg: var(--font_color_light);
-    --warning_bg: #c8ba70;
-    --warning_fg: #fff;
+    --info_fg: var(--font_color_regular);
     --border_color: var(--accent_color);
-    --accent_color2: #8b418b;
     --accent_font_color: #fff;
-    --accent_color_disabled: #846c84;
-    --accent_font_color_disabled: #b3b3b3;
   }
 }
-html {
+:root {
   font-family: Verdana;
   font-size: 1.1em;
 }
@@ -251,6 +218,53 @@ body {
 .nav a.next-link::after {
   content: "▷";
   margin-left: 0.3em;
+}
+#theme-switcher {
+  margin-top: 1.5em;
+}
+#syntax-themes-container {
+  margin-top: 0.5em;
+}
+#theme-switcher .themes-container {
+  display: grid;
+  grid-column-gap: 0.3em;
+  grid-auto-flow: column;
+  justify-content: start;
+}
+#theme-switcher .themes-container .theme-button {
+  background: unset;
+  border: 1px solid var(--border_color);
+  border-radius: 5px;
+  width: 1.6rem;
+  height: 1.6rem;
+  font-size: 1rem;
+  padding: 0;
+  filter: brightness(1);
+}
+#theme-switcher .themes-container .theme-button:hover {
+  filter: brightness(1.1);
+}
+#theme-switcher #site-themes-container .active::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: calc(1.6rem / 2 - 8px);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 5px solid var(--font_color_regular);
+}
+#theme-switcher #syntax-themes-container .active::before {
+  content: "";
+  position: absolute;
+  bottom: -8px;
+  left: calc(1.6rem / 2 - 8px);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 5px solid var(--font_color_regular);
 }
 .toctree-wrapper {
   margin-top: 2em;

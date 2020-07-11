@@ -27,8 +27,9 @@ class CallFrame:
     def __init__(self, frame):
         """
         Creates a new ``CallFrame`` from a ``CallFrame`` or :data:`types.FrameType` object.
-        """
 
+        :param frame: An existing frame object
+        """
         if isinstance(frame, __class__):
             frame = frame.__frame
 
@@ -82,42 +83,42 @@ class CallFrame:
     @property
     def builtins(self):
         """
-        The builtins seen by this frame
+        Returns the builtins seen by this frame
         """
         return self.__frame.f_builtins
 
     @property
     def globals(self):
         """
-        The global scope seen by this frame
+        Returns the global scope seen by this frame
         """
         return self.__frame.f_globals
 
     @property
     def locals(self):
         """
-        The frame's local variable scope
+        Returns the frame's local variable scope
         """
         return self.__frame.f_locals
 
     @property
     def code_object(self):
         """
-        The code object being executed in this frame
+        Returns the code object being executed in this frame
         """
         return self.__frame.f_code
 
     @property
     def file_name(self):
         """
-        The name of the file in which this frame's code was defined
+        Returns the name of the file in which this frame's code was defined
         """
         return self.code_object.co_filename
 
     @property
     def scope_name(self):
         """
-        The name of the scope in which this frame's code was defined.
+        Returns the name of the scope in which this frame's code was defined.
         In case of a function, the function's name.
         In case of a class, the class's name.
         In any other case, whichever name the interpreter assigned to that scope.
@@ -133,6 +134,7 @@ class CallFrame:
 
                 This includes variables marked as ``nonlocal``.
 
+        :param name: The name of the variable you want to look up
         :return: The value mapped to the given name
         :raises NameError: If no matching variable is found
         """

@@ -1,7 +1,7 @@
 
 import inspect
 
-from ._utils import _annotation_to_string
+from .typing import annotation_to_string
 
 __all__ = ['Parameter']
 
@@ -21,11 +21,11 @@ class Parameter(inspect.Parameter):
     :ivar default: The parameter's default value or :attr:`inspect.Parameter.empty`
     :ivar annotation: The parameter's type annotation
     """
-    __slots__ = ('_description',)
+    __slots__ = ()
 
-    # A special class-level marker that can be used to specify
-    # that the parameter is optional, but doesn't have a (known)
-    # default value.
+    #: A special class-level marker that can be used to specify
+    #: that the parameter is optional, but doesn't have a (known)
+    #: default value.
     missing = type('_missing', (), {})
 
     def __init__(self,
@@ -88,7 +88,7 @@ class Parameter(inspect.Parameter):
             self.is_vararg
         )
 
-    def _to_string_no_brackets(self):
+    def _to_string_no_brackets(self, implicit_typing):
         text = self.name
 
         if self.kind is __class__.VAR_POSITIONAL:
@@ -97,7 +97,7 @@ class Parameter(inspect.Parameter):
             text = '**' + text
 
         if self.has_annotation:
-            ann = _annotation_to_string(self.annotation)
+            ann = annotation_to_string(self.annotation, implicit_typing)
             text += ': {}'.format(ann)
 
         if self.default not in {__class__.empty, __class__.missing}:
@@ -112,7 +112,7 @@ class Parameter(inspect.Parameter):
 
         return text
 
-    def to_string(self):
+    def to_string(self, implicit_typing=False):
         """
         Returns a string representation of this parameter, similar to
         how parameters are written in function signatures.
@@ -123,8 +123,11 @@ class Parameter(inspect.Parameter):
             '*foo'
             >>> Parameter('foo', annotation=int, default=3).to_string()
             'foo: int = 3'
+        
+        :param implicit_typing: If ``True``, the "typing." prefix will be omitted from types defined in the ``typing`` module
+        :return: A string representation of this parameter, like you would see in a function signature
         """
-        text = self._to_string_no_brackets()
+        text = self._to_string_no_brackets(implicit_typing)
 
         if self.default is __class__.missing:
             text = '[{}]'.format(text)

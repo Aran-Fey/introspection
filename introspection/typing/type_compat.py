@@ -4,7 +4,8 @@ import contextlib
 import re
 import typing
 
-from .introspection import is_typing_type, _to_python, _get_forward_ref_code
+from .introspection import *
+from .introspection import _to_python, _get_forward_ref_code, _is_variadic_generic
 from . import _compat
 
 __all__ = ['to_python', 'to_typing']
@@ -22,7 +23,7 @@ FORWARDREF_TO_TYPING = {
     're.Pattern': 'Pattern',
     're.Match': 'Match',
     'collections.deque': 'Deque',
-    'collections.defaultdict': 'defaultdict',
+    'collections.defaultdict': 'DefaultDict',
     # 'collections.namedtuple': 'NamedTuple',
     'collections.Counter': 'Counter',
     'collections.OrderedDict': 'OrderedDict',
@@ -54,15 +55,15 @@ FORWARDREF_TO_TYPING = {
     'contextlib.AbstractAsyncContextManager': 'AsyncContextManager',
 }
 
-CLASS_TO_TYPING = {}
+PYTHON_TO_TYPING = {}
 for key, value in FORWARDREF_TO_TYPING.items():
     try:
         key = eval(key)
         value = getattr(typing, value)
-    except AttributeError:  # pragma: no cover
+    except AttributeError:
         continue
 
-    CLASS_TO_TYPING[key] = value
+    PYTHON_TO_TYPING[key] = value
 
 
 def to_python(type_, strict=False):
@@ -70,25 +71,89 @@ def to_python(type_, strict=False):
     Given a ``typing`` type as input, returns the corresponding
     "regular" python class.
 
-    :param cls: The type to convert to a python class
+    Examples::
+
+        >>> to_python(typing.List)
+        <class 'list'>
+        >>> to_python(typing.Iterable)
+        <class 'collections.abc.Iterable'>
+
+    Note that ``typing.Any`` and :class:`object` are two
+    distinct types::
+
+        >>> to_python(typing.Any)
+        typing.Any
+        >>> to_python(object)
+        <class 'object'>
+
+    Generics qualified with ``typing.Any`` or other pointless
+    constraints are converted to their regular python
+    counterparts::
+
+        >>> to_python(typing.List[typing.Any])
+        <class 'list'>
+        >>> to_python(typing.Callable[..., typing.Any])
+        <class 'collections.abc.Callable'>
+        >>> to_python(typing.Type[object])
+        <class 'type'>
+
+    The function recurses on the type arguments of qualified
+    generics::
+
+        >>> to_python(typing.List[typing.Set], strict=False)
+        typing.List[set]
+
+    Forward references are handled, as well::
+
+        >>> to_python(typing.List['Set'], strict=False)
+        typing.List[set]
+
+    :param type_: The type to convert to a python class
     :param strict: Whether to raise an exception if the input type has no python equivalent
     :return: The class corresponding to the input type
     """
+    if isinstance(type_, type) and type_.__module__ != 'typing':
+        return type_
 
-    if is_typing_type(type_, raising=False):
+    if type_ is None:
+        return type_
+
+    if not is_typing_type(type_, raising=False):
+        raise TypeError("Expected a type, not {!r}".format(type_))
+
+    if is_qualified_generic(type_):
+        base = get_generic_base_class(type_)
+        args = get_type_args(type_)
+
+        if (not _is_variadic_generic(base)
+                and all(arg is typing.Any for arg in args)):
+            return to_python(base, strict)
+        elif base is typing.Type and args[0] is object:
+            return type
+        elif base is typing.Callable and args == (..., typing.Any):
+            return to_python(base, strict)
+
+        if not strict:
+            if base is typing.Callable:
+                if args[0] is ...:
+                    args = (..., to_python(args[1], strict))
+                else:
+                    args = (
+                        [to_python(arg, strict) for arg in args[0]],
+                        to_python(args[1], strict)
+                    )
+            elif hasattr(typing, 'Literal') and base is typing.Literal:
+                return type_
+            else:
+                args = tuple(to_python(arg, strict) for arg in args)
+
+            return base[args]
+    else:
         typ = _to_python(type_)
 
         # _to_python returns None if there's no equivalent
         if typ is not None:
             return typ
-
-        if not strict:
-            return type_
-
-        raise ValueError('{!r} has no python equivalent'.format(type_))
-
-    if not isinstance(type_, type):
-        raise TypeError("Expected a type, not {!r}".format(type_))
 
     if strict:
         raise ValueError('{!r} has no python equivalent'.format(type_))
@@ -96,31 +161,63 @@ def to_python(type_, strict=False):
         return type_
 
 
-def to_typing(cls, strict=False):
+def to_typing(type_, strict=False):
     """
     Given a python class as input, returns the corresponding
     ``typing`` annotation.
 
-    :param cls: The class to convert to a typing annotation
+    Examples::
+
+        >>> to_typing(list)
+        typing.List
+        >>> to_typing(typing.List[tuple])
+        typing.List[typing.Tuple]
+        >>> to_typing(typing.List['tuple'])
+        typing.List[typing.Tuple]
+
+    :param type_: The class to convert to a typing annotation
     :param strict: Whether to raise an exception if the input class has no ``typing`` equivalent
     :return: The corresponding annotation from the ``typing`` module
     """
     # process forward references
-    if isinstance(cls, _compat.ForwardRef):
-        cls = _get_forward_ref_code(cls)
+    if isinstance(type_, _compat.ForwardRef):
+        type_ = _get_forward_ref_code(type_)
 
-    if isinstance(cls, str):
+    if isinstance(type_, str):
         try:
-            return FORWARDREF_TO_TYPING[cls]
+            type_ = FORWARDREF_TO_TYPING[type_]
         except KeyError:
             pass
+
+        if hasattr(typing, type_):
+            return getattr(typing, type_)
+    elif is_qualified_generic(type_):
+        base = get_generic_base_class(type_)
+        args = get_type_args(type_)
+
+        if base is typing.Callable:
+            if args[0] is ...:
+                args = (..., to_typing(args[1], strict))
+            else:
+                args = (
+                    [to_typing(arg, strict) for arg in args[0]],
+                    to_typing(args[1], strict)
+                )
+        elif hasattr(typing, 'Literal') and base is typing.Literal:
+            return type_
+        else:
+            args = tuple(to_typing(arg, strict) for arg in args)
+
+        return base[args]
+    elif is_typing_type(type_):
+        return type_
     else:
         try:
-            return CLASS_TO_TYPING[cls]
+            return PYTHON_TO_TYPING[type_]
         except KeyError:
             pass
 
     if strict:
-        raise ValueError('{!r} has no typing equivalent'.format(cls))
+        raise ValueError('{!r} has no typing equivalent'.format(type_))
     else:
-        return cls
+        return type_

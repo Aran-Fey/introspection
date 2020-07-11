@@ -104,3 +104,27 @@ def test_get_class_dundermethod():
 def test_get_class_dundermethod_error():
     with pytest.raises(AttributeError):
         get_class_dundermethod(object, '__len__')
+
+
+def test_get_bound_dundermethod():
+    method = get_bound_dundermethod([1, 2], '__len__')
+
+    assert method() == 2
+
+
+def test_get_bound_dundermethod_handles_instance_method():
+    class MySized:
+        def __len__(self):
+            return 3
+
+    my_sized = MySized()
+    my_sized.__len__ = lambda: 0
+
+    method = get_bound_dundermethod(my_sized, '__len__')
+
+    assert method() == 3
+
+
+def test_get_bound_dundermethod_error():
+    with pytest.raises(AttributeError):
+        get_bound_dundermethod([1, 2], '__int__')

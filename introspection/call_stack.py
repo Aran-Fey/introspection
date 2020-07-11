@@ -27,6 +27,8 @@ class CallStack:
     def __init__(self, frames: Iterable[Union[CallFrame, types.FrameType]]):
         """
         Creates a new ``CallStack`` from the given frame objects.
+
+        :param frames: An iterable of frame objects, starting with the root frame
         """
         self.__frames = [CallFrame.from_frame(frame) for frame in frames]
 

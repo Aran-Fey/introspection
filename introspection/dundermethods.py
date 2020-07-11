@@ -3,13 +3,34 @@ from typing import Iterator, Iterable, Tuple, Dict, Any, Callable, Optional
 
 from .misc import static_vars
 
-__all__ = ['DUNDERMETHOD_NAMES', 'iter_class_dundermethods', 'class_implements_dundermethod', 'class_implements_any_dundermethod', 'class_implements_dundermethods', 'collect_class_dundermethods', 'get_class_dundermethod']
+__all__ = ['DUNDERMETHOD_NAMES', 'AUGMENTED_ASSIGNMENT_DUNDERMETHOD_NAMES',
+           'iter_class_dundermethods', 'class_implements_dundermethod', 'class_implements_any_dundermethod', 'class_implements_dundermethods', 'collect_class_dundermethods', 'get_class_dundermethod',
+           'get_bound_dundermethod']
 
 
 # An incomplete(!) list of dundermethods can be found on the data model page:
 # https://docs.python.org/3/reference/datamodel.html
 #: A set containing the names of all dundermethods.
 DUNDERMETHOD_NAMES = {'__abs__', '__add__', '__aenter__', '__aexit__', '__aiter__', '__and__', '__anext__', '__await__', '__bool__', '__bytes__', '__call__', '__complex__', '__contains__', '__delattr__', '__delete__', '__delitem__', '__delslice__', '__dir__', '__div__', '__divmod__', '__enter__', '__eq__', '__exit__', '__float__', '__floordiv__', '__format__', '__fspath__', '__ge__', '__get__', '__getattribute__', '__getitem__', '__getnewargs__', '__getslice__', '__gt__', '__hash__', '__iadd__', '__iand__', '__imul__', '__index__', '__init__', '__init_subclass__', '__instancecheck__', '__int__', '__invert__', '__ior__', '__isub__', '__iter__', '__ixor__', '__le__', '__len__', '__lshift__', '__lt__', '__mod__', '__mul__', '__ne__', '__neg__', '__new__', '__next__', '__or__', '__pos__', '__pow__', '__prepare__', '__radd__', '__rand__', '__rdiv__', '__rdivmod__', '__reduce__', '__reduce_ex__', '__repr__', '__reversed__', '__rfloordiv__', '__rlshift__', '__rmod__', '__rmul__', '__ror__', '__round__', '__rpow__', '__rrshift__', '__rshift__', '__rsub__', '__rtruediv__', '__rxor__', '__set__', '__setattr__', '__setitem__', '__sizeof__', '__str__', '__sub__', '__subclasscheck__', '__subclasses__', '__truediv__', '__xor__', '__rmatmul__', '__imatmul__', '__ifloordiv__', '__class_getitem__', '__irshift__', '__floor__', '__ilshift__', '__length_hint__', '__del__', '__matmul__', '__ipow__', '__getattr__', '__set_name__', '__ceil__', '__imod__', '__itruediv__', '__trunc__'}
+
+#: A set containing the names of all augmented assignment dundermethods.
+#:
+#: .. versionadded:: 1.1
+AUGMENTED_ASSIGNMENT_DUNDERMETHOD_NAMES = {
+    '__iadd__',
+    '__isub__',
+    '__imul__',
+    '__imatmul__',
+    '__itruediv__',
+    '__ifloordiv__',
+    '__imod__',
+    '__ipow__',
+    '__ilshift__',
+    '__irshift__',
+    '__iand__',
+    '__ixor__',
+    '__ior__',
+}
 
 
 def _is_implemented(name, method):
@@ -181,7 +202,7 @@ def get_class_dundermethod(cls: type,
     :param cls: A class
     :param method_name: The name of a dundermethod
     :param bound: Where to stop searching through the class's MRO
-    :return: The function object for that name
+    :return: The function object for the given ``method_name``
     :raises TypeError: If ``cls`` is not a class
     :raises AttributeError: If ``cls`` does not implement that dundermethod
     """
@@ -191,3 +212,25 @@ def get_class_dundermethod(cls: type,
 
     msg = "class {!r} does not implement {}"
     raise AttributeError(msg.format(cls, method_name))
+
+
+def get_bound_dundermethod(instance: Any,
+                           method_name: str,
+                           bound: Optional[type] = None,
+                           ) -> Optional[Callable]:
+    """
+    Retrieves a class's implementation of the given dundermethod.
+
+    .. versionadded:: 1.1
+
+    :param instance: Any object
+    :param method_name: The name of a dundermethod
+    :param bound: Where to stop searching through the class's MRO
+    :return: A bound method for the given ``method_name``
+    :raises TypeError: If ``cls`` is not a class
+    :raises AttributeError: If ``cls`` does not implement that dundermethod
+    """
+    cls = type(instance)
+    method = get_class_dundermethod(cls, method_name, bound)
+
+    return method.__get__(instance, cls)

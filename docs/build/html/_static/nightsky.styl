@@ -55,50 +55,57 @@ hover_effect()
 content_width = 40rem
 
 
-define_theme_vars(bg_color_regular, font_color_regular, accent_color)
-    increments = 10%
+light_theme()
+    bg_color_regular = #fff
+    font_color_regular = #000
+    accent_color = #a34da3
     
     --bg_color_regular: bg_color_regular
     --font_color_regular: font_color_regular
     --accent_color: accent_color
     
-    --bg_color_dark4: darken(bg_color_regular, 4*increments)
-    --bg_color_dark3: darken(bg_color_regular, 3*increments)
-    --bg_color_dark2: darken(bg_color_regular, 2*increments)
-    --bg_color_dark: darken(bg_color_regular, increments)
-    --bg_color_light: lighten(bg_color_regular, increments)
-    --bg_color_light2: lighten(bg_color_regular, 2*increments)
-        
-    --font_color_dark: darken(font_color_regular, increments)
-    --font_color_light: lighten(font_color_regular, increments)
-    --font_color_light2: lighten(font_color_regular, 2*increments)
+    increments = 10%
     
-    --code_color: mix(font_color_regular, accent_color, 75%)
-            
-    --font_color_placeholder: #aaa
-            
+    --textbox_bg: darken(bg_color_regular, 2*increments)
+    --button_bg: darken(bg_color_regular, increments)
+    
+    --placeholder_fg: #444
+    --less_important_fg: #333
+    --code_color: #572857
+    
     --info_bg: #506977
-    --info_fg: var(--font_color_light)
+    --info_fg: var(--font_color_regular)
     
-    warning_bg = #c8ba70
-    --warning_bg: warning_bg
-    --warning_fg: make_font_color_for_background(warning_bg, font_color_regular, bg_color_regular)
-            
     --border_color: var(--accent_color)
 
-    --accent_color2: darken(accent_color, 15%)
-    accent_font_color = make_font_color_for_background(accent_color, font_color_regular, bg_color_regular)
-    --accent_font_color: accent_font_color
-
-    --accent_color_disabled: saturation(accent_color, 10%)
-    --accent_font_color_disabled: darken(accent_font_color, 3*increments)
+    --accent_font_color: make_font_color_for_background(accent_color, font_color_regular, bg_color_regular)
 
 
 dark_theme()
-    define_theme_vars(#252525, #ccc, #a34da3)
+    bg_color_regular = #252525
+    font_color_regular = #ccc
+    accent_color = #a34da3
+    
+    --bg_color_regular: bg_color_regular
+    --font_color_regular: font_color_regular
+    --accent_color: accent_color
+    
+    increments = 10%
+    
+    --textbox_bg: darken(bg_color_regular, increments)
+    --button_bg: lighten(bg_color_regular, 2*increments)
+    
+    --placeholder_fg: #aaa
+    --less_important_fg: darken(font_color_regular, increments)
+    --code_color: mix(font_color_regular, accent_color, 75%)
+    
+    --info_bg: #506977
+    --info_fg: var(--font_color_regular)
+    
+    --border_color: var(--accent_color)
 
-light_theme()
-    define_theme_vars(#fff, #000, #a34da3)
+    --accent_font_color: make_font_color_for_background(accent_color, font_color_regular, bg_color_regular)
+
 
 /* ===================================
  * === END OF VAR/FUNC DEFINITIONS ===
@@ -108,19 +115,19 @@ light_theme()
 // === COLOR THEME ===
 
 body
-body.dark-theme
-    dark_theme()
-
 body.light-theme
     light_theme()
 
-@media (prefers-color-scheme: light)
+body.dark-theme
+    dark_theme()
+
+@media (prefers-color-scheme: dark)
     body
-        light_theme()
+        dark_theme()
 
 // === DESIGN ===
 
-html
+:root
     font-family: Verdana
     font-size: 1.1em
 
@@ -324,6 +331,76 @@ body
         &::after
             content: "▷"
             margin-left: 0.3em
+
+// theme switcher
+
+#theme-switcher
+    margin-top: 1.5em
+    
+#syntax-themes-container
+    margin-top: 0.5em
+
+#theme-switcher
+    theme_button_size = 1.6rem
+    
+    .themes-container
+        display: grid
+        grid-column-gap: 0.3em
+        grid-auto-flow: column
+        justify-content: start
+        
+        .theme-button
+            background: unset
+            border: 1px solid var(--border_color)
+            border-radius: 5px
+            
+            width: theme_button_size
+            height: @width
+            
+            font-size: 1rem
+            padding: 0
+            
+            // The hover_effect changes how the ::before-element's position
+            // is calculated, so to prevent it from jumping around we need
+            // to apply a filter even when the user isn't hovering over the
+            // button
+            filter: brightness(1)
+            
+            &:hover
+                hover_effect()
+
+    // display little arrows above/below the currently active themes
+    arrow_height = 5px
+    arrow_width = 8px
+    arrow_color = var(--font_color_regular)
+    arrow_y_offset = -8px
+    
+    #site-themes-container .active::before
+        content: ""
+        
+        position: absolute
+        top: arrow_y_offset
+        left: "calc(%s / 2 - %s)" % (theme_button_size arrow_width)
+        
+        width: 0
+        height: 0
+        border-left: arrow_width solid transparent
+        border-right: arrow_width solid transparent
+        border-top: arrow_height solid arrow_color
+    
+    
+    #syntax-themes-container .active::before
+        content: ""
+        
+        position: absolute
+        bottom: arrow_y_offset
+        left: "calc(%s / 2 - %s)" % (theme_button_size arrow_width)
+        
+        width: 0
+        height: 0
+        border-left: arrow_width solid transparent
+        border-right: arrow_width solid transparent
+        border-bottom: arrow_height solid arrow_color
 
 // === END OF SIDEBAR WIDGETS ===
 

@@ -4,8 +4,13 @@
 # This file is execfile()d with the current directory set to its
 # containing dir.
 
-import os
+import sphinx_utils
+
 import introspection as project_module
+
+
+DEFAULT_LIGHT_SYNTAX_THEME = 'friendly'
+DEFAULT_DARK_SYNTAX_THEME = 'monokai'
 
 
 def setup(app):
@@ -14,19 +19,30 @@ def setup(app):
     #   sphinx-build -b html -a -E docs/source docs/build/html
     #
     # to suppress build output and rebuild all files.
-
-    import sphinx_utils
-
+    
     augment = sphinx_utils.augment(app)
-    augment.relative_names()
+    augment.bugfixes()
+    augment.public_identifiers()
+    augment.theme_switcher(
+        [
+            {'id': 'light', 'icon': '☼'},
+            {'id': 'dark', 'icon': '☽'},
+        ],
+        syntax_themes=[
+            DEFAULT_LIGHT_SYNTAX_THEME,
+            DEFAULT_DARK_SYNTAX_THEME,
+            'sphinx_utils.pygments_styles.cobalt2.Cobalt2Style',
+        ],
+        default_theme='window.matchMedia("(prefers-color-scheme: dark)").matches ? "{}" : "{}"'.format(DEFAULT_DARK_SYNTAX_THEME, DEFAULT_LIGHT_SYNTAX_THEME),
+        default_syntax_theme='siteThemeId === "dark" ? "{}" : "{}"'.format(DEFAULT_DARK_SYNTAX_THEME, DEFAULT_LIGHT_SYNTAX_THEME),
+    )
     # augment.no_object_base()
     # augment.run_directive()
 
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-#
-# needs_sphinx = '1.0'
+needs_sphinx = '3.0.0'
 
 extensions = [
     'sphinx.ext.autodoc',
@@ -49,7 +65,6 @@ templates_path = ['_templates']
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
-#
 # source_suffix = ['.rst', '.md']
 source_suffix = '.rst'
 
@@ -82,41 +97,16 @@ language = 'en'
 # This patterns also effect to html_static_path and html_extra_path
 exclude_patterns = []
 
-
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
-
 
 # -- Options for HTML output ----------------------------------------------
 
 html_show_copyright = False
 html_show_sphinx = False
 
-# The theme to use for HTML and HTML Help pages.  See the documentation for
-# a list of builtin themes.
-#
+html_title = "Introspection documentation"
+html_favicon = "favicon.png"
+
 html_theme = "nightsky"
-html_theme_path = [os.path.expanduser('~')+"/Desktop/folder/coding/python/sphinx_utils/sphinx_utils/themes"]
-
-# Theme options are theme-specific and customize the look and feel of a theme
-# further.  For a list of options available for each theme, see the
-# documentation.
-#
-# html_theme_options = {}
-
-# Add any paths that contain custom static files (such as style sheets) here,
-# relative to this directory. They are copied after the builtin static files,
-# so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
-
-# Custom sidebar templates, must be a dictionary that maps document names
-# to template names.
-#
-# This is required for the alabaster theme
-# refs: http://alabaster.readthedocs.io/en/latest/installation.html#sidebars
-html_sidebars = {
-    '**': [
-        'relations.html',  # needs 'show_related': True theme option to display
-        'searchbox.html',
-    ]
-}
+html_theme_path = [sphinx_utils.HTML_THEMES_DIR]

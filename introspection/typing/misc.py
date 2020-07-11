@@ -1,6 +1,7 @@
 
 import builtins
 import collections
+import importlib
 import typing
 
 from .introspection import is_qualified_generic, get_generic_base_class, get_type_args, get_type_name, _get_forward_ref_code
@@ -26,6 +27,8 @@ def resolve_forward_refs(annotation, module=None, eval_=True, strict=True):
     :param strict: Whether to raise an exception if a forward reference can't be resolved
     :return: A new annotation with no forward references
     """
+    if isinstance(module, str):
+        module = importlib.import_module(module)
 
     if isinstance(annotation, _compat.ForwardRef):
         annotation = _get_forward_ref_code(annotation)
@@ -104,6 +107,15 @@ def annotation_to_string(annotation, implicit_typing=True):
     """
     Converts a type annotation to string. The result is
     valid python code.
+
+    Examples::
+
+        >>> annotation_to_string(int)
+        'int'
+        >>> annotation_to_string(None)
+        'None'
+        >>> annotation_to_string(typing.List[int])
+        'List[int]'
 
     :param annotation: A class or type annotation
     :param implicit_typing: Whether to omit the "typing." prefix from ``typing`` types' names

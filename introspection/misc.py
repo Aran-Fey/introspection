@@ -1,8 +1,46 @@
 
-from collections import defaultdict, deque
-from typing import Any, Iterable
+import builtins
+import copy
+import types
 
-__all__ = ['common_ancestor', 'resolve_bases', 'static_vars']
+from collections import defaultdict, deque
+from typing import TypeVar, Any, Optional, Callable, Type, Dict, Iterable
+
+__all__ = ['common_ancestor', 'create_class', 'resolve_bases', 'static_vars', 'static_copy']
+
+T = TypeVar('T')
+
+
+def create_class(name: str,
+                 bases: Iterable = (),
+                 attrs: dict = {},
+                 metaclass: Optional[Callable[..., Type[T]]] = None,
+                 **kwargs: Any
+                 ) -> Type[T]:
+    """
+    Creates a new class. This is similar to :func:`types.new_class`,
+    except it calls :func:`resolve_bases` even in python versions
+    <= 3.7. (And it has a different interface.)
+
+    :param name: The name of the new class
+    :param bases: An iterable of bases classes
+    :param attrs: A dict of class attributes
+    :param metaclass: The metaclass, or ``None``
+    :param kwargs: Keyword arguments to pass to the metaclass
+    """
+    if metaclass is not None:
+        kwargs.setdefault('metaclass', metaclass)
+
+    resolved_bases = resolve_bases(bases)
+    meta, ns, kwds = types.prepare_class(name, resolved_bases, kwargs)
+
+    ns.update(attrs)
+
+    # Note: In types.new_class this is "is not" rather than "!="
+    if resolved_bases != bases:
+        ns['__orig_bases__'] = bases
+
+    return meta(name, resolved_bases, ns, **kwds)
 
 
 def resolve_bases(bases: Iterable) -> tuple:
@@ -40,6 +78,57 @@ def static_vars(obj: Any):
         return object.__getattribute__(obj, '__dict__')
     except AttributeError:
         raise TypeError("{!r} object has no __dict__".format(obj)) from None
+
+
+def static_copy(obj: Any):
+    """
+    Creates a copy of the given object without invoking any of its methods -
+    ``__new__``, ``__init__``, ``__copy__`` or anything else.
+
+    How it works:
+
+    1. A new instance of the same class is created by calling
+       ``object.__new__(type(obj))``.
+    2. If ``obj`` has a ``__dict__``, the new instance's
+       ``__dict__`` is updated with its contents.
+    3. All values stored in ``__slots__`` (except for ``__dict__``
+       and ``__weakref__``) are assigned to the new object.
+
+    An exception are instances of builtin classes - these are copied
+    by calling :func:`copy.copy`.
+
+    .. versionadded: 1.1
+    """
+    from .classes import iter_slots
+
+    cls = type(obj)
+
+    # We'll check the __module__ attribute for speed and then also
+    # make sure the class isn't lying about its module
+    if cls.__module__ == 'builtins' and cls in vars(builtins).values():
+        return copy.copy(obj)
+
+    new_obj = object.__new__(cls)
+
+    try:
+        old_dict = static_vars(obj)
+    except TypeError:
+        pass
+    else:
+        static_vars(new_obj).update(old_dict)
+
+    for slot_name, slot in iter_slots(cls):
+        if slot_name in {'__dict__', '__weakref__'}:
+            continue
+
+        try:
+            value = slot.__get__(obj, cls)
+        except AttributeError:
+            pass
+        else:
+            slot.__set__(new_obj, value)
+
+    return new_obj
 
 
 def common_ancestor(classes: Iterable[type]):

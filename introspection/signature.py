@@ -10,7 +10,7 @@ from numbers import Number
 from typing import Union, List, Dict, Callable, Any, Iterator, Iterable, Mapping, Tuple, Optional, TypeVar, ByteString
 
 from .parameter import Parameter
-from ._utils import _annotation_to_string
+from .typing import annotation_to_string
 
 __all__ = ['Signature']
 
@@ -407,7 +407,7 @@ class Signature(inspect.Signature):
 
         raise ValueError("Can't determine signature of {}".format(callable_))
 
-    def without_parameters(self, *params):
+    def without_parameters(self, *params) -> 'Signature':
         """
         Returns a copy of this signature with some parameters removed.
 
@@ -455,11 +455,11 @@ class Signature(inspect.Signature):
     @property
     def num_required_arguments(self):
         """
-        Returns the number of required arguments, i.e. arguments with a default value.
+        Returns the number of required arguments, i.e. arguments with no default value.
         """
         return sum(not p.is_optional for p in self.parameters.values())
 
-    def to_string(self):
+    def to_string(self, implicit_typing=False) -> str:
         """
         Returns a string representation of this signature.
 
@@ -469,6 +469,9 @@ class Signature(inspect.Signature):
             ...    Parameter('nums', Parameter.VAR_POSITIONAL, annotation=int)
             ... ], return_annotation=int).to_string()
             '(*nums: int) -> int'
+        
+        :param implicit_typing: If ``True``, the "typing." prefix will be omitted from types defined in the ``typing`` module
+        :return: A string representation of this signature, like you would see in python code
         """
         # Because parameters with a default of Parameter.missing have a special bracket
         # notation (like "[a[, b]]" for positional-only parameters and "[a][, b]" otherwise),
@@ -544,10 +547,13 @@ class Signature(inspect.Signature):
                 if not is_first:
                     chunks.append(', ')
 
-                chunk = param_spec._to_string_no_brackets()
+                chunk = param_spec._to_string_no_brackets(implicit_typing)
             # otherwise, it's a group of bracket parameters
             else:
-                chunk = [param._to_string_no_brackets() for param in param_spec]
+                chunk = [
+                    param._to_string_no_brackets(implicit_typing)
+                    for param in param_spec
+                ]
                 chunk = '[, '.join(chunk) + ']'*(len(chunk)-1)
 
                 if is_first:
@@ -578,7 +584,7 @@ class Signature(inspect.Signature):
         # Parameter list complete
 
         if self.has_return_annotation:
-            ann = _annotation_to_string(self.return_annotation)
+            ann = annotation_to_string(self.return_annotation, implicit_typing)
             ann = ' -> {}'.format(ann)
         else:
             ann = ''
