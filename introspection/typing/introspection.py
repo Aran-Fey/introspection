@@ -1,10 +1,19 @@
 
+import sys
 import typing
 
 from . import _compat
 
-__all__ = ['is_type', 'is_typing_type', 'is_generic', 'is_variadic_generic', 'is_generic_base_class', 'is_qualified_generic', 'is_fully_qualified_generic', 'get_generic_base_class', 'get_type_args', 'get_type_params', 'get_type_name']
+__all__ = ['is_type', 'is_typing_type', 'is_generic', 'is_variadic_generic',
+           'is_generic_base_class', 'is_qualified_generic', 'is_fully_qualified_generic',
+           'is_parameterized_generic', 'is_fully_parameterized_generic', 'get_generic_base_class',
+           'get_type_args', 'get_type_arguments', 'get_type_params', 'get_type_parameters',
+           'get_type_name']
 
+
+# NOTE: The following function implementations work in python 3.5.
+# Depending on the python version being used, some of these functions
+# will be overridden later.
 
 VARIADIC_GENERICS = {
     typing.Union,
@@ -18,16 +27,94 @@ if hasattr(typing, 'Literal'):
 def _is_variadic_generic(cls):
     return cls in VARIADIC_GENERICS
 
+def _is_generic(cls):
+    try:
+        params = cls.__parameters__
+    except AttributeError:
+        pass
+    else:
+        if params:
+            return True
 
-if hasattr(typing, '_VariadicGenericAlias'):  # python 3.7+
-    SPECIAL_GENERICS = {typing.Optional, typing.ClassVar}
+    if isinstance(cls, (typing.CallableMeta, typing.TupleMeta, typing._Union)):
+        return cls.__args__ is None
+
+    return cls in {typing.Optional, typing.ClassVar}
+
+def _is_generic_base_class(cls):
+    if isinstance(cls, (typing.CallableMeta, typing._Union)):
+        return cls.__args__ is None
+
+    if isinstance(cls, typing.GenericMeta):
+        return cls.__args__ is None and bool(cls.__parameters__)
+
+    if type(cls) is typing._ClassVar:
+        return cls.__type__ is None
+
+    return cls in {typing.Union, typing.Optional, typing.ClassVar}
+
+def _is_parameterized_generic(cls):
+    if isinstance(cls, (typing.GenericMeta, typing._Union)):
+        return cls.__args__ is not None
+
+    if type(cls) is typing._ClassVar:
+        return cls.__type__ is not None
+
+    return False
+
+def _is_fully_parameterized_generic(cls):
+    if isinstance(cls, (typing.GenericMeta, typing._Union)):
+        return cls.__args__ is not None and not cls.__parameters__
+
+    if type(cls) is typing._ClassVar:
+        return cls.__type__ is not None
+
+    return False
+
+def _is_typing_type(cls):
+    if not isinstance(cls, (typing.TypingMeta, typing._TypingBase)):
+        return False
+
+    if _is_parameterized_generic(cls):
+        return True
+
+    return cls.__module__ == 'typing'
+
+def _get_generic_base_class(cls):
+    return cls.__origin__
+
+def _to_python(cls):
+    return getattr(cls, '__extra__', None)
+
+def _get_name(cls):
+    try:
+        return cls.__name__
+    except AttributeError:
+        pass
+
+    typing_, _, name = repr(cls).partition('.')
+    return name
+
+def _get_type_parameters(cls):
+    if cls not in {typing.Generic, _compat.Protocol}:
+        try:
+            return cls.__parameters__
+        except AttributeError:
+            pass
+
+    msg = "{!r} is not a generic type and thus has no type parameters"
+    raise TypeError(msg.format(cls))
+
+
+if sys.version_info >= (3, 7):
+    SPECIAL_GENERICS = {typing.Optional, typing.Union, typing.ClassVar, typing.Callable}
 
     if hasattr(typing, 'Literal'):  # python 3.8+
         SPECIAL_GENERICS.add(typing.Literal)
 
     if hasattr(typing, 'Final'):  # python 3.8+
         SPECIAL_GENERICS.add(typing.Final)
-
+    
     def _is_generic(cls):
         if isinstance(cls, typing._VariadicGenericAlias):
             return True
@@ -38,9 +125,16 @@ if hasattr(typing, '_VariadicGenericAlias'):  # python 3.7+
             pass
 
         return cls in SPECIAL_GENERICS or cls in VARIADIC_GENERICS
+    
+    def _is_parameterized_generic(cls):
+        if isinstance(cls, typing._GenericAlias):
+            return not cls._special
+
+        return False
 
     def _is_generic_base_class(cls):
         if isinstance(cls, typing._GenericAlias):
+            # The _special attribute was removed in 3.9
             if not cls._special:
                 return False
         elif not isinstance(cls, (type, typing._SpecialForm)):
@@ -48,13 +142,7 @@ if hasattr(typing, '_VariadicGenericAlias'):  # python 3.7+
 
         return _is_generic(cls)
 
-    def _is_qualified_generic(cls):
-        if isinstance(cls, typing._GenericAlias):
-            return not cls._special
-
-        return False
-
-    def _is_fully_qualified_generic(cls):
+    def _is_fully_parameterized_generic(cls):
         if isinstance(cls, typing._VariadicGenericAlias):
             return False
 
@@ -88,77 +176,56 @@ if hasattr(typing, '_VariadicGenericAlias'):  # python 3.7+
             return cls.__name__
         except AttributeError:
             return cls._name
-else:  # python <3.7
+
+
+if sys.version_info >= (3, 9):
     def _is_generic(cls):
-        try:
-            params = cls.__parameters__
-        except AttributeError:
-            pass
-        else:
-            if params:
-                return True
-
-        if isinstance(cls, (typing.CallableMeta, typing.TupleMeta, typing._Union)):
-            return cls.__args__ is None
-
-        return cls in {typing.Optional, typing.ClassVar}
-
-    def _is_generic_base_class(cls):
-        if isinstance(cls, (typing.CallableMeta, typing._Union)):
-            return cls.__args__ is None
-
-        if isinstance(cls, typing.GenericMeta):
-            return cls.__args__ is None and bool(cls.__parameters__)
-
-        if type(cls) is typing._ClassVar:
-            return cls.__type__ is None
-
-        return cls in {typing.Union, typing.Optional, typing.ClassVar}
-
-    def _is_qualified_generic(cls):
-        if isinstance(cls, (typing.GenericMeta, typing._Union)):
-            return cls.__args__ is not None
-
-        if type(cls) is typing._ClassVar:
-            return cls.__type__ is not None
-
-        return False
-
-    def _is_fully_qualified_generic(cls):
-        if isinstance(cls, (typing.GenericMeta, typing._Union)):
-            return cls.__args__ is not None and not cls.__parameters__
-
-        if type(cls) is typing._ClassVar:
-            return cls.__type__ is not None
-
-        return False
-
-    def _is_typing_type(cls):
-        if not isinstance(cls, (typing.TypingMeta, typing._TypingBase)):
-            return False
-
-        if _is_qualified_generic(cls):
+        if isinstance(cls, typing._GenericAlias):
+            return bool(cls.__parameters__)
+        
+        if isinstance(cls, typing._SpecialGenericAlias):
+            return cls._nparams != 0
+        
+        if cls in SPECIAL_GENERICS:
             return True
 
-        return cls.__module__ == 'typing'
+        if not isinstance(cls, type):
+            return False
+        
+        return issubclass(cls, typing.Generic)
+    
+    def _is_generic_base_class(cls):
+        if isinstance(cls, typing._SpecialGenericAlias):
+            return cls._nparams != 0
+        
+        if cls in SPECIAL_GENERICS:
+            return True
 
-    def _get_generic_base_class(cls):
-        return cls.__origin__
+        if not isinstance(cls, type):
+            return False
+        
+        return issubclass(cls, typing.Generic)
+        
+    def _is_parameterized_generic(cls):
+        return isinstance(cls, typing._GenericAlias)
+    
+    def _is_fully_parameterized_generic(cls):
+        if cls in SPECIAL_GENERICS:
+            return False
 
-    def _to_python(cls):
-        return getattr(cls, '__extra__', None)
+        if not _is_parameterized_generic(cls):
+            return False
 
-    def _get_name(cls):
-        try:
-            return cls.__name__
-        except AttributeError:
-            pass
+        return not cls.__parameters__
 
-        typing_, _, name = repr(cls).partition('.')
-        return name
+    def _get_type_parameters(cls):
+        raise NotImplementedError
+
+        msg = "{!r} is not a generic type and thus has no type parameters"
+        raise TypeError(msg.format(cls))
 
 
-if hasattr(typing, 'get_args'):  # python 3.8
+if hasattr(typing, 'get_args'):  # python 3.8+
     def _get_type_args(cls):
         return typing.get_args(cls)
 else:
@@ -199,21 +266,8 @@ else:
 
         return subtypes
 
-
-def _get_type_params(cls):
-    if cls not in {typing.Generic, _compat.Protocol}:
-        try:
-            return cls.__parameters__
-        except AttributeError:
-            pass
-
-    msg = "{!r} is not a generic type and thus has no type parameters"
-    raise TypeError(msg.format(cls))
-
-
 def _get_forward_ref_code(ref):
     return ref.__forward_arg__
-
 
 def _is_regular_type(type_):
     if isinstance(type_, type):
@@ -260,7 +314,7 @@ def is_type(type_: typing.Any) -> bool:
 def is_typing_type(type_, raising=True) -> bool:
     """
     Returns whether ``type_`` is a type added by :pep:`0484`.
-    This includes qualified generics and all types defined in
+    This includes parameterized generics and all types defined in
     the :mod:`typing` module (but not custom subclasses thereof).
 
     If ``type_`` is not a type as defined by :func:`is_type`
@@ -364,6 +418,15 @@ def is_generic_base_class(type_, raising=True):
 
 def is_qualified_generic(type_, raising=True):
     """
+    .. deprecated:: 1.2
+       Use :func:`is_parameterized_generic` instead.
+    """
+    warnings.warn("'is_qualified_generic' is deprecated; use 'is_parameterized_generic' instead")
+    return is_parameterized_generic(type_, raising)
+
+
+def is_parameterized_generic(type_, raising=True):
+    """
     Returns whether ``type_`` is a generic type with some
     type arguments supplied, for example ``List[int]``
     or ``List[T]`` (but not ``List``).
@@ -384,10 +447,19 @@ def is_qualified_generic(type_, raising=True):
         else:
             return False
 
-    return _is_qualified_generic(type_)
+    return _is_parameterized_generic(type_)
 
 
 def is_fully_qualified_generic(type_, raising=True):
+    """
+    .. deprecated:: 1.2
+       Use :func:`is_fully_parameterized_generic` instead.
+    """
+    warnings.warn("'is_fully_qualified_generic' is deprecated; use 'is_fully_parameterized_generic' instead")
+    return is_fully_parameterized_generic(type_, raising)
+
+
+def is_fully_parameterized_generic(type_, raising=True):
     """
     Returns whether ``type_`` is a generic type with all
     type arguments supplied, for example ``List[int]``
@@ -409,12 +481,12 @@ def is_fully_qualified_generic(type_, raising=True):
         else:
             return False
 
-    return _is_fully_qualified_generic(type_)
+    return _is_fully_parameterized_generic(type_)
 
 
 def get_generic_base_class(type_):
     """
-    Given a qualified generic type as input, returns the
+    Given a parameterized generic type as input, returns the
     corresponding generic base class.
 
     Example::
@@ -422,11 +494,11 @@ def get_generic_base_class(type_):
         >>> get_generic_base_class(typing.List[int])
         typing.List
 
-    :param type_: A qualified generic type
+    :param type_: A parameterized generic type
     :return: The input type without its type arguments
     """
-    if not is_qualified_generic(type_, raising=False):
-        msg = '{} is not a qualified typing.Generic and thus has no base'
+    if not is_parameterized_generic(type_, raising=False):
+        msg = '{} is not a parameterized typing.Generic and thus has no base'
         raise TypeError(msg.format(type_))
 
     base = _get_generic_base_class(type_)
@@ -443,21 +515,30 @@ def get_generic_base_class(type_):
 
 def get_type_args(type_):
     """
-    Given a qualified generic type as input, returns a
+    .. deprecated:: 1.2
+       Use :func:`get_type_arguments` instead.
+    """
+    warnings.warn("'get_type_args' is deprecated; use 'get_type_arguments' instead")
+    return get_type_arguments(type_)
+
+
+def get_type_arguments(type_):
+    """
+    Given a parameterized generic type as input, returns a
     tuple of its type arguments.
 
     Example::
 
-        >>> get_type_args(typing.List[int])
+        >>> get_type_arguments(typing.List[int])
         (<class 'int'>,)
-        >>> get_type_args(typing.Callable[[str], None])
+        >>> get_type_arguments(typing.Callable[[str], None])
         ([<class 'str'>], None)
 
-    :param type_: A qualified generic type
+    :param type_: A parameterized generic type
     :return: The input type's type arguments
     """
-    if not is_qualified_generic(type_, raising=False):
-        raise TypeError('{} is not a qualified typing.Generic and thus has no type arguments'.format(type_))
+    if not is_parameterized_generic(type_, raising=False):
+        raise TypeError('{} is not a parameterized typing.Generic and thus has no type arguments'.format(type_))
 
     args = _get_type_args(type_)
 
@@ -491,45 +572,54 @@ _SPECIAL_TYPE_PARAMS = {
 
 def get_type_params(type_):
     """
+    .. deprecated:: 1.2
+       Use :func:`get_type_parameters` instead.
+    """
+    warnings.warn("'get_type_params' is deprecated; use 'get_type_parameters' instead")
+    return get_type_parameters(type_)
+
+
+def get_type_parameters(type_):
+    """
     Returns the TypeVars of a generic type.
 
     If ``type_`` is not a generic type, ``TypeError`` is raised.
-    If ``type_`` is a fully qualified generic class (like
+    If ``type_`` is a fully parameterized generic class (like
     ``ByteString``), an empty tuple is returned.
 
     Examples::
 
-        >>> get_type_params(List)
+        >>> get_type_parameters(List)
         (~T,)
-        >>> get_type_params(Generator)
+        >>> get_type_parameters(Generator)
         (+T_co, -T_contra, +V_co)
-        >>> get_type_params(List[Tuple[T, int, T]])
+        >>> get_type_parameters(List[Tuple[T, int, T]])
         (~T,)
-        >>> get_type_params(ByteString)
+        >>> get_type_parameters(ByteString)
         ()
 
     In most cases, the returned TypeVars correspond directly
     to the type parameters the type accepts. However, some
     special cases exist. Firstly, there are generics which
     accept any number of type arguments, like ``Tuple``.
-    Calling ``get_type_params`` on these will only return
+    Calling ``get_type_parameters`` on these will only return
     a single TypeVar::
 
-        >>> get_type_params(Union)
+        >>> get_type_parameters(Union)
         (+T_co,)
-        >>> get_type_params(Tuple)
+        >>> get_type_parameters(Tuple)
         (+T_co,)
 
     Secondly, there are special generic types that the
     ``typing`` module internally doesn't implement with
-    TypeVars. Despite this, ``get_type_params`` still
+    TypeVars. Despite this, ``get_type_parameters`` still
     supports them::
 
-        >>> get_type_params(Optional)
+        >>> get_type_parameters(Optional)
         (+T_co,)
-        >>> get_type_params(ClassVar)
+        >>> get_type_parameters(ClassVar)
         (+T_co,)
-        >>> get_type_params(Callable)
+        >>> get_type_parameters(Callable)
         (-A_contra, +R_co)
 
     :raises TypeError: If ``type_`` is not a generic type and ``raising`` is ``True``
@@ -543,7 +633,7 @@ def get_type_params(type_):
     except KeyError:
         pass
 
-    return _get_type_params(type_)
+    return _get_type_parameters(type_)
 
 
 def get_type_name(type_):
@@ -559,14 +649,14 @@ def get_type_name(type_):
 
     :param type_: The type whose name to retrieve
     :return: The type's name
-    :raises TypeError: If ``type_`` isn't a type or is a qualified generic type
+    :raises TypeError: If ``type_`` isn't a type or is a parameterized generic type
     """
     if not is_type(type_):
         msg = "Expected a class or type, not {!r}"
         raise TypeError(msg.format(type_))
 
-    if is_qualified_generic(type_, raising=False):
-        msg = "get_type_name argument must not be a qualified generic type (argument is {!r})"
+    if is_parameterized_generic(type_, raising=False):
+        msg = "get_type_name argument must not be a parameterized generic type (argument is {!r})"
         raise TypeError(msg.format(type_))
 
     if type_ is None:
