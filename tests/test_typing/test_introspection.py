@@ -503,8 +503,8 @@ if hasattr(typing, 'Protocol'):
 
 if hasattr(typing, 'ClassVar'):
     @pytest.mark.parametrize('type_, expected', [
-        # (typing.ClassVar, False),
-        # (typing.ClassVar[str], True),
+        (typing.ClassVar, False),
+        (typing.ClassVar[str], True),
         (typing.ClassVar[E], sys.version_info < (3, 7)),
     ])
     def test_classvar_is_fully_qualified_generic(type_, expected):
