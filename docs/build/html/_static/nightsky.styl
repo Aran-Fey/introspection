@@ -76,6 +76,10 @@ light_theme()
     --info_bg: #506977
     --info_fg: var(--font_color_regular)
     
+    --feature_added_color: green
+    --feature_changed_color: orange
+    --feature_deprecated_color: red
+    
     --border_color: var(--accent_color)
 
     --accent_font_color: make_font_color_for_background(accent_color, font_color_regular, bg_color_regular)
@@ -105,6 +109,10 @@ dark_theme()
     
     --info_bg: #506977
     --info_fg: var(--font_color_regular)
+    
+    --feature_added_color: #00ac00
+    --feature_changed_color: orange
+    --feature_deprecated_color: red
     
     --border_color: var(--accent_color)
 
@@ -468,6 +476,23 @@ admonition(color)
     
     &.note
         admonition(#62629b)
+
+
+div.versionadded
+    span.added
+        color: var(--feature_added_color)
+
+div.versionchanged
+    span.changed
+        color: var(--feature_changed_color)
+
+div.deprecated
+    span.deprecated
+        color: var(--feature_deprecated_color)
+
+div.section > div.deprecated
+    border: 1px solid var(--feature_deprecated_color)
+    padding: 1em
 
 
 // rubrics, usually used for footnotes

@@ -13,7 +13,6 @@ class Parameter(inspect.Parameter):
     Instances of this class are immutable.
 
     This class adds a new special value for the ``default`` attribute: :attr:`Parameter.missing`.
-    This value indicates that the parameter is optional, but has no known default value.
 
     :ivar name: The parameter's name
     :type name: str
@@ -26,6 +25,19 @@ class Parameter(inspect.Parameter):
     #: A special class-level marker that can be used to specify
     #: that the parameter is optional, but doesn't have a (known)
     #: default value.
+    #: 
+    #: This is commonly used by signatures for builtin functions.
+    #: For example, the signature of the :class:`range` function
+    #: can be represented as
+    #:
+    #: ::
+    #:
+    #:     >>> Signature([
+    #:     ...     Parameter('start', Parameter.POSITIONAL_ONLY),
+    #:     ...     Parameter('stop', Parameter.POSITIONAL_ONLY, default=Parameter.missing),
+    #:     ...     Parameter('step', Parameter.POSITIONAL_ONLY, default=Parameter.missing),
+    #:     ... ])
+    #:     <Signature (start[, stop[, step]], /)>
     missing = type('_missing', (), {})
 
     def __init__(self,
@@ -38,7 +50,7 @@ class Parameter(inspect.Parameter):
         :param name: The parameter's name
         :type name: str
         :param kind: The parameter's kind. See :attr:`inspect.Parameter.kind` for details.
-        :param default: The parameter's default value or :attr:`inspect.Parameter.empty`
+        :param default: The parameter's default value, or one of the special values :attr:`inspect.Parameter.empty` and :attr:`Parameter.missing`
         :param annotation: The parameter's type annotation
         """
         super().__init__(name, kind, default=default, annotation=annotation)
@@ -78,9 +90,10 @@ class Parameter(inspect.Parameter):
     @property
     def is_optional(self) -> bool:
         """
-        Returns a boolean indicating whether this parameter requires an argument.
+        Returns a boolean indicating whether this parameter can be omitted or
+        requires an argument.
 
-        Returns ``False`` if the parameter has a default value or is a vararg.
+        Returns ``True`` if the parameter has a default value or is a vararg.
         """
 
         return (

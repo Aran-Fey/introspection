@@ -14,6 +14,9 @@ body.light-theme {
   --code_color: #572857;
   --info_bg: #506977;
   --info_fg: var(--font_color_regular);
+  --feature_added_color: #008000;
+  --feature_changed_color: #ffa500;
+  --feature_deprecated_color: #f00;
   --border_color: var(--accent_color);
   --accent_font_color: #fff;
   --header_highlight_bg1: #cfa9da;
@@ -31,6 +34,9 @@ body.dark-theme {
   --code_color: #c1acc1;
   --info_bg: #506977;
   --info_fg: var(--font_color_regular);
+  --feature_added_color: #00ac00;
+  --feature_changed_color: #ffa500;
+  --feature_deprecated_color: #f00;
   --border_color: var(--accent_color);
   --accent_font_color: #fff;
   --header_highlight_bg1: #342a37;
@@ -49,6 +55,9 @@ body.dark-theme {
     --code_color: #c1acc1;
     --info_bg: #506977;
     --info_fg: var(--font_color_regular);
+    --feature_added_color: #00ac00;
+    --feature_changed_color: #ffa500;
+    --feature_deprecated_color: #f00;
     --border_color: var(--accent_color);
     --accent_font_color: #fff;
     --header_highlight_bg1: #342a37;
@@ -317,6 +326,19 @@ blockquote {
 .admonition.note {
   border-color: #62629b;
   background: rgba(98,98,155,0.2);
+}
+div.versionadded span.added {
+  color: var(--feature_added_color);
+}
+div.versionchanged span.changed {
+  color: var(--feature_changed_color);
+}
+div.deprecated span.deprecated {
+  color: var(--feature_deprecated_color);
+}
+div.section > div.deprecated {
+  border: 1px solid var(--feature_deprecated_color);
+  padding: 1em;
 }
 .rubric {
   font-size: 1.3em;
