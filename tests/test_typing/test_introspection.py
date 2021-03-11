@@ -5,7 +5,7 @@ import sys
 import typing
 
 from introspection.typing import *
-from introspection.typing._compat import ForwardRef
+from introspection.typing._compat import ForwardRef, Protocol
 
 
 T_co = typing.TypeVar('T_co', covariant=True)
@@ -437,6 +437,7 @@ def test_get_type_parameters(type_, expected):
     'List',
     typing.Any,
     typing.Generic,
+    Protocol,
 ])
 def test_get_type_parameters_error(type_):
     with pytest.raises(TypeError):

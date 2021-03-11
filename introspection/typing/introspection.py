@@ -149,9 +149,6 @@ else:
     PARAMETERIZED_GENERIC_META = typing.GenericMeta
 
 def _get_type_parameters(type_):
-    if isinstance(type_, PARAMETERIZED_GENERIC_META):
-        return type_.__parameters__
-    
     if safe_is_subclass(type_, typing.Generic):
         # Classes that inherit from Generic directly (like
         # ``class Protocol(Generic):``) and Generic itself don't
@@ -159,7 +156,15 @@ def _get_type_parameters(type_):
         # parameters do.
         if not hasattr(type_, '__orig_bases__'):
             return None
-
+    
+        return type_.__parameters__
+    
+    if isinstance(type_, PARAMETERIZED_GENERIC_META):
+        if (sys.version_info < (3, 7)
+            and not type_._gorg is typing.Callable
+            and not type_.__orig_bases__):
+                return None
+        
         return type_.__parameters__
     
     return None
