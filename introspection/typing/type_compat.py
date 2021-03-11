@@ -121,9 +121,9 @@ def to_python(type_, strict=False):
     if not is_typing_type(type_, raising=False):
         raise TypeError("Expected a type, not {!r}".format(type_))
 
-    if is_qualified_generic(type_):
+    if is_parameterized_generic(type_):
         base = get_generic_base_class(type_)
-        args = get_type_args(type_)
+        args = get_type_arguments(type_)
 
         if (not _is_variadic_generic(base)
                 and all(arg is typing.Any for arg in args)):
@@ -191,9 +191,9 @@ def to_typing(type_, strict=False):
 
         if hasattr(typing, type_):
             return getattr(typing, type_)
-    elif is_qualified_generic(type_):
+    elif is_parameterized_generic(type_):
         base = get_generic_base_class(type_)
-        args = get_type_args(type_)
+        args = get_type_arguments(type_)
 
         if base is typing.Callable:
             if args[0] is ...:

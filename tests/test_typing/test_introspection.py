@@ -5,6 +5,7 @@ import sys
 import typing
 
 from introspection.typing import *
+from introspection.typing._compat import ForwardRef
 
 
 T_co = typing.TypeVar('T_co', covariant=True)
@@ -13,6 +14,35 @@ E = typing.TypeVar('E', bound=Exception)
 
 class MyGeneric(typing.Generic[E]):
     pass
+
+
+@pytest.mark.parametrize('type_, expected', [
+    (int, False),
+    (list, False),
+    (None, False),
+    (typing.List, False),
+    ('Foo', True),
+    (ForwardRef('Foo'), True),
+])
+def test_is_forwardref(type_, expected):
+    assert is_forwardref(type_) == expected
+
+
+@pytest.mark.parametrize('obj', [
+    3,
+    ...,
+])
+def test_is_forwardref_error(obj):
+    with pytest.raises(TypeError):
+        is_forwardref(obj)
+
+
+@pytest.mark.parametrize('obj', [
+    3,
+    ...,
+])
+def test_is_forwardref_non_raising(obj):
+    assert not is_forwardref(obj, raising=False)
 
 
 @pytest.mark.parametrize('type_, expected', [
@@ -52,9 +82,19 @@ def test_is_type(type_, expected):
 
 
 @pytest.mark.parametrize('type_, expected', [
+    ('Foo', False),
+    (ForwardRef('Foo'), False),
+])
+def test_is_type_no_forwardref(type_, expected):
+    assert is_type(type_, allow_forwardref=False) == expected
+
+
+@pytest.mark.parametrize('type_, expected', [
     (int, False),
     (list, False),
     (None, False),
+    ('List', False),
+    (ForwardRef('List'), False),
     (T_co, True),
     (E, True),
     (typing.Any, True),
@@ -104,6 +144,7 @@ def test_is_typing_type_non_raising(type_):
     (int, False),
     (list, False),
     (None, False),
+    ('List', False),
     (typing.Any, False),
     (typing.List, True),
     (typing.Union, True),
@@ -154,6 +195,7 @@ def test_is_generic_non_raising(type_):
     (int, False),
     (list, False),
     (None, False),
+    ('List', False),
     (typing.Any, False),
     (typing.List, False),
     (typing.Callable, False),
@@ -200,6 +242,7 @@ def test_is_variadic_generic_non_raising(type_):
     (int, False),
     (list, False),
     (None, False),
+    ('List', False),
     (typing.Any, False),
     (typing.List, True),
     (typing.Union, True),
@@ -232,6 +275,7 @@ def test_is_generic_base_class_error(type_):
     (int, False),
     (list, False),
     (None, False),
+    ('List', False),
     (typing.Any, False),
     (typing.List, False),
     (typing.Union, False),
@@ -249,23 +293,24 @@ def test_is_generic_base_class_error(type_):
     (typing.List[E], True),
     (typing.List[typing.Tuple[E]], True),
 ])
-def test_is_qualified_generic(type_, expected):
-    assert is_qualified_generic(type_) == expected
+def test_is_parameterized_generic(type_, expected):
+    assert is_parameterized_generic(type_) == expected
 
 
 @pytest.mark.parametrize('type_', [
     3,
     ...,
 ])
-def test_is_qualified_generic_error(type_):
+def test_is_parameterized_generic_error(type_):
     with pytest.raises(TypeError):
-        is_qualified_generic(type_)
+        is_parameterized_generic(type_)
 
 
 @pytest.mark.parametrize(['type_', 'expected'], [
     (int, False),
     (list, False),
     (None, False),
+    ('List', False),
     (typing.Any, False),
     (typing.List, False),
     (typing.Union, False),
@@ -281,25 +326,25 @@ def test_is_qualified_generic_error(type_):
     (typing.List[E], False),
     (typing.List[typing.List[E]], False),
 ])
-def test_is_fully_qualified_generic(type_, expected):
-    assert is_fully_qualified_generic(type_) == expected
+def test_is_fully_parameterized_generic(type_, expected):
+    assert is_fully_parameterized_generic(type_) == expected
 
 
 @pytest.mark.parametrize('type_', [
     3,
     ...,
 ])
-def test_is_fully_qualified_generic_error(type_):
+def test_is_fully_parameterized_generic_error(type_):
     with pytest.raises(TypeError):
-        is_fully_qualified_generic(type_)
+        is_fully_parameterized_generic(type_)
 
 
 @pytest.mark.parametrize('type_', [
     3,
     ...,
 ])
-def test_is_fully_qualified_generic_non_raising(type_):
-    assert not is_fully_qualified_generic(type_, raising=False)
+def test_is_fully_parameterized_generic_non_raising(type_):
+    assert not is_fully_parameterized_generic(type_, raising=False)
 
 
 @pytest.mark.parametrize('type_, expected', [
@@ -317,6 +362,7 @@ def test_get_generic_base_class(type_, expected):
     3,
     None,
     ...,
+    'List',
     typing.List,
     typing.Tuple,
     typing.Optional,
@@ -344,13 +390,14 @@ def test_get_generic_base_class_error(type_):
     (typing.Tuple[typing.List[E]][str], (typing.List[str],)),
     (typing.Tuple[typing.List[typing.Type[E]]][str], (typing.List[typing.Type[str]],)),
 ])
-def test_get_type_args(type_, expected):
-    assert get_type_args(type_) == expected
+def test_get_type_arguments(type_, expected):
+    assert get_type_arguments(type_) == expected
 
 
 @pytest.mark.parametrize('type_', [
     3,
     None,
+    'List',
     typing.List,
     typing.Tuple,
     typing.Optional,
@@ -358,9 +405,9 @@ def test_get_type_args(type_, expected):
     typing.Callable,
     typing.Type,
 ])
-def test_get_type_args_error(type_):
+def test_get_type_arguments_error(type_):
     with pytest.raises(TypeError):
-        get_type_args(type_)
+        get_type_arguments(type_)
 
 
 @pytest.mark.parametrize('type_, expected', [
@@ -377,21 +424,23 @@ def test_get_type_args_error(type_):
     (typing.Tuple[E, int, T_co], '(~E, +T_co)'),
     (typing.Callable[[E, int], E][T_co], '(+T_co,)'),
     (typing.Tuple[typing.List[T_co]], '(+T_co,)'),
+    (MyGeneric, '(~E,)'),
 ])
-def test_get_type_params(type_, expected):
-    params = get_type_params(type_)
+def test_get_type_parameters(type_, expected):
+    params = get_type_parameters(type_)
     assert str(params) == expected
 
 
 @pytest.mark.parametrize('type_', [
     3,
     None,
+    'List',
     typing.Any,
     typing.Generic,
 ])
-def test_get_type_params_error(type_):
+def test_get_type_parameters_error(type_):
     with pytest.raises(TypeError):
-        get_type_params(type_)
+        get_type_parameters(type_)
 
 
 @pytest.mark.parametrize('type_, expected', [
@@ -416,6 +465,7 @@ def test_get_type_name(type_, expected):
 
 @pytest.mark.parametrize('type_', [
     3,
+    'List',
     typing.List[int],
     typing.Tuple[int, str],
     typing.Optional[str],
@@ -438,8 +488,8 @@ if hasattr(typing, 'Literal'):
         (typing.Literal, False),
         (typing.Literal[1, 2], True),
     ])
-    def test_literal_is_fully_qualified_generic(type_, expected):
-        assert is_fully_qualified_generic(type_) == expected
+    def test_literal_is_fully_parameterized_generic(type_, expected):
+        assert is_fully_parameterized_generic(type_) == expected
 
 
     @pytest.mark.parametrize('type_, expected', [
@@ -464,7 +514,7 @@ if hasattr(typing, 'Literal'):
     ])
     def test_get_literal_params_error(type_):
         with pytest.raises(TypeError):
-            get_type_params(type_)
+            get_type_parameters(type_)
 
 
 if hasattr(typing, 'Protocol'):
@@ -485,8 +535,8 @@ if hasattr(typing, 'Protocol'):
     @pytest.mark.parametrize('type_, expected', [
         (typing.Protocol, False),
     ])
-    def test_protocol_is_qualified_generic(type_, expected):
-        assert is_qualified_generic(type_) == expected
+    def test_protocol_is_parameterized_generic(type_, expected):
+        assert is_parameterized_generic(type_) == expected
 
 
     @pytest.mark.parametrize('type_', [
@@ -494,7 +544,7 @@ if hasattr(typing, 'Protocol'):
     ])
     def test_get_protocol_params_error(type_):
         with pytest.raises(TypeError):
-            get_type_params(type_)
+            get_type_parameters(type_)
 
 
     def test_get_protocol_name():
@@ -507,8 +557,8 @@ if hasattr(typing, 'ClassVar'):
         (typing.ClassVar[str], True),
         (typing.ClassVar[E], sys.version_info < (3, 7)),
     ])
-    def test_classvar_is_fully_qualified_generic(type_, expected):
-        assert is_fully_qualified_generic(type_) == expected
+    def test_classvar_is_fully_parameterized_generic(type_, expected):
+        assert is_fully_parameterized_generic(type_) == expected
 
 
     @pytest.mark.parametrize('type_, expected', [
@@ -533,7 +583,7 @@ if hasattr(typing, 'ClassVar'):
         (typing.ClassVar, '(+T_co,)'),
     ])
     def test_get_classvar_params(type_, expected):
-        params = get_type_params(type_)
+        params = get_type_parameters(type_)
         assert str(params) == expected
 
 
@@ -543,8 +593,8 @@ if hasattr(typing, 'Final'):
         (typing.Final[str], True),
         (typing.Final[E], False),
     ])
-    def test_final_is_fully_qualified_generic(type_, expected):
-        assert is_fully_qualified_generic(type_) == expected
+    def test_final_is_fully_parameterized_generic(type_, expected):
+        assert is_fully_parameterized_generic(type_) == expected
 
 
     @pytest.mark.parametrize('type_, expected', [
@@ -569,5 +619,41 @@ if hasattr(typing, 'Final'):
         (typing.Final, '(+T_co,)'),
     ])
     def test_get_final_params(type_, expected):
-        params = get_type_params(type_)
+        params = get_type_parameters(type_)
+        assert str(params) == expected
+
+
+if hasattr(typing, 'Annotated'):
+    @pytest.mark.parametrize('type_, expected', [
+        (typing.Annotated, False),
+        (typing.Annotated[str, 'idk lol'], True),
+        (typing.Annotated[E, 'foobar'], False),
+    ])
+    def test_annotated_is_fully_parameterized_generic(type_, expected):
+        assert is_fully_parameterized_generic(type_) == expected
+
+
+    @pytest.mark.parametrize('type_, expected', [
+        (typing.Annotated, True),
+        (typing.Annotated[int, 5], False),
+        (typing.Annotated[E, 5], False),
+    ])
+    def test_annotated_is_generic_base_class(type_, expected):
+        assert is_generic_base_class(type_) == expected
+
+
+    @pytest.mark.parametrize('type_, expected', [
+        (typing.Annotated, True),
+        (typing.Annotated[str, ''], False),
+        (typing.Annotated[E, None], True),
+    ])
+    def test_annotated_is_generic(type_, expected):
+        assert is_generic(type_) == expected
+
+
+    @pytest.mark.parametrize('type_, expected', [
+        (typing.Annotated, '(+T_co,)'),
+    ])
+    def test_get_annotated_params(type_, expected):
+        params = get_type_parameters(type_)
         assert str(params) == expected
