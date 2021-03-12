@@ -21,10 +21,17 @@ class MyGeneric(typing.Generic[E]):
     pass
 
 
+class UnhashableMeta(type):
+    __hash__ = None
+class UnhashableClass(metaclass=UnhashableMeta):
+    pass
+
+
 @pytest.mark.parametrize('type_, expected', [
     (int, False),
     (list, False),
     (None, False),
+    (UnhashableClass, False),
     (typing.List, False),
     ('Foo', True),
     (ForwardRef('Foo'), True),
@@ -53,6 +60,7 @@ def test_is_forwardref_non_raising(obj):
 @pytest.mark.parametrize('type_, expected', [
     (int, True),
     (list, True),
+    (UnhashableClass, True),
     (None, True),
     (..., False),
     (3, False),
@@ -97,6 +105,7 @@ def test_is_type_no_forwardref(type_, expected):
 @pytest.mark.parametrize('type_, expected', [
     (int, False),
     (list, False),
+    (UnhashableClass, False),
     (None, False),
     ('List', False),
     (ForwardRef('List'), False),
@@ -151,6 +160,7 @@ def test_is_typing_type_non_raising(type_):
     ('List', False),
     (list, is_py39_plus),
     (tuple, is_py39_plus),
+    (UnhashableClass, False),
     (collections.deque, is_py39_plus),
     (collections.Counter, is_py39_plus),
     (collections.abc.Iterable, is_py39_plus),
@@ -204,6 +214,7 @@ def test_is_generic_non_raising(type_):
     (int, False),
     (list, False),
     (tuple, is_py39_plus),
+    (UnhashableClass, False),
     (collections.abc.Callable, False),
     (None, False),
     ('List', False),
@@ -255,6 +266,7 @@ def test_is_variadic_generic_non_raising(type_):
     (int, False),
     (list, is_py39_plus),
     (tuple, is_py39_plus),
+    (UnhashableClass, False),
     (None, False),
     ('List', False),
     (collections.defaultdict, is_py39_plus),
@@ -293,6 +305,7 @@ def test_is_generic_base_class_error(type_):
 @pytest.mark.parametrize(['type_', 'expected'], [
     (int, False),
     (list, False),
+    (UnhashableClass, False),
     (None, False),
     ('List', False),
     (typing.Any, False),
@@ -343,6 +356,7 @@ if is_py39_plus:
 @pytest.mark.parametrize(['type_', 'expected'], [
     (int, False),
     (list, False),
+    (UnhashableClass, False),
     (None, False),
     ('List', False),
     (collections.abc.Iterable, False),
@@ -423,6 +437,7 @@ def test_get_generic_base_class(type_, expected):
     ...,
     'List',
     list,
+    UnhashableClass,
     collections.abc.Iterable,
     collections.abc.Callable,
     typing.List,
@@ -537,6 +552,7 @@ def test_get_type_parameters_typeerror(type_):
 @pytest.mark.parametrize('type_', [
     None,
     'List',
+    UnhashableClass,
     typing.Any,
     typing.Generic,
     Protocol,
@@ -570,6 +586,7 @@ if is_py39_plus:
     (None, 'NoneType'),
     (type(None), 'NoneType'),
     (type(...), 'ellipsis'),
+    (UnhashableClass, 'UnhashableClass'),
     (MyGeneric, 'MyGeneric'),
     (typing.Any, 'Any'),
     (typing.List, 'List'),

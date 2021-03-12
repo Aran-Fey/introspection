@@ -311,15 +311,6 @@ def _is_parameterized_generic(cls):
 
     return False
 
-def _is_fully_parameterized_generic(cls):
-    if isinstance(cls, (typing.GenericMeta, typing._Union)):
-        return cls.__args__ is not None and not cls.__parameters__
-
-    if type(cls) is typing._ClassVar:
-        return cls.__type__ is not None
-
-    return False
-
 def _is_typing_type(cls):
     if not isinstance(cls, (typing.TypingMeta, typing._TypingBase)):
         return False
@@ -370,15 +361,6 @@ if sys.version_info >= (3, 7):
 
         return is_generic(cls)
 
-    def _is_fully_parameterized_generic(cls):
-        if isinstance(cls, typing._VariadicGenericAlias):
-            return False
-
-        if not isinstance(cls, typing._GenericAlias):
-            return False
-
-        return not cls.__parameters__
-
     def _is_typing_type(cls):
         if isinstance(cls, typing._GenericAlias):
             return True
@@ -416,18 +398,6 @@ if sys.version_info >= (3, 9):
     def _is_parameterized_generic(cls):
         return isinstance(cls, (types.GenericAlias, typing._GenericAlias))
     
-    def _is_fully_parameterized_generic(cls):
-        if cls in SPECIAL_GENERICS:
-            return False
-        
-        if isinstance(cls, typing._SpecialGenericAlias):
-            return cls._nparams == 0
-
-        if not _is_parameterized_generic(cls):
-            return False
-
-        return not cls.__parameters__
-
     def _get_generic_base_class(cls):
         if isinstance(cls, typing._GenericAlias) and cls._name is not None:
             return getattr(typing, cls._name)
@@ -604,12 +574,6 @@ def is_generic(type_, raising=True):
     :return: Whether the object is a generic type
     :raises TypeError: If ``type_`` is not a type and ``raising`` is ``True``
     """
-    if not is_type(type_):
-        if raising:
-            msg = "Expected a class or type, not {!r}"
-            raise TypeError(msg.format(type_)) from None
-        else:
-            return False
 
     try:
         params = get_type_parameters(type_)
@@ -678,11 +642,7 @@ def is_generic_base_class(type_, raising=True):
     if _is_generic_base_class(type_):
         return True
 
-    if raising and not is_type(type_):
-        msg = "Expected a class or type, not {!r}"
-        raise TypeError(msg.format(type_)) from None
-    else:
-        return False
+    return False
 
 
 def is_qualified_generic(type_, raising=True):

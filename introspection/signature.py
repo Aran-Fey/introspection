@@ -22,11 +22,7 @@ B = TypeVar('B')
 K = TypeVar('K')
 V = TypeVar('V')
 IntOrFloatVar = TypeVar('T', int, float)
-
-if hasattr(os, 'PathLike'):
-    FilePath = Union[str, bytes, os.PathLike]
-else:
-    FilePath = Union[str, bytes]
+FilePath = Union[str, bytes, os.PathLike]
 
 BUILTIN_SIGNATURES = {
     'abs': (Any, [
