@@ -64,6 +64,15 @@ attributes stored in the object’s <code class="docutils literal notranslate"><
 </dd></dl>
 
 <dl class="py function">
+<dt id="introspection.safe_is_subclass">
+<span id="introspection.classes.safe_is_subclass"></span><code class="sig-prename descclassname"><span class="pre">introspection.</span></code><code class="sig-name descname"><span class="pre">safe_is_subclass</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subclass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">superclass</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.safe_is_subclass" title="Permalink to this definition">¶</a></dt>
+<dd><p>A clone of <a class="reference external" href="https://docs.python.org/3/library/functions.html#issubclass" title="(in Python v3.9)"><code class="xref py py-func docutils literal notranslate"><span class="pre">issubclass()</span></code></a> that returns <code class="docutils literal notranslate"><span class="pre">False</span></code> instead of throwing a <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.9)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">TypeError</span></code></a>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version 1.2.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py function">
 <dt id="introspection.iter_slots">
 <span id="introspection.classes.iter_slots"></span><code class="sig-prename descclassname"><span class="pre">introspection.</span></code><code class="sig-name descname"><span class="pre">iter_slots</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.iter_slots" title="Permalink to this definition">¶</a></dt>
 <dd><p>Iterates over all <code class="docutils literal notranslate"><span class="pre">__slots__</span></code> of the given class, yielding

@@ -511,7 +511,7 @@ def is_type(type_: typing.Any, allow_forwardref : bool = True) -> bool:
        The ``allow_forwardref`` parameter.
     
     :param type_: The object to examine
-    :param allow_forwardref: Controls whether strings and ``ForwardRef``s are considered types
+    :param allow_forwardref: Controls whether strings and ForwardRefs are considered types
     :return: Whether the object is a class or type (or forward reference)
     """
     # strings are forward references
