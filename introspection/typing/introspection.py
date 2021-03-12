@@ -1,7 +1,10 @@
 
 import ordered_set
 
+import collections.abc
+import re
 import sys
+import types
 import typing
 import warnings
 
@@ -21,6 +24,58 @@ def is_in(needle, haystack):
         return needle in haystack
     except TypeError:
         return False
+
+
+def resolve_dotted_name(name):
+    """
+    ::
+        
+        >>> resolve_dotted_name('collections.deque')
+        <class 'collections.deque'>
+    """
+    module_name, *attrs = name.split('.')
+    
+    obj = sys.modules[module_name]
+    for attr in attrs:
+        obj = getattr(obj, attr)
+    
+    return obj
+
+
+def resolve_dotted_names(names):
+    """
+    ::
+        
+        >>> resolve_dotted_names({
+        ...     'collections.deque': 'foo',
+        ...     'collections.this_doesnt_exist': 'bar'
+        ... })
+        {<class 'collections.deque'>: 'foo'}
+    """
+    if isinstance(names, dict):
+        result = {}
+        
+        for name, value in names.items():
+            try:
+                key = resolve_dotted_name(name)
+            except AttributeError:
+                continue
+            
+            result[key] = value
+    else:
+        result = []
+        
+        for name in names:
+            try:
+                value = resolve_dotted_name(name)
+            except AttributeError:
+                continue
+            
+            result.append(value)
+        
+        result = type(names)(result)
+    
+    return result
 
 
 # NOTE: The following function implementations work in python 3.5.
@@ -47,106 +102,153 @@ VARIADIC_GENERICS = {
     if hasattr(typing, attr)
 }
 
+if sys.version_info >= (3, 9):
+    VARIADIC_GENERICS.add(tuple)
+
 def _is_variadic_generic(type_):
     return is_in(type_, VARIADIC_GENERICS)
 
 
 GENERIC_INHERITANCE = {
-    'Type': [('Generic', typing.TypeVar('CT_co', covariant=True))],
-    'Annotated': [('Generic', T_co)],
-    'ClassVar': [('Generic', T_co)],
-    'Final': [('Generic', T_co)],
-    'Optional': [('Generic', T_co)],
-    'Union': [('Generic', T_co)],
+    'typing.Type': [('Generic', typing.TypeVar('CT_co', covariant=True))],
+    'typing.Annotated': [('Generic', T_co)],
+    'typing.ClassVar': [('Generic', T_co)],
+    'typing.Final': [('Generic', T_co)],
+    'typing.Optional': [('Generic', T_co)],
+    'typing.Union': [('Generic', T_co)],
     
-    'Callable': [('Generic', typing.TypeVar('A_contra', contravariant=True),
+    'typing.Callable': [('Generic', typing.TypeVar('A_contra', contravariant=True),
                              typing.TypeVar('R_co', covariant=True))],
     
-    'Dict': [('MutableMapping', K, V)],
-    'DefaultDict': [('MutableMapping', K, V)],
-    'OrderedDict': [('MutableMapping', K, V)],
-    'ChainMap': [('MutableMapping', K, V)],
-    'Counter': [('MutableMapping', K, int)],
+    'typing.Dict': [('MutableMapping', K, V)],
+    'typing.DefaultDict': [('MutableMapping', K, V)],
+    'typing.OrderedDict': [('MutableMapping', K, V)],
+    'typing.ChainMap': [('MutableMapping', K, V)],
+    'typing.Counter': [('MutableMapping', K, int)],
     
-    'Set': [('MutableSet', T)],
-    'FrozenSet': [('AbstractSet', T_co)],
+    'typing.Set': [('MutableSet', T)],
+    'typing.FrozenSet': [('AbstractSet', T_co)],
     
-    'List': [('MutableSequence', T)],
-    'Deque': [('MutableSequence', T)],
-    'Tuple': [('Sequence', T_co)],
+    'typing.List': [('MutableSequence', T)],
+    'typing.Deque': [('MutableSequence', T)],
+    'typing.Tuple': [('Sequence', T_co)],
     
-    'Collection': [
+    'typing.Collection': [
         ('Sized',),
         ('Iterable', T_co),
         ('Container', T_co),
     ],
-    'Container': [('Generic', T_co)],
-    'Iterable': [('Generic', T_co)],
-    'Iterator': [('Iterable', T_co)],
-    'Reversible': [('Iterable', T_co)],
-    'Generator': [
+    'typing.Container': [('Generic', T_co)],
+    'typing.Iterable': [('Generic', T_co)],
+    'typing.Iterator': [('Iterable', T_co)],
+    'typing.Reversible': [('Iterable', T_co)],
+    'typing.Generator': [
         ('Iterator', Y_co),
         ('Generic', Y_co,
                     typing.TypeVar('S_contra', contravariant=True),
                     typing.TypeVar('R_co', covariant=True)),
     ],
-    'ContextManager': [('Generic', T_co)],
-    'AsyncIterable': [('Generic', T_co)],
-    'AsyncIterator': [('AsyncIterable', T_co)],
-    'AsyncGenerator': [
+    'typing.ContextManager': [('Generic', T_co)],
+    'typing.AsyncIterable': [('Generic', T_co)],
+    'typing.AsyncIterator': [('AsyncIterable', T_co)],
+    'typing.AsyncGenerator': [
         ('AsyncIterator', Y_co),
         ('Generic', Y_co,
                     typing.TypeVar('S_contra', contravariant=True)),
     ],
-    'AsyncContextManager': [('Generic', T_co)],
-    'Coroutine': [
+    'typing.AsyncContextManager': [('Generic', T_co)],
+    'typing.Coroutine': [
         ('Awaitable', A_co),
         ('Generic', T_co,
                     typing.TypeVar('S_contra', contravariant=True),
                     A_co),
     ],
-    'Awaitable': [('Generic', A_co)],
-    'AbstractSet': [
+    'typing.Awaitable': [('Generic', A_co)],
+    'typing.AbstractSet': [
         ('Sized',),
         ('Collection', T_co),
     ],
-    'ByteString': [('Sequence', int)],
-    'ItemsView': [
+    'typing.MutableSet': [('AbstractSet', T)],
+    'typing.ByteString': [('Sequence', int)],
+    'typing.ItemsView': [
         ('MappingView', typing.Tuple[K_co, V_co]),
         ('AbstractSet', typing.Tuple[K_co, V_co]),
     ],
-    'KeysView': [
+    'typing.KeysView': [
         ('MappingView', K_co),
         ('AbstractSet', K_co, V_co),
     ],
-    'ValuesView': [
+    'typing.ValuesView': [
         ('MappingView', V_co),
     ],
-    'MappingView': [
+    'typing.MappingView': [
         ('Sized',),
         ('Iterable', T_co),
     ],
-    'Mapping': [
+    'typing.Mapping': [
         ('Collection', K),
         ('Generic', K, V),
     ],
-    'MutableMapping': [('Mapping', K, V)],
-    'Sequence': [
+    'typing.MutableMapping': [('Mapping', K, V)],
+    'typing.Sequence': [
         ('Reversible', T_co),
         ('Collection', T_co),
     ],
-    'MutableSequence': [('Sequence', T)],
+    'typing.MutableSequence': [('Sequence', T)],
 }
-GENERIC_INHERITANCE = {
-    getattr(typing, cls_name): bases
-    for cls_name, bases in GENERIC_INHERITANCE.items()
-    if hasattr(typing, cls_name)
-}
-
 if sys.version_info >= (3, 9):
-    PARAMETERIZED_GENERIC_META = typing._GenericAlias
-else:
-    PARAMETERIZED_GENERIC_META = typing.GenericMeta
+    GENERIC_INHERITANCE.update({
+        'builtins.tuple': GENERIC_INHERITANCE['typing.Tuple'],
+        'builtins.list': GENERIC_INHERITANCE['typing.List'],
+        'builtins.dict': GENERIC_INHERITANCE['typing.Dict'],
+        'builtins.set': GENERIC_INHERITANCE['typing.Set'],
+        'builtins.frozenset': GENERIC_INHERITANCE['typing.FrozenSet'],
+        'builtins.type': GENERIC_INHERITANCE['typing.Type'],
+        
+        'collections.deque': GENERIC_INHERITANCE['typing.Deque'],
+        'collections.defaultdict': GENERIC_INHERITANCE['typing.DefaultDict'],
+        'collections.OrderedDict': GENERIC_INHERITANCE['typing.OrderedDict'],
+        'collections.Counter': GENERIC_INHERITANCE['typing.Counter'],
+        'collections.ChainMap': GENERIC_INHERITANCE['typing.ChainMap'],
+        'collections.abc.Awaitable': GENERIC_INHERITANCE['typing.Awaitable'],
+        'collections.abc.Coroutine': GENERIC_INHERITANCE['typing.Coroutine'],
+        'collections.abc.AsyncIterable': GENERIC_INHERITANCE['typing.AsyncIterable'],
+        'collections.abc.AsyncIterator': GENERIC_INHERITANCE['typing.AsyncIterator'],
+        'collections.abc.AsyncGenerator': GENERIC_INHERITANCE['typing.AsyncGenerator'],
+        'collections.abc.Iterable': GENERIC_INHERITANCE['typing.Iterable'],
+        'collections.abc.Iterator': GENERIC_INHERITANCE['typing.Iterator'],
+        'collections.abc.Generator': GENERIC_INHERITANCE['typing.Generator'],
+        'collections.abc.Reversible': GENERIC_INHERITANCE['typing.Reversible'],
+        'collections.abc.Container': GENERIC_INHERITANCE['typing.Container'],
+        'collections.abc.Collection': GENERIC_INHERITANCE['typing.Collection'],
+        'collections.abc.Callable': GENERIC_INHERITANCE['typing.Callable'],
+        'collections.abc.Set': GENERIC_INHERITANCE['typing.AbstractSet'],
+        'collections.abc.MutableSet': GENERIC_INHERITANCE['typing.MutableSet'],
+        'collections.abc.Mapping': GENERIC_INHERITANCE['typing.Mapping'],
+        'collections.abc.MutableMapping': GENERIC_INHERITANCE['typing.MutableMapping'],
+        'collections.abc.Sequence': GENERIC_INHERITANCE['typing.Sequence'],
+        'collections.abc.MutableSequence': GENERIC_INHERITANCE['typing.MutableSequence'],
+        'collections.abc.ByteString': GENERIC_INHERITANCE['typing.ByteString'],
+        'collections.abc.MappingView': GENERIC_INHERITANCE['typing.MappingView'],
+        'collections.abc.KeysView': GENERIC_INHERITANCE['typing.KeysView'],
+        'collections.abc.ItemsView': GENERIC_INHERITANCE['typing.ItemsView'],
+        'collections.abc.ValuesView': GENERIC_INHERITANCE['typing.ValuesView'],
+        
+        'contextlib.AbstractContextManager': GENERIC_INHERITANCE['typing.ContextManager'],
+        'contextlib.AbstractAsyncContextManager': GENERIC_INHERITANCE['typing.AsyncContextManager'],
+            
+        're.Match': [('Generic', typing.AnyStr)],
+        're.Pattern': [('Generic', typing.AnyStr)],
+    })
+GENERIC_INHERITANCE = resolve_dotted_names(GENERIC_INHERITANCE)
+
+
+PARAMETERIZED_GENERIC_META = (
+    'types.GenericAlias',  # py3.9+
+    'typing._GenericAlias',  # py3.8+
+    'typing.GenericMeta',  # py3.5-3.7
+)
+PARAMETERIZED_GENERIC_META = resolve_dotted_names(PARAMETERIZED_GENERIC_META)
 
 def _get_type_parameters(type_):
     if safe_is_subclass(type_, typing.Generic):
@@ -160,12 +262,22 @@ def _get_type_parameters(type_):
         return type_.__parameters__
     
     if isinstance(type_, PARAMETERIZED_GENERIC_META):
-        if (sys.version_info < (3, 7)
-            and not type_._gorg is typing.Callable
-            and not type_.__orig_bases__):
+        if sys.version_info < (3, 7):
+            # typing.Callable is an outlier that never has __orig_bases__
+            if not type_.__orig_bases__ and type_._gorg is not typing.Callable:
                 return None
         
         return type_.__parameters__
+
+    if sys.version_info < (3, 7) and hasattr(typing, '_Union'):
+        if isinstance(type_, typing._Union):
+            return type_.__parameters__
+    
+    # Special case: ClassVar can only be parameterized once in older
+    # versions
+    if sys.version_info < (3, 7) and hasattr(typing, '_ClassVar'):
+        if isinstance(type_, typing._ClassVar):
+            return ()
     
     return None
 
@@ -302,16 +414,25 @@ if sys.version_info >= (3, 9):
         return False
         
     def _is_parameterized_generic(cls):
-        return isinstance(cls, typing._GenericAlias)
+        return isinstance(cls, (types.GenericAlias, typing._GenericAlias))
     
     def _is_fully_parameterized_generic(cls):
         if cls in SPECIAL_GENERICS:
             return False
+        
+        if isinstance(cls, typing._SpecialGenericAlias):
+            return cls._nparams == 0
 
         if not _is_parameterized_generic(cls):
             return False
 
         return not cls.__parameters__
+
+    def _get_generic_base_class(cls):
+        if isinstance(cls, typing._GenericAlias) and cls._name is not None:
+            return getattr(typing, cls._name)
+
+        return cls.__origin__
 
 
 if hasattr(typing, 'get_args'):  # python 3.8+
@@ -492,8 +613,13 @@ def is_generic(type_, raising=True):
 
     try:
         params = get_type_parameters(type_)
-    except TypeError:
+    except ValueError:
         return is_in(type_, PARAMLESS_SUBSCRIPTABLES)
+    except TypeError:
+        if raising:
+            raise
+        
+        return False
     
     return bool(params)
 
@@ -573,7 +699,8 @@ def is_parameterized_generic(type_, raising=True):
     """
     Returns whether ``type_`` is a generic type with some
     type arguments supplied, for example ``List[int]``
-    or ``List[T]`` (but not ``List``).
+    or ``List[T]`` (but not ``List``) - in other words, a
+    :class:`types.GenericAlias`.
 
     If ``type_`` is not a type as defined by :func:`is_type`
     and ``raising`` is ``True``, a ``TypeError`` is raised.
@@ -609,6 +736,16 @@ def is_fully_parameterized_generic(type_, raising=True):
     Returns whether ``type_`` is a generic type with all
     type arguments supplied, for example ``List[int]``
     (but not ``List[T]`` or ``List[Tuple[T]]``).
+    
+    Unlike :func:`is_parameterized_generic`, which will only ever return
+    ``True`` for :class:`types.GenericAlias` objects, this function returns
+    ``True`` for any input that was once generic, but no longer accepts
+    any more type parameters. For example::
+        
+        >>> is_parameterized_generic(typing.ByteString)
+        False
+        >>> is_fully_parameterized_generic(typing.ByteString)
+        True
 
     If ``type_`` is not a type as defined by :func:`is_type`
     and ``raising`` is ``True``, a ``TypeError`` is raised.
@@ -618,15 +755,17 @@ def is_fully_parameterized_generic(type_, raising=True):
     :param raising: Whether to throw a ``TypeError`` on invalid input
     :return: Whether the object is a generic type with type arguments
     :raises TypeError: If ``type_`` is not a type and ``raising`` is ``True``
+    :raises ValueError: If ``type_`` is not a type and ``raising`` is ``True``
     """
-    if not is_type(type_):
+    try:
+        return get_type_parameters(type_) == ()
+    except ValueError:
+        return False
+    except TypeError:
         if raising:
-            msg = "Expected a class or type, not {!r}"
-            raise TypeError(msg.format(type_)) from None
-        else:
-            return False
-
-    return _is_fully_parameterized_generic(type_)
+            raise
+        
+        return False
 
 
 @weakref_cache
@@ -644,7 +783,7 @@ def get_generic_base_class(type_):
     :return: The input type without its type arguments
     """
     if not is_parameterized_generic(type_, raising=False):
-        msg = '{} is not a parameterized typing.Generic and thus has no base'
+        msg = '{} is not a parameterized generic and thus has no base'
         raise TypeError(msg.format(type_))
 
     base = _get_generic_base_class(type_)
@@ -688,7 +827,7 @@ def get_type_arguments(type_):
     :return: The input type's type arguments
     """
     if not is_parameterized_generic(type_, raising=False):
-        raise TypeError('{} is not a parameterized typing.Generic and thus has no type arguments'.format(type_))
+        raise TypeError('{} is not a parameterized generic and thus has no type arguments'.format(type_))
 
     args = _get_type_args(type_)
 
@@ -761,8 +900,13 @@ def get_type_parameters(type_):
         (+T_co,)
         >>> get_type_parameters(Callable)
         (-A_contra, +R_co)
+    
+    .. versionchanged:: 1.2
+       Now throws :exc:`ValueError` instead of :exc:`TypeError` if the
+       input is a type, but not generic.
 
-    :raises TypeError: If ``type_`` is not a generic type and ``raising`` is ``True``
+    :raises TypeError: If ``type_`` is not a type
+    :raises ValueError: If ``type_`` is a type, but not generic
     """
     if not is_type(type_):
         msg = "Expected a class or type, not {!r}"
@@ -786,7 +930,7 @@ def get_type_parameters(type_):
         return params
     
     msg = "{!r} is not a generic type and thus has no type parameters"
-    raise TypeError(msg.format(type_))
+    raise ValueError(msg.format(type_))
 
 
 @weakref_cache
