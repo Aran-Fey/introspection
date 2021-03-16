@@ -9,9 +9,11 @@ module = "introspection"
 author = "Paul Pinterits"
 description-file = "README.md"
 home-page = "https://github.com/Aran-Fey/introspection"
-requires-python = ">=3.5,<4"
-requires = []
+requires-python = ">=3.6,<4"
+requires = [
+    "ordered-set"
+]
 
 [tool.flit.metadata.requires-extra]
-test = ["pytest"]
+test = ["pytest", "tox", "coverage"]
 doc = ["sphinx"]

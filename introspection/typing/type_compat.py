@@ -5,14 +5,13 @@ import re
 import typing
 
 from .introspection import *
-from .introspection import _to_python, _get_forward_ref_code, _is_variadic_generic
+from .introspection import _to_python, _get_forward_ref_code
 from . import _compat
 
 __all__ = ['to_python', 'to_typing']
 
 
 FORWARDREF_TO_TYPING = {
-    # 'object': 'Any',
     'type': 'Type',
     'list': 'List',
     'tuple': 'Tuple',
@@ -24,7 +23,6 @@ FORWARDREF_TO_TYPING = {
     're.Match': 'Match',
     'collections.deque': 'Deque',
     'collections.defaultdict': 'DefaultDict',
-    # 'collections.namedtuple': 'NamedTuple',
     'collections.Counter': 'Counter',
     'collections.OrderedDict': 'OrderedDict',
     'collections.ChainMap': 'ChainMap',
@@ -86,7 +84,7 @@ def to_python(type_, strict=False):
         >>> to_python(object)
         <class 'object'>
 
-    Generics qualified with ``typing.Any`` or other pointless
+    Generics parameterized with ``typing.Any`` or other pointless
     constraints are converted to their regular python
     counterparts::
 
@@ -97,7 +95,7 @@ def to_python(type_, strict=False):
         >>> to_python(typing.Type[object])
         <class 'type'>
 
-    The function recurses on the type arguments of qualified
+    The function recurses on the type arguments of parameterized
     generics::
 
         >>> to_python(typing.List[typing.Set], strict=False)
@@ -112,53 +110,59 @@ def to_python(type_, strict=False):
     :param strict: Whether to raise an exception if the input type has no python equivalent
     :return: The class corresponding to the input type
     """
-    if isinstance(type_, type) and type_.__module__ != 'typing':
-        return type_
-
     if type_ is None:
         return type_
 
-    if not is_typing_type(type_, raising=False):
-        raise TypeError("Expected a type, not {!r}".format(type_))
+    if not is_parameterized_generic(type_):
+        if not is_typing_type(type_):
+            return type_
 
-    if is_qualified_generic(type_):
-        base = get_generic_base_class(type_)
-        args = get_type_args(type_)
-
-        if (not _is_variadic_generic(base)
-                and all(arg is typing.Any for arg in args)):
-            return to_python(base, strict)
-        elif base is typing.Type and args[0] is object:
-            return type
-        elif base is typing.Callable and args == (..., typing.Any):
-            return to_python(base, strict)
-
-        if not strict:
-            if base is typing.Callable:
-                if args[0] is ...:
-                    args = (..., to_python(args[1], strict))
-                else:
-                    args = (
-                        [to_python(arg, strict) for arg in args[0]],
-                        to_python(args[1], strict)
-                    )
-            elif hasattr(typing, 'Literal') and base is typing.Literal:
-                return type_
-            else:
-                args = tuple(to_python(arg, strict) for arg in args)
-
-            return base[args]
-    else:
         typ = _to_python(type_)
 
         # _to_python returns None if there's no equivalent
         if typ is not None:
             return typ
-
-    if strict:
+        elif not strict:
+            return type_
+        
         raise ValueError('{!r} has no python equivalent'.format(type_))
-    else:
+    
+    # At this point we know it's a parameterized generic type
+    base = get_generic_base_class(type_)
+    args = get_type_arguments(type_)
+
+    if (not is_variadic_generic(base)
+            and all(arg is typing.Any for arg in args)):
+        return to_python(base, strict)
+    elif base in (type, typing.Type) and args[0] is object:
+        return type
+    elif base in (collections.abc.Callable, typing.Callable) and args == (..., typing.Any):
+        return collections.abc.Callable
+
+    # At this point we know that the type arguments aren't redundant, so
+    # if python doesn't have a generic equivalent of the base type, then
+    # we can't convert it
+    py_base = to_python(base, strict=strict)
+
+    if is_generic(py_base):
+        base = py_base
+    elif strict:
+        raise ValueError(f'{type_!r} has no (generic) python equivalent')
+
+    if base in (collections.abc.Callable, typing.Callable):
+        if args[0] is ...:
+            args = (..., to_python(args[1], strict))
+        else:
+            args = (
+                [to_python(arg, strict) for arg in args[0]],
+                to_python(args[1], strict)
+            )
+    elif hasattr(typing, 'Literal') and base is typing.Literal:
         return type_
+    else:
+        args = tuple(to_python(arg, strict) for arg in args)
+
+    return base[args]
 
 
 def to_typing(type_, strict=False):
@@ -191,9 +195,9 @@ def to_typing(type_, strict=False):
 
         if hasattr(typing, type_):
             return getattr(typing, type_)
-    elif is_qualified_generic(type_):
-        base = get_generic_base_class(type_)
-        args = get_type_args(type_)
+    elif is_parameterized_generic(type_):
+        base = to_typing(get_generic_base_class(type_), strict)
+        args = get_type_arguments(type_)
 
         if base is typing.Callable:
             if args[0] is ...:

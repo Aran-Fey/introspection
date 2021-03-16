@@ -6,7 +6,7 @@ from typing import Dict, Any, Set, Iterator, Tuple
 
 from .misc import static_vars
 
-__all__ = ['get_subclasses', 'get_attributes',
+__all__ = ['get_subclasses', 'get_attributes', 'safe_is_subclass',
            'iter_slots', 'get_slot_names', 'get_slot_counts', 'get_slots']
 
 
@@ -143,3 +143,15 @@ def get_attributes(obj: Any, include_weakref: bool = False) -> Dict[str, Any]:
         attrs.update(dict_)
 
     return attrs
+
+
+def safe_is_subclass(subclass, superclass):
+    """
+    A clone of :func:`issubclass` that returns ``False`` instead of throwing a :exc:`TypeError`.
+    
+    .. versionadded:: 1.2
+    """
+    try:
+        return issubclass(subclass, superclass)
+    except TypeError:
+        return False

@@ -23,6 +23,8 @@ def setup(app):
     augment = sphinx_utils.augment(app)
     augment.bugfixes()
     augment.public_identifiers()
+    augment.repr_defaults_by_identifier()
+    augment.no_wrong_aliases()
     augment.theme_switcher(
         [
             {'id': 'light', 'icon': '☼'},
@@ -33,8 +35,8 @@ def setup(app):
             DEFAULT_DARK_SYNTAX_THEME,
             'sphinx_utils.pygments_styles.cobalt2.Cobalt2Style',
         ],
-        default_theme='window.matchMedia("(prefers-color-scheme: dark)").matches ? "{}" : "{}"'.format(DEFAULT_DARK_SYNTAX_THEME, DEFAULT_LIGHT_SYNTAX_THEME),
-        default_syntax_theme='siteThemeId === "dark" ? "{}" : "{}"'.format(DEFAULT_DARK_SYNTAX_THEME, DEFAULT_LIGHT_SYNTAX_THEME),
+        default_theme=f'window.matchMedia("(prefers-color-scheme: dark)").matches ? "{DEFAULT_DARK_SYNTAX_THEME}" : "{DEFAULT_LIGHT_SYNTAX_THEME}"',
+        default_syntax_theme=f'siteThemeId === "dark" ? "{DEFAULT_DARK_SYNTAX_THEME}" : "{DEFAULT_LIGHT_SYNTAX_THEME}"',
     )
     # augment.no_object_base()
     # augment.run_directive()
@@ -106,7 +108,7 @@ html_show_copyright = False
 html_show_sphinx = False
 
 html_title = "Introspection documentation"
-html_favicon = "favicon.png"
+html_favicon = "favicon.svg"
 
 html_theme = "nightsky"
 html_theme_path = [sphinx_utils.HTML_THEMES_DIR]

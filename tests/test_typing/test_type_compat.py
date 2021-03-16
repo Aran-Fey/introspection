@@ -2,9 +2,20 @@
 import pytest
 
 import collections.abc
+import re
+import sys
 import typing
 
 from introspection.typing.type_compat import *
+
+
+T = typing.TypeVar('T')
+
+class MyGeneric(typing.Generic[T]):
+    pass
+
+
+is_py39_plus = sys.version_info >= (3, 9)
 
 
 @pytest.mark.parametrize('type_, expected', [
@@ -13,9 +24,12 @@ from introspection.typing.type_compat import *
     (typing.List, list),
     (typing.Set, set),
     (typing.Callable, collections.abc.Callable),
+    (MyGeneric, MyGeneric),
     (typing.List[typing.Any], list),
     (typing.Callable[..., typing.Any], collections.abc.Callable),
     (typing.Type[object], type),
+    (MyGeneric[typing.Tuple], MyGeneric[tuple]),
+    (MyGeneric[typing.Any], MyGeneric),
 ])
 def test_to_python_strict(type_, expected):
     assert to_python(type_, strict=True) == expected
@@ -24,11 +38,6 @@ def test_to_python_strict(type_, expected):
 @pytest.mark.parametrize('type_, expected', [
     (typing.Any, typing.Any),
     (typing.SupportsFloat, typing.SupportsFloat),
-    (typing.List[int], typing.List[int]),
-    (typing.List[typing.Set], typing.List[set]),
-    (typing.List[typing.Set[typing.Tuple]], typing.List[typing.Set[tuple]]),
-    (typing.Callable[[typing.Set], typing.Tuple], typing.Callable[[set], tuple]),
-    (typing.Callable[..., typing.List], typing.Callable[..., list])
 ])
 def test_to_python_non_strict(type_, expected):
     assert to_python(type_, strict=False) == expected
@@ -42,6 +51,37 @@ def test_to_python_non_strict(type_, expected):
 def test_to_python_strict_error(type_):
     with pytest.raises(ValueError):
         to_python(type_, strict=True)
+
+
+if is_py39_plus:
+    @pytest.mark.parametrize('type_, expected', [
+        (typing.List[int], list[int]),
+        (typing.re.Match[str], re.Match[str]),
+        (typing.List[typing.Set], list[set]),
+        (typing.List[typing.Set[typing.Tuple]], list[set[tuple]]),
+        (typing.Callable[[typing.Set], typing.Tuple], collections.abc.Callable[[set], tuple]),
+        (typing.Callable[..., typing.List], collections.abc.Callable[..., list]),
+    ])
+    def test_to_python_non_strict_py39(type_, expected):
+        assert to_python(type_, strict=False) == expected
+else:
+    @pytest.mark.parametrize('type_, expected', [
+        (typing.List[int], typing.List[int]),
+        (typing.List[typing.Set], typing.List[set]),
+        (typing.List[typing.Set[typing.Tuple]], typing.List[typing.Set[tuple]]),
+        (typing.Callable[[typing.Set], typing.Tuple], typing.Callable[[set], tuple]),
+        (typing.Callable[..., typing.List], typing.Callable[..., list])
+    ])
+    def test_to_python_non_strict_pre39(type_, expected):
+        assert to_python(type_, strict=False) == expected
+
+
+    @pytest.mark.parametrize('type_', [
+        typing.List[int],
+    ])
+    def test_to_python_strict_error_pre39(type_):
+        with pytest.raises(ValueError):
+            to_python(type_, strict=True)
 
 
 @pytest.mark.parametrize('type_', [
@@ -68,6 +108,15 @@ def test_to_python_error(type_):
 ])
 def test_to_typing(type_, expected):
     assert to_typing(type_) == expected
+
+
+if is_py39_plus:
+    @pytest.mark.parametrize('type_, expected', [
+        (collections.abc.Iterable[int], typing.Iterable[int]),
+        (re.Pattern[bytes], typing.re.Pattern[bytes]),
+    ])
+    def test_to_typing_py39(type_, expected):
+        assert to_typing(type_) == expected
 
 
 @pytest.mark.parametrize('type_', [

@@ -2,7 +2,7 @@
 New and improved introspection functions
 """
 
-__version__ = '1.1'
+__version__ = '1.2'
 
 from .parameter import *
 from .signature import *
@@ -22,3 +22,4 @@ __all__ = [
     if not isinstance(obj, types.ModuleType)
     and not name.startswith('_')
 ]
+del types

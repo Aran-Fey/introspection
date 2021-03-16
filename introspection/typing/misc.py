@@ -4,7 +4,7 @@ import collections
 import importlib
 import typing
 
-from .introspection import is_qualified_generic, get_generic_base_class, get_type_args, get_type_name, _get_forward_ref_code
+from .introspection import is_parameterized_generic, get_generic_base_class, get_type_arguments, get_type_name, _get_forward_ref_code
 from . import _compat
 
 __all__ = ['resolve_forward_refs', 'annotation_to_string']
@@ -89,7 +89,7 @@ def resolve_forward_refs(annotation, module=None, eval_=True, strict=True):
     if isinstance(annotation, list):
         return [resolve_forward_refs(typ, module, eval_, strict) for typ in annotation]
 
-    if not is_qualified_generic(annotation, raising=False):
+    if not is_parameterized_generic(annotation, raising=False):
         return annotation
 
     base = get_generic_base_class(annotation)
@@ -97,7 +97,7 @@ def resolve_forward_refs(annotation, module=None, eval_=True, strict=True):
     if base == getattr(typing, 'Literal', None):
         return annotation
 
-    type_args = get_type_args(annotation)
+    type_args = get_type_arguments(annotation)
 
     type_args = tuple(resolve_forward_refs(typ, module, eval_, strict) for typ in type_args)
     return base[type_args]
@@ -137,9 +137,9 @@ def annotation_to_string(annotation, implicit_typing=True):
     if annotation is type(None):
         return 'None'
 
-    if is_qualified_generic(annotation, raising=False):
+    if is_parameterized_generic(annotation, raising=False):
         base = get_generic_base_class(annotation)
-        subtypes = get_type_args(annotation)
+        subtypes = get_type_arguments(annotation)
 
         prefix = annotation_to_string(base, implicit_typing)
         return process_nested(prefix, subtypes)
