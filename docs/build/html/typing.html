@@ -359,6 +359,15 @@ tuple of its type arguments.</p>
 <span class="go">([&lt;class &#39;str&#39;&gt;], None)</span>
 </pre></div>
 </div>
+<p>Note that some generic types (like <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.9)"><code class="xref any docutils literal notranslate"><span class="pre">typing.Optional</span></code></a>) won’t accept
+a tuple as input, so take care when you try to parameterize something
+with this function’s return value:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">get_type_arguments</span><span class="p">(</span><span class="n">typing</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span>
+<span class="go">(&lt;class &#39;int&#39;&gt;,)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">typing</span><span class="o">.</span><span class="n">Optional</span><span class="p">[(</span><span class="nb">int</span><span class="p">,)]</span>
+<span class="go">TypeError: typing.Optional requires a single type. Got (&lt;class &#39;int&#39;&gt;,).</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>type_</strong> – A parameterized generic type</p>

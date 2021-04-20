@@ -1,13 +1,23 @@
 
 import collections
 import inspect
+import functools
 
 from typing import Dict, Any, Set, Iterator, Tuple
 
+import sentinel
+
 from .misc import static_vars
 
-__all__ = ['get_subclasses', 'get_attributes', 'safe_is_subclass',
-           'iter_slots', 'get_slot_names', 'get_slot_counts', 'get_slots']
+__all__ = [
+    'get_subclasses', 'get_attributes', 'safe_is_subclass',
+    'iter_slots', 'get_slot_names', 'get_slot_counts', 'get_slots',
+    'get_implicit_method_type',
+    'add_method_to_class', 'wrap_method',
+]
+
+
+auto = sentinel.create('auto')
 
 
 def get_subclasses(cls: type, include_abstract: bool = False) -> Set[type]:
@@ -145,7 +155,7 @@ def get_attributes(obj: Any, include_weakref: bool = False) -> Dict[str, Any]:
     return attrs
 
 
-def safe_is_subclass(subclass, superclass):
+def safe_is_subclass(subclass, superclass) -> bool:
     """
     A clone of :func:`issubclass` that returns ``False`` instead of throwing a :exc:`TypeError`.
     
@@ -155,3 +165,284 @@ def safe_is_subclass(subclass, superclass):
         return issubclass(subclass, superclass)
     except TypeError:
         return False
+
+
+def get_implicit_method_type(method_name: str):
+    """
+    Given the name of a method as input, returns what kind of method python automatically
+    converts it to. The return value can be :class:`staticmethod`, :class:`classmethod`,
+    or ``None``.
+
+    Examples::
+
+        >>> get_implicit_method_type('frobnicate_quadrizzles')
+        >>> get_implicit_method_type('__new__')
+        <class 'staticmethod'>
+        >>> get_implicit_method_type('__init_subclass__')
+        <class 'classmethod'>
+    
+    .. versionadded:: 1.3
+    """
+    TYPES_BY_NAME = {
+        '__new__': staticmethod,
+        '__init_subclass__': classmethod,
+        '__class_getitem__': classmethod,
+    }
+
+    return TYPES_BY_NAME.get(method_name)
+
+
+def add_method_to_class(method, cls: type, name: str = None, method_type=auto):
+    r"""
+    Adds ``method`` to ``cls``\ 's namespace under the given ``name``.
+
+    If ``name`` is ``None``, it defaults to ``method.__name__``.
+
+    The method's metadata (``__name__``, ``__qualname__``, and ``__module__``)
+    will be updated to match the class.
+
+    If a ``method_type`` is passed in, it should have a value of :class:`staticmethod`,
+    :class:`classmethod`, or ``None``. If omitted, it is automatically determined by
+    calling :func:`~introspection.get_implicit_method_type`. The method is then automatically
+    wrapped with the appropriate descriptor.
+
+    .. versionadded:: 1.3
+
+    :param method: The method to add to the class
+    :param cls: The class to which to add the method
+    :param name: The name under which the method is registered in the class namespace
+    :param method_type: One of :class:`staticmethod`, :class:`classmethod`, or ``None`` (or omitted)
+    """
+    if name is None:
+        name = method.__name__
+    
+    method.__name__ = name
+    method.__qualname__ = cls.__qualname__.rsplit('.', 1)[0] + '.' + name
+    method.__module__ = cls.__module__
+
+    if method_type is auto:
+        method_type = get_implicit_method_type(name)
+    
+    if method_type is not None:
+        method = method_type(method)
+
+    setattr(cls, name, method)
+
+
+def wrap_method(method, cls, name=None, method_type=auto):
+    r"""
+    Adds ``method`` to ``cls``\ 's namespace under the given ``name``,
+    wrapping the existing method (if one exists).
+
+    The replaced method will be passed in as the first positional argument
+    (even before the implicit ``self``). If the class previously didn't
+    implement this method, an appropriate dummy method will be passed
+    in instead, which merely sends the call further up the MRO.
+
+    ``method_type`` has the same meaning as it does in :func:`~introspection.add_method_to_class`.
+
+    Example::
+
+        class Foo:
+            def __init__(self, foo):
+                self.foo = foo
+            
+            def __repr__(self):
+                return f'<Foo object with foo={self.foo}>'
+
+        def custom_init(original_init, self, *args, **kwargs):
+            original_init(self, *args, **kwargs)
+            print('Initialized instance:', self)
+        
+        wrap_method(custom_init, Foo, '__init__')
+
+        Foo(5)  # prints "Initialized instance: <Foo object with foo=5>"
+    
+    .. note::
+        Adding a ``__new__`` method to a class can lead to unexpected
+        problems because of the way ``object.__new__`` works.
+
+        If a class doesn't implement a ``__new__`` method at all, 
+        ``object.__new__`` silently discards any arguments it receives.
+        But if a class does implement a custom ``__new__`` method,
+        passing arguments into ``object.__new__`` will throw an exception::
+
+            class ThisWorks:
+                def __init__(self, some_arg):
+                    pass
+            
+            class ThisDoesntWork:
+                def __new__(cls, *args, **kwargs):
+                    return super().__new__(cls, *args, **kwargs)
+                
+                def __init__(self, some_arg):
+                    pass
+            
+            ThisWorks(5)  # works
+            ThisDoesntWork(5)  # throws TypeError: object.__new__() takes exactly one argument
+        
+        This is why, when this function is used to add a ``__new__``
+        method to a class that previously didn't have one, it
+        automatically generates a dummy ``__new__`` that *attempts*
+        to figure out whether it should forward its arguments to
+        the base class's ``__new__`` method or not. This is why
+        the following code will work just fine::
+
+            class ThisWorks:
+                def __init__(self, some_arg):
+                    pass
+            
+            def __new__(original_new, cls, *args, **kwargs):
+                return original_new(cls, *args, **kwargs)
+            
+            wrap_method(__new__, ThisWorks)
+
+            ThisWorks(5)  # works!
+        
+        However, it is impossible to always correctly figure out
+        if the arguments should be passed on or not. If there is
+        another ``__new__`` method that passes on its arguments,
+        things will go wrong::
+
+            class Parent:
+                def __init__(self, some_arg):
+                    pass
+
+            class Child(Parent):
+                def __new__(cls, *args, **kwargs):
+                    return super().__new__(cls, *args, **kwargs)
+
+            def __new__(original_new, cls, *args, **kwargs):
+                return original_new(cls, *args, **kwargs)
+
+            wrap_method(__new__, Parent)
+
+            Parent(5)  # works!
+            Child(5)  # throws TypeError
+        
+        In such a scenario, the method sees that ``Child.__new__``
+        exists, and therefore it is ``Child.__new__``\ 's responsibility
+        to handle the arguments correctly. It should consume all the
+        arguments, but doesn't, so an exception is raised.
+
+        As a workaround, you can mark ``Child.__new__`` as a
+        method that forwards its arguments. This is done by
+        setting its ``_forwards_args`` attribute to ``True``::
+        
+            Child.__new__._forwards_args = True
+
+            Child(5)  # works!
+    
+    .. versionadded:: 1.3
+
+    :param method: The method to add to the class
+    :param cls: The class to which to add the method
+    :param name: The name under which the method is registered in the class namespace
+    :param method_type: One of :class:`staticmethod`, :class:`classmethod`, or ``None`` (or omitted)
+    """
+    if name is None:
+        name = method.__name__
+    
+    if method_type is auto:
+        method_type = get_implicit_method_type(name)
+
+    original_method, wrap_original = _get_original_method(cls, name, method_type)
+
+    @wrap_original
+    def replacement_method(*args, **kwargs):
+        return method(original_method, *args, **kwargs)
+    
+    add_method_to_class(replacement_method, cls, name, method_type=method_type)
+
+
+def _get_original_method(cls, method_name, method_type):
+    cls_vars = static_vars(cls)
+
+    try:
+        original_method = cls_vars[method_name]
+    except KeyError:
+        # === SPECIAL METHOD: __new__ ===
+        if method_name == '__new__':
+            original_method, wrap_original = _make_original_new_method(cls)
+        
+        # === STATICMETHODS ===
+        elif method_type is staticmethod:
+            def original_method(*args, **kwargs):
+                super_method = getattr(super(cls, cls), method_name)
+                return super_method(*args, **kwargs)
+            
+            wrap_original = lambda func: func
+        
+        # === INSTANCE- AND CLASSMETHODS ===
+        else:
+            def original_method(self_or_cls, *args, **kwargs):
+                super_method = getattr(super(cls, self_or_cls), method_name)
+                return super_method(*args, **kwargs)
+
+            wrap_original = lambda func: func
+    else:
+        if isinstance(original_method, (staticmethod, classmethod)):
+            original_method = original_method.__func__
+
+        wrap_original = functools.wraps(original_method)
+    
+    return original_method, wrap_original
+
+
+def _make_original_new_method(cls):
+    def original_method(class_, *args, **kwargs):
+        super_new = super(cls, class_).__new__
+
+        # object.__new__ accepts no arguments if the class
+        # implements its own __new__ method, so we must
+        # take care to not pass it any if this is the only
+        # __new__ method in the whole MRO. But if there's
+        # no __init__ method either, then receiving any
+        # arguments should results in an exception.
+
+        # If super_new is not object.__new__, then it's
+        # their responsibility to deal with the arguments.
+        # In this case, we always forward them.
+        # If the class implements no __init__ method at all,
+        # we forward them as well.
+        if super_new is object.__new__ and class_.__init__ is not object.__init__:
+            # At this point, we know that the next __new__
+            # method in the MRO is object.__new__, so we
+            # must decide how to handle the arguments.
+
+            # If there's a __new__ method in the MRO that
+            # is not object.__new__ and is not marked as
+            # ._forwards_args, then that method should've
+            # consumed all the arguments.
+            forward_args = False
+
+            for c in class_.__mro__:  # pragma: no branch
+                if c is object:
+                    break
+
+                try:
+                    # __new__ is always wrapped in a staticmethod
+                    new = static_vars(c)['__new__'].__func__
+                except KeyError:
+                    continue
+
+                if getattr(new, '_forwards_args', False):
+                    continue
+                
+                forward_args = True
+                break
+            
+            if not forward_args:
+                args = ()
+                kwargs = {}
+        
+        return super_new(class_, *args, **kwargs)
+    
+    # We're just gonna assume that the user is going to properly
+    # call our original_method, because if not, they should've
+    # just used add_method_to_class instead.
+    def wrap_original(func):
+        func._forwards_args = True
+        return func
+    
+    return original_method, wrap_original

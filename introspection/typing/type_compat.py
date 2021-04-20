@@ -162,6 +162,10 @@ def to_python(type_, strict=False):
     else:
         args = tuple(to_python(arg, strict) for arg in args)
 
+    # Some generics, like typing.Optional, don't accept tuples
+    if len(args) == 1:
+        args = args[0]
+
     return base[args]
 
 

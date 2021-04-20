@@ -140,6 +140,168 @@ that shadows all other descriptors of the same name is returned.</p>
 </dl>
 </dd></dl>
 
+<dl class="py function">
+<dt id="introspection.get_implicit_method_type">
+<span id="introspection.classes.get_implicit_method_type"></span><code class="sig-prename descclassname"><span class="pre">introspection.</span></code><code class="sig-name descname"><span class="pre">get_implicit_method_type</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.get_implicit_method_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given the name of a method as input, returns what kind of method python automatically
+converts it to. The return value can be <code class="xref py py-class docutils literal notranslate"><span class="pre">staticmethod</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">classmethod</span></code>,
+or <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+<p>Examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">get_implicit_method_type</span><span class="p">(</span><span class="s1">&#39;frobnicate_quadrizzles&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">get_implicit_method_type</span><span class="p">(</span><span class="s1">&#39;__new__&#39;</span><span class="p">)</span>
+<span class="go">&lt;class &#39;staticmethod&#39;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">get_implicit_method_type</span><span class="p">(</span><span class="s1">&#39;__init_subclass__&#39;</span><span class="p">)</span>
+<span class="go">&lt;class &#39;classmethod&#39;&gt;</span>
+</pre></div>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version 1.3.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="introspection.add_method_to_class">
+<span id="introspection.classes.add_method_to_class"></span><code class="sig-prename descclassname"><span class="pre">introspection.</span></code><code class="sig-name descname"><span class="pre">add_method_to_class</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">auto</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.add_method_to_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds <code class="docutils literal notranslate"><span class="pre">method</span></code> to <code class="docutils literal notranslate"><span class="pre">cls</span></code>‘s namespace under the given <code class="docutils literal notranslate"><span class="pre">name</span></code>.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">name</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code>, it defaults to <code class="docutils literal notranslate"><span class="pre">method.__name__</span></code>.</p>
+<p>The method’s metadata (<code class="docutils literal notranslate"><span class="pre">__name__</span></code>, <code class="docutils literal notranslate"><span class="pre">__qualname__</span></code>, and <code class="docutils literal notranslate"><span class="pre">__module__</span></code>)
+will be updated to match the class.</p>
+<p>If a <code class="docutils literal notranslate"><span class="pre">method_type</span></code> is passed in, it should have a value of <code class="xref py py-class docutils literal notranslate"><span class="pre">staticmethod</span></code>,
+<code class="xref py py-class docutils literal notranslate"><span class="pre">classmethod</span></code>, or <code class="docutils literal notranslate"><span class="pre">None</span></code>. If omitted, it is automatically determined by
+calling <a class="reference internal" href="#introspection.get_implicit_method_type" title="introspection.get_implicit_method_type"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_implicit_method_type()</span></code></a>. The method is then automatically
+wrapped with the appropriate descriptor.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version 1.3.</span></p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>method</strong> – The method to add to the class</p></li>
+<li><p><strong>cls</strong> – The class to which to add the method</p></li>
+<li><p><strong>name</strong> – The name under which the method is registered in the class namespace</p></li>
+<li><p><strong>method_type</strong> – One of <code class="xref py py-class docutils literal notranslate"><span class="pre">staticmethod</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">classmethod</span></code>, or <code class="docutils literal notranslate"><span class="pre">None</span></code> (or omitted)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="introspection.wrap_method">
+<span id="introspection.classes.wrap_method"></span><code class="sig-prename descclassname"><span class="pre">introspection.</span></code><code class="sig-name descname"><span class="pre">wrap_method</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">auto</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.wrap_method" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds <code class="docutils literal notranslate"><span class="pre">method</span></code> to <code class="docutils literal notranslate"><span class="pre">cls</span></code>‘s namespace under the given <code class="docutils literal notranslate"><span class="pre">name</span></code>,
+wrapping the existing method (if one exists).</p>
+<p>The replaced method will be passed in as the first positional argument
+(even before the implicit <code class="docutils literal notranslate"><span class="pre">self</span></code>). If the class previously didn’t
+implement this method, an appropriate dummy method will be passed
+in instead, which merely sends the call further up the MRO.</p>
+<p><code class="docutils literal notranslate"><span class="pre">method_type</span></code> has the same meaning as it does in <a class="reference internal" href="#introspection.add_method_to_class" title="introspection.add_method_to_class"><code class="xref py py-func docutils literal notranslate"><span class="pre">add_method_to_class()</span></code></a>.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Foo</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">foo</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">foo</span> <span class="o">=</span> <span class="n">foo</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;&lt;Foo object with foo=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">foo</span><span class="si">}</span><span class="s1">&gt;&#39;</span>
+
+<span class="k">def</span> <span class="nf">custom_init</span><span class="p">(</span><span class="n">original_init</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="n">original_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Initialized instance:&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+
+<span class="n">wrap_method</span><span class="p">(</span><span class="n">custom_init</span><span class="p">,</span> <span class="n">Foo</span><span class="p">,</span> <span class="s1">&#39;__init__&#39;</span><span class="p">)</span>
+
+<span class="n">Foo</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>  <span class="c1"># prints &quot;Initialized instance: &lt;Foo object with foo=5&gt;&quot;</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Adding a <code class="docutils literal notranslate"><span class="pre">__new__</span></code> method to a class can lead to unexpected
+problems because of the way <code class="docutils literal notranslate"><span class="pre">object.__new__</span></code> works.</p>
+<p>If a class doesn’t implement a <code class="docutils literal notranslate"><span class="pre">__new__</span></code> method at all, 
+<code class="docutils literal notranslate"><span class="pre">object.__new__</span></code> silently discards any arguments it receives.
+But if a class does implement a custom <code class="docutils literal notranslate"><span class="pre">__new__</span></code> method,
+passing arguments into <code class="docutils literal notranslate"><span class="pre">object.__new__</span></code> will throw an exception:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">ThisWorks</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">some_arg</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+<span class="k">class</span> <span class="nc">ThisDoesntWork</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">some_arg</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+<span class="n">ThisWorks</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>  <span class="c1"># works</span>
+<span class="n">ThisDoesntWork</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>  <span class="c1"># throws TypeError: object.__new__() takes exactly one argument</span>
+</pre></div>
+</div>
+<p>This is why, when this function is used to add a <code class="docutils literal notranslate"><span class="pre">__new__</span></code>
+method to a class that previously didn’t have one, it
+automatically generates a dummy <code class="docutils literal notranslate"><span class="pre">__new__</span></code> that <em>attempts</em>
+to figure out whether it should forward its arguments to
+the base class’s <code class="docutils literal notranslate"><span class="pre">__new__</span></code> method or not. This is why
+the following code will work just fine:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">ThisWorks</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">some_arg</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+<span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span><span class="n">original_new</span><span class="p">,</span> <span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">original_new</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<span class="n">wrap_method</span><span class="p">(</span><span class="fm">__new__</span><span class="p">,</span> <span class="n">ThisWorks</span><span class="p">)</span>
+
+<span class="n">ThisWorks</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>  <span class="c1"># works!</span>
+</pre></div>
+</div>
+<p>However, it is impossible to always correctly figure out
+if the arguments should be passed on or not. If there is
+another <code class="docutils literal notranslate"><span class="pre">__new__</span></code> method that passes on its arguments,
+things will go wrong:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Parent</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">some_arg</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+<span class="k">class</span> <span class="nc">Child</span><span class="p">(</span><span class="n">Parent</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span><span class="n">original_new</span><span class="p">,</span> <span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">original_new</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<span class="n">wrap_method</span><span class="p">(</span><span class="fm">__new__</span><span class="p">,</span> <span class="n">Parent</span><span class="p">)</span>
+
+<span class="n">Parent</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>  <span class="c1"># works!</span>
+<span class="n">Child</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>  <span class="c1"># throws TypeError</span>
+</pre></div>
+</div>
+<p>In such a scenario, the method sees that <code class="docutils literal notranslate"><span class="pre">Child.__new__</span></code>
+exists, and therefore it is <code class="docutils literal notranslate"><span class="pre">Child.__new__</span></code>‘s responsibility
+to handle the arguments correctly. It should consume all the
+arguments, but doesn’t, so an exception is raised.</p>
+<p>As a workaround, you can mark <code class="docutils literal notranslate"><span class="pre">Child.__new__</span></code> as a
+method that forwards its arguments. This is done by
+setting its <code class="docutils literal notranslate"><span class="pre">_forwards_args</span></code> attribute to <code class="docutils literal notranslate"><span class="pre">True</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Child</span><span class="o">.</span><span class="fm">__new__</span><span class="o">.</span><span class="n">_forwards_args</span> <span class="o">=</span> <span class="kc">True</span>
+
+<span class="n">Child</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>  <span class="c1"># works!</span>
+</pre></div>
+</div>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version 1.3.</span></p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>method</strong> – The method to add to the class</p></li>
+<li><p><strong>cls</strong> – The class to which to add the method</p></li>
+<li><p><strong>name</strong> – The name under which the method is registered in the class namespace</p></li>
+<li><p><strong>method_type</strong> – One of <code class="xref py py-class docutils literal notranslate"><span class="pre">staticmethod</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">classmethod</span></code>, or <code class="docutils literal notranslate"><span class="pre">None</span></code> (or omitted)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
 </div>
 
 

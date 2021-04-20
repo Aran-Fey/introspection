@@ -782,6 +782,15 @@ def get_type_arguments(type_):
         (<class 'int'>,)
         >>> get_type_arguments(typing.Callable[[str], None])
         ([<class 'str'>], None)
+    
+    Note that some generic types (like :any:`typing.Optional`) won't accept
+    a tuple as input, so take care when you try to parameterize something
+    with this function's return value::
+
+        >>> get_type_arguments(typing.Optional[int])
+        (<class 'int'>,)
+        >>> typing.Optional[(int,)]
+        TypeError: typing.Optional requires a single type. Got (<class 'int'>,).
 
     :param type_: A parameterized generic type
     :return: The input type's type arguments

@@ -315,8 +315,8 @@ for key in list(BUILTIN_SIGNATURES):
 
     try:
         key = getattr(builtins, key)
-    except AttributeError:
-        continue
+    except AttributeError:  # pragma: no cover
+        continue            # pragma: no cover
 
     BUILTIN_SIGNATURES[key] = value
 

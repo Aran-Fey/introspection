@@ -38,6 +38,7 @@ def test_to_python_strict(type_, expected):
 @pytest.mark.parametrize('type_, expected', [
     (typing.Any, typing.Any),
     (typing.SupportsFloat, typing.SupportsFloat),
+    (typing.Optional[int], typing.Optional[int]),
 ])
 def test_to_python_non_strict(type_, expected):
     assert to_python(type_, strict=False) == expected

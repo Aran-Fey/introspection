@@ -1,6 +1,10 @@
 
 import abc
+import types
 
+import pytest
+
+import introspection
 from introspection.classes import *
 
 
@@ -135,3 +139,338 @@ def test_get_attributes_with_weakref():
 
     attrs = get_attributes(obj, include_weakref=True)
     assert attrs == {'foo': 3, '__weakref__': None}
+
+
+@pytest.mark.parametrize('method_name, expected_type', [
+    ('__new__', staticmethod),
+    ('__init_subclass__', classmethod),
+    ('__class_getitem__', classmethod),
+    ('__init__', None),
+    ('__get__', None),
+    ('frobnicate', None),
+])
+def test_get_implicit_method_type(method_name, expected_type):
+    assert get_implicit_method_type(method_name) is expected_type
+
+
+
+def test_add_method_to_class():
+    def method(self):
+        return 5
+
+    class Foo:
+        pass
+
+    add_method_to_class(method, Foo)
+
+    assert Foo.method is method
+
+
+def test_add_method_to_class_overwrite():
+    def method(self):
+        return 5
+    
+    class Foo:
+        def method(self):
+            return 3
+
+    add_method_to_class(method, Foo)
+
+    assert Foo.method is method
+
+
+def test_add_method_to_class_with_name():
+    def method(self):
+        return 5
+    
+    class Foo:
+        pass
+
+    add_method_to_class(method, Foo, name='my_method')
+
+    assert Foo.my_method is method
+    assert Foo().my_method() == 5
+
+
+def test_add_method_to_class_with_implicit_type():
+    def method(cls, key):
+        return (key, 2)
+    
+    class Foo:
+        pass
+
+    add_method_to_class(method, Foo, name='__class_getitem__')
+
+    assert isinstance(vars(Foo)['__class_getitem__'], classmethod)
+    assert Foo.__class_getitem__.__func__ is method
+
+
+def test_add_method_to_class_as_staticmethod():
+    def do_something():
+        pass
+    
+    class Foo:
+        pass
+
+    add_method_to_class(do_something, Foo, method_type=staticmethod)
+
+    assert isinstance(vars(Foo)['do_something'], staticmethod)
+    assert Foo.do_something is do_something
+
+
+def test_add_method_to_class_as_instancemethod():
+    def method(self):
+        return 5
+    
+    class Foo:
+        pass
+
+    add_method_to_class(method, Foo, method_type=None)
+
+    assert Foo.method is method
+    assert isinstance(vars(Foo)['method'], types.FunctionType)
+
+
+def test_wrap_method_instancemethod():
+    def __repr__(original_method, self):
+        return 'hello ' + original_method(self)
+    
+    class Foo:
+        def __repr__(self):
+            return 'world'
+
+    wrap_method(__repr__, Foo)
+
+    assert repr(Foo()) == 'hello world'
+
+
+def test_wrap_method_no_original_instancemethod():
+    def __repr__(original_method, self):
+        return 'hello ' + original_method(self)
+    
+    class Parent:
+        def __repr__(self):
+            return 'world'
+
+    class Child(Parent):
+        pass
+
+    wrap_method(__repr__, Child)
+
+    assert repr(Child()) == 'hello world'
+
+
+def test_wrap_method_implicit_classmethod():
+    def init_subclass(original_method, cls, **kwargs):
+        original_method(cls, **kwargs)
+        cls.foo = True
+    
+    class Parent:
+        def __init_subclass__(cls, **kwargs):
+            cls.parent_kwargs = kwargs
+
+    class Child(Parent):
+        pass
+
+    wrap_method(init_subclass, Child, '__init_subclass__')
+
+    class Toddler(Child, bar=9):
+        pass
+
+    assert isinstance(vars(Child)['__init_subclass__'], classmethod)
+    assert Toddler.foo is True
+    assert Toddler.parent_kwargs == {'bar': 9}
+
+
+def test_wrap_method_implicit_staticmethod(monkeypatch):
+    # There is no implicit staticmethod other than __new__, which gets
+    # special handling, so we must monkeypatch it
+    monkeypatch.setattr(introspection.classes, 'get_implicit_method_type', lambda _: staticmethod)
+
+    def do_stuff(original_method, *args, **kwargs):
+        return 4, original_method(*args, **kwargs)
+    
+    class Parent:
+        @staticmethod
+        def do_stuff(x, *, y):
+            return 17, x, y
+    
+    class Child(Parent):
+        pass
+
+    wrap_method(do_stuff, Child)
+
+    assert isinstance(vars(Child)['do_stuff'], staticmethod)
+    assert Child().do_stuff(3, y=False) == (4, (17, 3, False))
+
+
+def test_wrap_method_with_explicit_type():
+    def do_something(original_method, cls, *args, **kwargs):
+        return (cls, original_method(*args, **kwargs))
+    
+    class Foo:
+        @staticmethod
+        def do_something():
+            return 5
+
+    wrap_method(do_something, Foo, method_type=classmethod)
+
+    assert Foo.do_something() == (Foo, 5)
+
+
+def test_wrap_method_no_other_new():
+    def new(original_new, cls, *args, **kwargs):
+        instance = original_new(cls, *args, **kwargs)
+        instance.z = 3
+        return instance
+    
+    # Foo doesn't define __new__, so the original_new
+    # must not pass on any arguments to object.__new__
+    class Parent:
+        def __init__(self, x, *, y):
+            self.x = x
+            self.y = y
+    
+    class Child(Parent):
+        pass  # another class with no __new__ method
+
+    wrap_method(new, Parent, '__new__')
+
+    obj = Child(1, y=2)
+    assert vars(obj) == {'x': 1, 'y': 2, 'z': 3}
+
+
+def test_wrap_method_new_with_no_init():
+    def new(original_new, cls, *args, **kwargs):
+        instance = original_new(cls, *args, **kwargs)
+        instance.z = 3
+        return instance
+    
+    # Foo doesn't define __new__ OR __init__, so calling
+    # it with arguments should fail
+    class Foo:
+        pass
+
+    wrap_method(new, Foo, '__new__')
+
+    with pytest.raises(TypeError):
+        Foo(1, y=2)
+
+
+def test_wrap_method_with_super_new():
+    def new(original_new, cls, *args, **kwargs):
+        instance = original_new(cls, *args, **kwargs)
+        instance.z = 3
+        return instance
+    
+    # Since Bar implements __new__, original_new must forward
+    # its arguments
+    class Bar:
+        def __new__(cls, x, *, y):
+            instance = super().__new__(cls)
+            instance.x = x
+            instance.y = y
+            return instance
+        
+        def __init__(self, *args, **kwargs):
+            pass
+
+    class Foo(Bar):
+        pass
+
+    wrap_method(new, Foo, '__new__')
+
+    foo = Foo(1, y=2)
+    assert vars(foo) == {'x': 1, 'y': 2, 'z': 3}
+
+
+def test_wrap_method_with_injected_super_new():
+    def new(original_new, cls, *args, **kwargs):
+        instance = original_new(cls, *args, **kwargs)
+        instance.z = 3
+        return instance
+    
+    # Neither Foo nor any of its base classes implement __new__,
+    # but FooBar injects Bar (which does implement __new__) into
+    # the MRO
+    class Bar:
+        def __new__(cls, x, *, y):
+            instance = super().__new__(cls)
+            instance.x = x
+            instance.y = y
+            return instance
+        
+        def __init__(self, *args, **kwargs):
+            pass
+
+    class Foo:
+        pass
+
+    class FooBar(Foo, Bar):
+        pass
+
+    wrap_method(new, Foo, '__new__')
+
+    foo = FooBar(1, y=2)
+    assert vars(foo) == {'x': 1, 'y': 2, 'z': 3}
+
+
+def test_wrap_method_with_subclass_new():
+    def new(original_new, cls, *args, **kwargs):
+        instance = original_new(cls, *args, **kwargs)
+        instance.z = 3
+        return instance
+    
+    # Foo doesn't implement __new__, but SubFoo
+    # does. So if any arguments are passed into Foo.__new__,
+    # that's SubFoo.__new__'s fault. In this case, the
+    # arguments should be forwarded to object.__new__ so
+    # that it throws an exception.
+    class Foo:
+        pass
+
+    class SubFoo(Foo):
+        def __new__(cls):
+            return super().__new__(cls, 'oops, an extra argument')
+        
+        # Add an __init__ method to stay out of the "pass on arguments
+        # if the class doesn't implement __init__" branch
+        def __init__(self, *args, **kwargs):
+            pass
+
+    wrap_method(new, Foo, '__new__')
+
+    with pytest.raises(TypeError):
+        SubFoo()
+
+
+def test_wrap_method_with_multiple_new():
+    new1_args = new1_kwargs = None
+
+    def new1(original_new, cls, *args, **kwargs):
+        nonlocal new1_args, new1_kwargs
+        new1_args = args
+        new1_kwargs = kwargs
+
+        return original_new(cls, *args, **kwargs)
+    
+    def new2(original_new, cls, *args, **kwargs):
+        return original_new(cls, *args, **kwargs)
+    
+    # There are multiple classes with a replaced
+    # __new__ method in the MRO, so the last one
+    # should handle the arguments
+    class Bar:
+        pass
+
+    class Foo(Bar):
+        pass
+
+    wrap_method(new1, Bar, '__new__')
+    wrap_method(new2, Foo, '__new__')
+
+    with pytest.raises(TypeError):
+        Foo("oops", what="are these doing here")
+    
+    assert new1_args == ('oops',)
+    assert new1_kwargs == {'what': 'are these doing here'}

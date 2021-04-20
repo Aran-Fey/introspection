@@ -2,7 +2,7 @@
 New and improved introspection functions
 """
 
-__version__ = '1.2'
+__version__ = '1.3'
 
 from .parameter import *
 from .signature import *
@@ -14,7 +14,7 @@ from .classes import *
 from .dundermethods import *
 from .misc import *
 
-# make sure a ``from introspection import *`` doesn't
+# Make sure a ``from introspection import *`` doesn't
 # import the ``typing`` submodule
 import types
 __all__ = [
