@@ -24,7 +24,7 @@ def _call_descriptor_func(sup, attr, func_name, *args):
 
 class super(super):
     """
-    A subclass of the builtin :class:`super` that lets you invoke the setter and
+    A subclass of the builtin :any:`python:super` that lets you invoke the setter and
     deleter of descriptors in a parent class.
 
     .. note::

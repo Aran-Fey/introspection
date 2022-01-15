@@ -193,7 +193,7 @@ def static_hasattr(obj: Any, attr_name: str) -> bool:
     """
     Like the builtin :func:`hasattr`, except it doesn't execute any
     ``__getattr__`` or ``__getattribute__`` functions and also tries to avoid
-    invoking descriptors. (See :func:`static_vars` for more details.)
+    invoking descriptors. (See :func:`~introspection.static_vars` for more details.)
 
     .. versionadded: 1.4
 
