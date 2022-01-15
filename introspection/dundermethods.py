@@ -1,11 +1,15 @@
 
-from typing import Iterator, Iterable, Tuple, Dict, Any, Callable, Optional
+import types
+from typing import Iterator, Iterable, Tuple, Dict, Any, Callable, Optional, Type
 
+from .classes import static_mro
 from .misc import static_vars
 
-__all__ = ['DUNDERMETHOD_NAMES', 'AUGMENTED_ASSIGNMENT_DUNDERMETHOD_NAMES',
-           'iter_class_dundermethods', 'class_implements_dundermethod', 'class_implements_any_dundermethod', 'class_implements_dundermethods', 'collect_class_dundermethods', 'get_class_dundermethod',
-           'get_bound_dundermethod']
+__all__ = [
+    'DUNDERMETHOD_NAMES', 'AUGMENTED_ASSIGNMENT_DUNDERMETHOD_NAMES',
+    'iter_class_dundermethods', 'class_implements_dundermethod', 'class_implements_any_dundermethod', 'class_implements_dundermethods', 'collect_class_dundermethods', 'get_class_dundermethod',
+    'get_bound_dundermethod', 'call_dundermethod'
+]
 
 
 # An incomplete(!) list of dundermethods can be found on the data model page:
@@ -33,122 +37,195 @@ AUGMENTED_ASSIGNMENT_DUNDERMETHOD_NAMES = {
     '__ior__',
 }
 
+#: A set containing the names of all dundermethods for which ``None`` is
+#: a valid value in python 3.9.
+#:
+#: .. versionadded:: 1.4
+NONEABLE_DUNDERMETHOD_NAMES = {
+    '__hash__',
+    '__iter__',
+}
+
 
 def _is_implemented(name, method):
-    if name == '__hash__':
+    if name in NONEABLE_DUNDERMETHOD_NAMES:
         return method is not None
     else:
         return True
 
 
-def iter_class_dundermethods(cls: type,
-                             bound: Optional[type] = None,
-                             ) -> Iterator[Tuple[str, Any]]:
+def iter_class_attributes(
+        cls,
+        *,
+        start: Optional[type] = None,
+        start_after: Optional[type] = None,
+        bound: Optional[type] = None,
+    ):
+    mro = static_mro(cls)
+
+    if start is not None:
+        if start_after is not None:
+            raise TypeError(f"You cannot pass 'start' and 'start_after' at the same time")
+
+        mro = mro[mro.index(start):]
+    elif start_after is not None:
+        mro = mro[mro.index(start_after)+1:]
+    
+    if bound is not None:
+        mro = mro[:mro.index(bound)]
+
+    for cls in mro:
+        yield from static_vars(cls).items()
+
+
+def iter_class_dundermethods(
+        cls: type,
+        *,
+        start: Optional[type] = None,
+        start_after: Optional[type] = None,
+        bound: Optional[type] = None,
+    ) -> Iterator[Tuple[str, Any]]:
     """
     Yields all dundermethods implemented by the given class as
     ``(method_name, method)`` tuples.
 
-    (For the purpose of this function, "implemented" simply
-    means "exists". Even if the method's value is ``None`` or
-    anything else, it will still be yielded.)
+    (For the purpose of this function, "implemented" simply means "exists". Even
+    if the method's value is ``None`` or anything else, it will still be
+    yielded.)
 
-    If multiple classes in the MRO implement the same dundermethod,
-    both methods will be yielded. Methods implemented by subclasses
-    will always be yielded before methods implemented by parent
-    classes.
+    If multiple classes in the MRO implement the same dundermethod, both methods
+    will be yielded. Methods implemented by subclasses will always be yielded
+    before methods implemented by parent classes.
 
-    You can cause the iteration to stop early by passing in a class
-    as the upper ``bound``. The MRO will only be iterated up to
-    the ``bound``, excluding the ``bound`` class itself. This is
-    useful for excluding dundermethods implemented in :class:`object`.
+    You can skip some classes in the MRO by specifying ``start`` or
+    ``start_after``. If ``start`` is not ``None``, iteration will begin at that
+    class. If ``start_after`` is not ``None``, iteration will begin after that
+    class. Passing both at the same time is not allowed.
+
+    You can cause the iteration to stop early by passing in a class as the upper
+    ``bound``. The MRO will only be iterated up to the ``bound``, excluding the
+    ``bound`` class itself. This is useful for excluding dundermethods
+    implemented in :class:`object`.
 
     :param cls: The class whose dundermethods to yield
+    :param start: Where to start iterating through the class's MRO
+    :param start_after: Where to start iterating through the class's MRO
     :param bound: Where to stop iterating through the class's MRO
     :return: An iterator yielding ``(method_name, method)`` tuples
     :raises TypeError: If ``cls`` is not a class
     """
     if not isinstance(cls, type):
-        raise TypeError("'cls' argument must be a class, not {}".format(cls))
+        raise TypeError(f"'cls' argument must be a class, not {cls!r}")
 
-    for cl in cls.__mro__:
-        if cl is bound:
-            break
-
-        cls_vars = static_vars(cl)
-
-        for name, method in cls_vars.items():
-            if name in DUNDERMETHOD_NAMES:
-                yield name, method
+    for name, method in iter_class_attributes(cls, start=start, start_after=start_after, bound=bound):
+        if name in DUNDERMETHOD_NAMES:
+            yield name, method
 
 
-def collect_class_dundermethods(cls: type,
-                                bound: Optional[type] = None,
-                                ) -> Dict[str, Any]:
+def collect_class_dundermethods(
+        cls: type,
+        *,
+        start: Optional[type] = None,
+        start_after: Optional[type] = None,
+        bound: Optional[type] = None,
+    ) -> Dict[str, Any]:
     """
-    Generates a dict of the form ``{method_name: method}``
-    containing all dundermethods implemented by the given class.
+    Generates a dict of the form ``{method_name: method}`` containing all
+    dundermethods implemented by the given class.
 
-    If multiple classes in the MRO implement the same dundermethod,
-    only the first implementation is included in the result.
+    If multiple classes in the MRO implement the same dundermethod, only the
+    first implementation is included in the result.
+
+    For details about ``start``, ``start_after`` and ``bound``, see
+    :func:`~introspection.iter_class_dundermethods`.
+
+    .. versionadded:: 1.4
+        The ``start`` and ``start_after`` parameters.
 
     :param cls: The class whose dundermethods to collect
+    :param start: Where to start iterating through the class's MRO
+    :param start_after: Where to start iterating through the class's MRO
     :param bound: Where to stop iterating through the class's MRO
     :return: A ``{method_name: method}`` dict
     :raises TypeError: If ``cls`` is not a class
     """
     methods = {}
 
-    for name, method in iter_class_dundermethods(cls, bound=bound):
+    for name, method in iter_class_dundermethods(cls, start=start, start_after=start_after, bound=bound):
         methods.setdefault(name, method)
 
     return methods
 
 
-def class_implements_dundermethod(cls: type,
-                                  method_name: str,
-                                  bound: Optional[type] = None,
-                                  ) -> bool:
+def class_implements_dundermethod(
+        cls: type,
+        method_name: str,
+        *,
+        start: Optional[type] = None,
+        start_after: Optional[type] = None,
+        bound: Optional[type] = None,
+    ) -> bool:
     """
     Checks whether the given class implements a certain dundermethod.
 
-    The method is considered implemented if any of the classes in the
-    MRO have an entry for ``method_name`` in their ``__dict__``. The
-    only exception is that ``__hash__`` methods are considered *not*
+    The method is considered implemented if any of the classes in the MRO have
+    an entry for ``method_name`` in their ``__dict__``. The only exceptions are
+    methods from :attr:`NONEABLE_DUNDERMETHOD_NAMES`, which are considered *not*
     implemented if their value is ``None``.
 
-    Note that :class:`object` implements various dundermethods,
-    including some unexpected ones like ``__lt__``. Remember to pass
-    in ``bound=object`` if you wish to exclude these.
+    Note that :class:`object` implements various dundermethods, including some
+    unexpected ones like ``__lt__``. Remember to pass in ``bound=object`` if you
+    wish to exclude these.
+
+    For details about ``start``, ``start_after`` and ``bound``, see
+    :func:`~introspection.iter_class_dundermethods`.
+
+    .. versionadded:: 1.4
+        The ``start`` and ``start_after`` parameters.
 
     :param cls: A class
     :param method_name: The name of a dundermethod
+    :param start: Where to start searching through the class's MRO
+    :param start_after: Where to start searching through the class's MRO
     :param bound: Where to stop searching through the class's MRO
     :return: A boolean indicating whether the class implements that dundermethod
     :raises TypeError: If ``cls`` is not a class
     """
-    for name, method in iter_class_dundermethods(cls, bound=bound):
+    for name, method in iter_class_attributes(cls, start=start, start_after=start_after, bound=bound):
         if name == method_name:
             return _is_implemented(name, method)
 
     return False
 
 
-def class_implements_dundermethods(cls: type,
-                                   methods: Iterable[str],
-                                   bound: Optional[type] = None,
-                                   ) -> bool:
+def class_implements_dundermethods(
+        cls: type,
+        methods: Iterable[str],
+        *,
+        start: Optional[type] = None,
+        start_after: Optional[type] = None,
+        bound: Optional[type] = None,
+    ) -> bool:
     """
     Checks whether the given class implements all given dundermethods.
 
+    For details about ``start``, ``start_after`` and ``bound``, see
+    :func:`~introspection.iter_class_dundermethods`.
+
+    .. versionadded:: 1.4
+        The ``start`` and ``start_after`` parameters.
+
     :param cls: A class
     :param methods: The names of a bunch of dundermethods
+    :param start: Where to start searching through the class's MRO
+    :param start_after: Where to start searching through the class's MRO
     :param bound: Where to stop searching through the class's MRO
     :return: A boolean indicating whether the class implements all those dundermethods
     :raises TypeError: If ``cls`` is not a class
     """
     methods = set(methods)
 
-    for name, method in iter_class_dundermethods(cls, bound=bound):
+    for name, method in iter_class_attributes(cls, start=start, start_after=start_after, bound=bound):
         if name not in methods:
             continue
 
@@ -160,16 +237,28 @@ def class_implements_dundermethods(cls: type,
     return not methods
 
 
-def class_implements_any_dundermethod(cls: type,
-                                      methods: Iterable[str],
-                                      bound: Optional[type] = None,
-                                      ) -> bool:
+def class_implements_any_dundermethod(
+        cls: type,
+        methods: Iterable[str],
+        *,
+        start: Optional[type] = None,
+        start_after: Optional[type] = None,
+        bound: Optional[type] = None,
+    ) -> bool:
     """
-    Checks whether the given class implements at least one of the
-    given dundermethods.
+    Checks whether the given class implements at least one of the given
+    dundermethods.
+
+    For details about ``start``, ``start_after`` and ``bound``, see
+    :func:`~introspection.iter_class_dundermethods`.
+
+    .. versionadded:: 1.4
+        The ``start`` and ``start_after`` parameters.
 
     :param cls: A class
     :param methods: The names of a bunch of dundermethods
+    :param start: Where to start searching through the class's MRO
+    :param start_after: Where to start searching through the class's MRO
     :param bound: Where to stop searching through the class's MRO
     :return: A boolean indicating whether the class implements any of those dundermethods
     :raises TypeError: If ``cls`` is not a class
@@ -177,7 +266,7 @@ def class_implements_any_dundermethod(cls: type,
     methods = set(methods)
     seen = set()
 
-    for name, method in iter_class_dundermethods(cls, bound=bound):
+    for name, method in iter_class_attributes(cls, start=start, start_after=start_after, bound=bound):
         if name not in methods:
             continue
 
@@ -193,44 +282,154 @@ def class_implements_any_dundermethod(cls: type,
     return False
 
 
-def get_class_dundermethod(cls: type,
-                           method_name: str,
-                           bound: Optional[type] = None,
-                           ) -> Optional[Callable]:
+def get_class_dundermethod(
+        cls: type,
+        method_name: str,
+        *,
+        start: Optional[type] = None,
+        start_after: Optional[type] = None,
+        bound: Optional[type] = None,
+    ) -> Optional[Callable]:
     """
     Retrieves a class's implementation of the given dundermethod.
 
+    For details about ``start``, ``start_after`` and ``bound``, see
+    :func:`~introspection.iter_class_dundermethods`.
+
+    .. versionadded:: 1.4
+        The ``start`` and ``start_after`` parameters.
+
     :param cls: A class
     :param method_name: The name of a dundermethod
+    :param start: Where to start searching through the class's MRO
+    :param start_after: Where to start searching through the class's MRO
     :param bound: Where to stop searching through the class's MRO
     :return: The function object for the given ``method_name``
     :raises TypeError: If ``cls`` is not a class
     :raises AttributeError: If ``cls`` does not implement that dundermethod
     """
-    for name, method in iter_class_dundermethods(cls, bound=bound):
+    for name, method in iter_class_attributes(cls, start=start, start_after=start_after, bound=bound):
         if name == method_name:
             return method
 
-    msg = "class {!r} does not implement {}"
-    raise AttributeError(msg.format(cls, method_name))
+    raise AttributeError(f"class {cls!r} does not implement {method_name}")
 
 
-def get_bound_dundermethod(instance: Any,
-                           method_name: str,
-                           bound: Optional[type] = None,
-                           ) -> Optional[Callable]:
+def get_bound_dundermethod(
+        instance: Any,
+        method_name: str,
+        *,
+        start: Optional[type] = None,
+        start_after: Optional[type] = None,
+        bound: Optional[type] = None,
+    ) -> Optional[Callable]:
     """
     Retrieves an instance's implementation of the given dundermethod.
 
+    Some dundermethods (for example ``__hash__``) can be explicitly disabled by
+    setting them to ``None``. In such a case, this function will throw an
+    ``AttributeError``.
+
+    For details about ``start``, ``start_after`` and ``bound``, see
+    :func:`~introspection.iter_class_dundermethods`.
+
     .. versionadded:: 1.1
+    .. versionadded:: 1.4
+        The ``start`` and ``start_after`` parameters.
 
     :param instance: Any object
     :param method_name: The name of a dundermethod
+    :param start: Where to start searching through the class's MRO
+    :param start_after: Where to start searching through the class's MRO
     :param bound: Where to stop searching through the class's MRO
     :return: A bound method for the given ``method_name``
     :raises AttributeError: If ``instance`` does not implement that dundermethod
     """
     cls = type(instance)
-    method = get_class_dundermethod(cls, method_name, bound)
+    error = AttributeError(f"class {cls!r} does not implement {method_name}")
 
-    return method.__get__(instance, cls)
+    # Optimization: We can let `super` do most of the work for us. However, if
+    # the dundermethod is none-able (like __hash__), then we have to avoid
+    # `super` because we won't be able to tell if the method was set to None or
+    # if it was a descriptor that returned None.
+    if (
+        method_name in NONEABLE_DUNDERMETHOD_NAMES or
+        start is not None or
+        start_after is not None or
+        bound is not None
+    ):
+        # Manually extract it from the MRO
+        dunder = get_class_dundermethod(
+            cls,
+            method_name,
+            start=start,
+            start_after=start_after,
+            bound=bound,
+        )
+    else:
+        # `super` fast track: Check if the method is implemented in the class,
+        # and if not, use `super` to find it
+        cls_vars = static_vars(cls)
+
+        if method_name in cls_vars:
+            dunder = cls_vars[method_name]
+        else:
+            proxy = super(cls, instance)
+
+            try:
+                return getattr(proxy, method_name)
+            except AttributeError:
+                raise error from None
+
+    # At this point, we have retrieved the dunder from the class namespace
+    if dunder is None and method_name in NONEABLE_DUNDERMETHOD_NAMES:
+        raise error
+
+    # If it's a descriptor, call its __get__ method.
+    dunder_cls = type(dunder)
+
+    # Optimization: If it's a built-in type, we can directly access its __get__
+    # method without having to worry about any shenanigans
+    if dunder_cls in (types.FunctionType, classmethod, staticmethod):
+        return dunder.__get__(instance, cls)
+    
+    # Even though __get__ is also a dundermethod, calling it here doesn't use
+    # the usual mechanism for dundermethods. We simply get the `__get__`
+    # attribute from the class and call it. That's it.
+    try:
+        get = get_class_dundermethod(dunder_cls, '__get__')
+    except AttributeError:
+        return dunder
+    
+    return get(dunder, instance, cls)
+
+
+def call_dundermethod(
+        instance: Any,
+        method_name: str,
+        *args,
+        **kwargs,
+    ):
+    """
+    Given an instance and the name of a dundermethod, calls the object's
+    corresponding dundermethod. Excess arguments are passed to the dundermethod.
+
+    Examples::
+
+        >>> call_dundermethod('foo', '__len__')
+        3
+        >>> call_dundermethod([1], '__add__', [2])
+        [1, 2]
+    
+    Alternatively, you can use the functions in the
+    :mod:`introspection.dunder` module::
+
+        >>> introspection.dunder.__len__('foo')
+        3
+        >>> introspection.dunder.add([1], [2])
+        [1, 2]
+
+    .. versionadded:: 1.4
+    """
+    method = get_bound_dundermethod(instance, method_name)
+    return method(*args, **kwargs)

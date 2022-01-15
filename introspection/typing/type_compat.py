@@ -66,8 +66,8 @@ for key, value in FORWARDREF_TO_TYPING.items():
 
 def to_python(type_, strict=False):
     """
-    Given a ``typing`` type as input, returns the corresponding
-    "regular" python class.
+    Given a ``typing`` type as input, returns the corresponding "regular" python
+    class.
 
     Examples::
 
@@ -76,17 +76,15 @@ def to_python(type_, strict=False):
         >>> to_python(typing.Iterable)
         <class 'collections.abc.Iterable'>
 
-    Note that ``typing.Any`` and :class:`object` are two
-    distinct types::
+    Note that ``typing.Any`` and :class:`object` are two distinct types::
 
         >>> to_python(typing.Any)
         typing.Any
         >>> to_python(object)
         <class 'object'>
 
-    Generics parameterized with ``typing.Any`` or other pointless
-    constraints are converted to their regular python
-    counterparts::
+    Generics parameterized with ``typing.Any`` or other pointless constraints
+    are converted to their regular python counterparts::
 
         >>> to_python(typing.List[typing.Any])
         <class 'list'>
@@ -95,8 +93,7 @@ def to_python(type_, strict=False):
         >>> to_python(typing.Type[object])
         <class 'type'>
 
-    The function recurses on the type arguments of parameterized
-    generics::
+    The function recurses on the type arguments of parameterized generics::
 
         >>> to_python(typing.List[typing.Set], strict=False)
         typing.List[set]
@@ -139,14 +136,16 @@ def to_python(type_, strict=False):
     elif base in (collections.abc.Callable, typing.Callable) and args == (..., typing.Any):
         return collections.abc.Callable
 
-    # At this point we know that the type arguments aren't redundant, so
-    # if python doesn't have a generic equivalent of the base type, then
-    # we can't convert it
+    # At this point we know that the type arguments aren't redundant, so if
+    # python doesn't have a generic equivalent of the base type, then we can't
+    # convert it
     py_base = to_python(base, strict=strict)
 
-    if is_generic(py_base):
+    # I don't think there is a single class that would fail this is_generic
+    # check, so I'll just disable coverage for this
+    if is_generic(py_base):  # pragma: no branch
         base = py_base
-    elif strict:
+    elif strict:  # pragma: no cover
         raise ValueError(f'{type_!r} has no (generic) python equivalent')
 
     if base in (collections.abc.Callable, typing.Callable):

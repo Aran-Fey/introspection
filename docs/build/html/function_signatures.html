@@ -4,15 +4,19 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
     <title>Function Signatures &#8212; Introspection documentation</title>
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="_static/nightsky.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/nightsky.css" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
     <link id="pygments_dark_css" media="(prefers-color-scheme: dark)" rel="stylesheet" type="text/css" href="_static/pygments_dark.css" />
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
+    <script src="_static/clipboard.min.js"></script>
+    <script src="_static/copybutton.js"></script>
     <script src="_static/theme_switcher.js"></script>
     <link rel="shortcut icon" href="_static/favicon.svg"/>
     <link rel="index" title="Index" href="genindex.html" />
@@ -27,7 +31,7 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="function-signatures">
+  <section id="function-signatures">
 <h1>Function Signatures<a class="headerlink" href="#function-signatures" title="Permalink to this headline">¶</a></h1>
 <p>Function signatures are represented by the <a class="reference internal" href="#introspection.Signature" title="introspection.Signature"><code class="xref py py-class docutils literal notranslate"><span class="pre">Signature</span></code></a> class.
 Function parameters are represented by the <a class="reference internal" href="#introspection.Parameter" title="introspection.Parameter"><code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code></a> class.</p>
@@ -36,9 +40,10 @@ Function parameters are represented by the <a class="reference internal" href="#
 <div class="line"><br /></div>
 </div>
 <dl class="py class">
-<dt id="introspection.Signature">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">introspection.</span></code><code class="sig-name descname"><span class="pre">Signature</span></code><a class="headerlink" href="#introspection.Signature" title="Permalink to this definition">¶</a></dt>
-<dd><p>An <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Signature" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">inspect.Signature</span></code></a> subclass that represents a function’s parameter signature and return annotation.</p>
+<dt class="sig sig-object py" id="introspection.Signature">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">Signature</span></span><a class="headerlink" href="#introspection.Signature" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Signature" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">inspect.Signature</span></code></a></p>
+<p>An <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Signature" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">inspect.Signature</span></code></a> subclass that represents a function’s parameter signature and return annotation.</p>
 <p>Instances of this class are immutable.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Variables</dt>
@@ -49,49 +54,51 @@ Function parameters are represented by the <a class="reference internal" href="#
 </dd>
 </dl>
 <dl class="py method">
-<dt id="introspection.Signature.__init__">
-<code class="sig-name descname"><span class="pre">__init__</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#introspection.Signature.__init__" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="introspection.Signature.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_annotation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">inspect.Signature.empty</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validate_parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.Signature.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>parameters</strong> – A list or dict of <a class="reference internal" href="#introspection.Parameter" title="introspection.Parameter"><code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code></a> objects</p></li>
-<li><p><strong>return_annotation</strong> – The annotation for the function’s return value</p></li>
+<li><p><strong>parameters</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code>], <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code>], <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.10)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a>], default: <code class="docutils literal notranslate"><span class="pre">None</span></code>) – A list or dict of <a class="reference internal" href="#introspection.Parameter" title="introspection.Parameter"><code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code></a> objects</p></li>
+<li><p><strong>return_annotation</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>, default: <code class="docutils literal notranslate"><span class="pre">inspect.Signature.empty</span></code>) – The annotation for the function’s return value</p></li>
+<li><p><strong>validate_parameters</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>, default: <code class="docutils literal notranslate"><span class="pre">True</span></code>) – Whether to check if the signature is valid</p></li>
 </ul>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="introspection.Signature.from_signature">
-<em class="property"><span class="pre">classmethod</span> </em><code class="sig-name descname"><span class="pre">from_signature</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">signature</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">introspection.Parameter</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">param_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.Signature.from_signature" title="Permalink to this definition">¶</a></dt>
-<dd><p>Creates a new <code class="docutils literal notranslate"><span class="pre">Signature</span></code> instance from an <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Signature" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">inspect.Signature</span></code></a> instance.</p>
-<div class="deprecated">
-<p><span class="versionmodified deprecated">Deprecated since version 1.2: </span>The <code class="docutils literal notranslate"><span class="pre">param_type</span></code> parameter. Use <code class="docutils literal notranslate"><span class="pre">parameter_type</span></code> instead.</p>
+<dt class="sig sig-object py" id="introspection.Signature.from_signature">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_signature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">signature</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">introspection.Parameter</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.Signature.from_signature" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a new <code class="docutils literal notranslate"><span class="pre">Signature</span></code> instance from an <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Signature" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">inspect.Signature</span></code></a>
+instance.</p>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 1.4: </span><code class="docutils literal notranslate"><span class="pre">param_type</span></code> parameter renamed to <code class="docutils literal notranslate"><span class="pre">parameter_type</span></code>.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>signature</strong> (<a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Signature" title="(in Python v3.9)"><em>inspect.Signature</em></a>) – An <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Signature" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">inspect.Signature</span></code></a> instance</p></li>
-<li><p><strong>parameter_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.9)"><em>type</em></a>) – The class to use for the signature’s parameters</p></li>
+<li><p><strong>signature</strong> (<a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Signature" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Signature</span></code></a>) – An <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Signature" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">inspect.Signature</span></code></a> instance</p></li>
+<li><p><strong>parameter_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></a>, default: <code class="docutils literal notranslate"><span class="pre">introspection.Parameter</span></code>) – The class to use for the signature’s parameters</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A new <code class="docutils literal notranslate"><span class="pre">Signature</span></code> instance</p>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Signature</span></code></p>
 </dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="#introspection.Signature" title="introspection.Signature">Signature</a></p>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A new <code class="docutils literal notranslate"><span class="pre">Signature</span></code> instance</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="introspection.Signature.from_callable">
-<em class="property"><span class="pre">classmethod</span> </em><code class="sig-name descname"><span class="pre">from_callable</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">callable_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">introspection.Parameter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">follow_wrapped</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_signature_db</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">param_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.Signature.from_callable" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="introspection.Signature.from_callable">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_callable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">callable_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">introspection.Parameter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">follow_wrapped</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_signature_db</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.Signature.from_callable" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a matching <a class="reference internal" href="#introspection.Signature" title="introspection.Signature"><code class="xref py py-class docutils literal notranslate"><span class="pre">Signature</span></code></a> instance for the given <code class="docutils literal notranslate"><span class="pre">callable_</span></code>.</p>
 <p>Because the signatures of builtin functions often cannot be determined
 (at least in older python versions), this function contains a database
 of signatures for builtin functions. These signatures contain much more
-detail than <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.signature" title="(in Python v3.9)"><code class="xref py py-func docutils literal notranslate"><span class="pre">inspect.signature()</span></code></a> would provide - like type annotations
+detail than <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.signature" title="(in Python v3.10)"><code class="xref py py-func docutils literal notranslate"><span class="pre">inspect.signature()</span></code></a> would provide - like type annotations
 and default values of <a class="reference internal" href="#introspection.Parameter.missing" title="introspection.Parameter.missing"><code class="xref py py-attr docutils literal notranslate"><span class="pre">Parameter.missing</span></code></a>.</p>
 <p>Pass <code class="docutils literal notranslate"><span class="pre">use_signature_db=False</span></code> if you wish to bypass the signature
 database.</p>
@@ -105,36 +112,38 @@ Also added missing “value” parameter for <code class="docutils literal notra
 <div class="versionchanged">
 <p><span class="versionmodified changed">Changed in version 1.2: </span>Signature database updated for python 3.9.</p>
 </div>
-<div class="deprecated">
-<p><span class="versionmodified deprecated">Deprecated since version 1.2: </span>The <code class="docutils literal notranslate"><span class="pre">param_type</span></code> parameter. Use <code class="docutils literal notranslate"><span class="pre">parameter_type</span></code> instead.</p>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 1.4: </span>Signature database updated for python 3.10.
+<code class="docutils literal notranslate"><span class="pre">param_type</span></code> parameter renamed to <code class="docutils literal notranslate"><span class="pre">parameter_type</span></code>.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>callable_</strong> (<em>Callable</em>) – A function or any other callable object</p></li>
-<li><p><strong>parameter_type</strong> (<em>Type</em><em>[</em><a class="reference internal" href="#introspection.Parameter" title="introspection.Parameter">Parameter</a><em>]</em>) – The class to use for the signature’s parameters</p></li>
-<li><p><strong>follow_wrapped</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – Whether to unwrap decorated callables</p></li>
-<li><p><strong>use_signature_db</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – Whether to look up the signature</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A corresponding <code class="docutils literal notranslate"><span class="pre">Signature</span></code> instance</p>
-</dd>
-<dt class="field-odd">Raises</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.9)"><strong>TypeError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">callable_</span></code> isn’t a callable object</p></li>
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.9)"><strong>ValueError</strong></a> – If the signature can’t be determined (can happen for functions defined in C extensions)</p></li>
+<li><p><strong>callable_</strong> – A function or any other callable object</p></li>
+<li><p><strong>parameter_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Type" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Type</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code>], default: <code class="docutils literal notranslate"><span class="pre">introspection.Parameter</span></code>) – The class to use for the signature’s parameters</p></li>
+<li><p><strong>follow_wrapped</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>, default: <code class="docutils literal notranslate"><span class="pre">True</span></code>) – Whether to unwrap decorated callables</p></li>
+<li><p><strong>use_signature_db</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>, default: <code class="docutils literal notranslate"><span class="pre">True</span></code>) – Whether to look up the signature</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
-<dd class="field-even"><p><a class="reference internal" href="#introspection.Signature" title="introspection.Signature">Signature</a></p>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Signature</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A corresponding <code class="docutils literal notranslate"><span class="pre">Signature</span></code> instance</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.10)"><strong>TypeError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">callable_</span></code> isn’t a callable object</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.10)"><strong>ValueError</strong></a> – If the signature can’t be determined (can happen for
+functions defined in C extensions)</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="introspection.Signature.without_parameters">
-<code class="sig-name descname"><span class="pre">without_parameters</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">params_to_remove</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.Signature.without_parameters" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="introspection.Signature.without_parameters">
+<span class="sig-name descname"><span class="pre">without_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">params_to_remove</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.Signature.without_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a copy of this signature with some parameters removed.</p>
 <p>Parameters can be referenced by their name or index.</p>
 <p>Example:</p>
@@ -151,45 +160,75 @@ Also added missing “value” parameter for <code class="docutils literal notra
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>parameters</strong> – Names or indices of the parameters to remove</p>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A copy of this signature without the given parameters</p>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Signature</span></code></p>
 </dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A copy of this signature without the given parameters</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="introspection.Signature.parameter_list">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">parameter_list</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#introspection.Parameter" title="introspection.Parameter"><span class="pre">introspection.Parameter</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#introspection.Signature.parameter_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of the signature’s parameters.</p>
+<dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="#introspection.Signature" title="introspection.Signature">Signature</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="introspection.Signature.has_return_annotation">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">has_return_annotation</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a></em><a class="headerlink" href="#introspection.Signature.has_return_annotation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns whether the signature’s return annotation is not <code class="xref py py-attr docutils literal notranslate"><span class="pre">Signature.empty</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="introspection.Signature.num_required_arguments">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_required_arguments</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a></em><a class="headerlink" href="#introspection.Signature.num_required_arguments" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the number of required arguments, i.e. arguments with no default value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="introspection.Signature.param_list">
-<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">param_list</span></code><a class="headerlink" href="#introspection.Signature.param_list" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns a list of the signature’s parameters.</p>
-<div class="deprecated">
-<p><span class="versionmodified deprecated">Deprecated since version 1.2: </span>Use <a class="reference internal" href="#introspection.Signature.parameter_list" title="introspection.Signature.parameter_list"><code class="xref py py-attr docutils literal notranslate"><span class="pre">parameter_list</span></code></a> instead.</p>
-</div>
+<dt class="sig sig-object py" id="introspection.Signature.bind">
+<span class="sig-name descname"><span class="pre">bind</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.Signature.bind" title="Permalink to this definition">¶</a></dt>
+<dd><p>Similar to <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Signature.bind" title="(in Python v3.10)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">inspect.Signature.bind()</span></code></a>, but returns a
+<a class="reference internal" href="#introspection.BoundArguments" title="introspection.BoundArguments"><code class="xref py py-class docutils literal notranslate"><span class="pre">introspection.BoundArguments</span></code></a> object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">BoundArguments</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="introspection.Signature.parameter_list">
-<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">parameter_list</span></code><a class="headerlink" href="#introspection.Signature.parameter_list" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns a list of the signature’s parameters.</p>
+<dt class="sig sig-object py" id="introspection.Signature.bind_partial">
+<span class="sig-name descname"><span class="pre">bind_partial</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.Signature.bind_partial" title="Permalink to this definition">¶</a></dt>
+<dd><p>Similar to <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Signature.bind" title="(in Python v3.10)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">inspect.Signature.bind()</span></code></a>, but returns a
+<a class="reference internal" href="#introspection.BoundArguments" title="introspection.BoundArguments"><code class="xref py py-class docutils literal notranslate"><span class="pre">introspection.BoundArguments</span></code></a> object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">BoundArguments</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="introspection.Signature.has_return_annotation">
-<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">has_return_annotation</span></code><a class="headerlink" href="#introspection.Signature.has_return_annotation" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns whether the signature’s return annotation is not <code class="xref py py-attr docutils literal notranslate"><span class="pre">Signature.empty</span></code>.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt id="introspection.Signature.num_required_arguments">
-<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">num_required_arguments</span></code><a class="headerlink" href="#introspection.Signature.num_required_arguments" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the number of required arguments, i.e. arguments with no default value.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt id="introspection.Signature.to_string">
-<code class="sig-name descname"><span class="pre">to_string</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">implicit_typing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.Signature.to_string" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="introspection.Signature.to_string">
+<span class="sig-name descname"><span class="pre">to_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">implicit_typing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.Signature.to_string" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a string representation of this signature.</p>
 <p>Example:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Signature</span><span class="p">([</span>
@@ -200,13 +239,15 @@ Also added missing “value” parameter for <code class="docutils literal notra
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>implicit_typing</strong> – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the “typing.” prefix will be omitted from types defined in the <code class="docutils literal notranslate"><span class="pre">typing</span></code> module</p>
+<dd class="field-odd"><p><strong>implicit_typing</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>, default: <code class="docutils literal notranslate"><span class="pre">False</span></code>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the “typing.” prefix will be
+omitted from types defined in the <code class="docutils literal notranslate"><span class="pre">typing</span></code> module</p>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A string representation of this signature, like you would see in python code</p>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
 </dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a></p>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A string representation of this signature, like you would see
+in python code</p>
 </dd>
 </dl>
 </dd></dl>
@@ -214,29 +255,30 @@ Also added missing “value” parameter for <code class="docutils literal notra
 </dd></dl>
 
 <dl class="py class">
-<dt id="introspection.Parameter">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">introspection.</span></code><code class="sig-name descname"><span class="pre">Parameter</span></code><a class="headerlink" href="#introspection.Parameter" title="Permalink to this definition">¶</a></dt>
-<dd><p>An <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Parameter" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">inspect.Parameter</span></code></a> subclass that represents a function parameter.</p>
+<dt class="sig sig-object py" id="introspection.Parameter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">Parameter</span></span><a class="headerlink" href="#introspection.Parameter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Parameter" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">inspect.Parameter</span></code></a></p>
+<p>An <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Parameter" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">inspect.Parameter</span></code></a> subclass that represents a function parameter.</p>
 <p>Instances of this class are immutable.</p>
 <p>This class adds a new special value for the <code class="docutils literal notranslate"><span class="pre">default</span></code> attribute: <a class="reference internal" href="#introspection.Parameter.missing" title="introspection.Parameter.missing"><code class="xref py py-attr docutils literal notranslate"><span class="pre">Parameter.missing</span></code></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Variables</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>name</strong> – The parameter’s name</p></li>
-<li><p><strong>kind</strong> – The parameter’s kind. See <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Parameter.kind" title="(in Python v3.9)"><code class="xref py py-attr docutils literal notranslate"><span class="pre">inspect.Parameter.kind</span></code></a> for details.</p></li>
-<li><p><strong>default</strong> – The parameter’s default value or <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Parameter.empty" title="(in Python v3.9)"><code class="xref py py-attr docutils literal notranslate"><span class="pre">inspect.Parameter.empty</span></code></a></p></li>
+<li><p><strong>kind</strong> – The parameter’s kind. See <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Parameter.kind" title="(in Python v3.10)"><code class="xref py py-attr docutils literal notranslate"><span class="pre">inspect.Parameter.kind</span></code></a> for details.</p></li>
+<li><p><strong>default</strong> – The parameter’s default value or <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Parameter.empty" title="(in Python v3.10)"><code class="xref py py-attr docutils literal notranslate"><span class="pre">inspect.Parameter.empty</span></code></a></p></li>
 <li><p><strong>annotation</strong> – The parameter’s type annotation</p></li>
 </ul>
 </dd>
 </dl>
 <dl class="py attribute">
-<dt id="introspection.Parameter.missing">
-<code class="sig-name descname"><span class="pre">missing</span></code><a class="headerlink" href="#introspection.Parameter.missing" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="introspection.Parameter.missing">
+<span class="sig-name descname"><span class="pre">missing</span></span><a class="headerlink" href="#introspection.Parameter.missing" title="Permalink to this definition">¶</a></dt>
 <dd><p>A special class-level marker that can be used to specify
 that the parameter is optional, but doesn’t have a (known)
 default value.</p>
 <p>This is commonly used by signatures for builtin functions.
-For example, the signature of the <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#range" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">range</span></code></a> function
+For example, the signature of the <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#range" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">range</span></code></a> function
 can be represented as</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Signature</span><span class="p">([</span>
 <span class="gp">... </span>    <span class="n">Parameter</span><span class="p">(</span><span class="s1">&#39;start&#39;</span><span class="p">,</span> <span class="n">Parameter</span><span class="o">.</span><span class="n">POSITIONAL_ONLY</span><span class="p">),</span>
@@ -249,62 +291,77 @@ can be represented as</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="introspection.Parameter.__init__">
-<code class="sig-name descname"><span class="pre">__init__</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#introspection.Parameter.__init__" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="introspection.Parameter.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">inspect.Parameter.POSITIONAL_OR_KEYWORD</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">inspect.Parameter.empty</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">annotation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">inspect.Parameter.empty</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.Parameter.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – The parameter’s name</p></li>
-<li><p><strong>kind</strong> – The parameter’s kind. See <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Parameter.kind" title="(in Python v3.9)"><code class="xref py py-attr docutils literal notranslate"><span class="pre">inspect.Parameter.kind</span></code></a> for details.</p></li>
-<li><p><strong>default</strong> – The parameter’s default value, or one of the special values <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Parameter.empty" title="(in Python v3.9)"><code class="xref py py-attr docutils literal notranslate"><span class="pre">inspect.Parameter.empty</span></code></a> and <a class="reference internal" href="#introspection.Parameter.missing" title="introspection.Parameter.missing"><code class="xref py py-attr docutils literal notranslate"><span class="pre">Parameter.missing</span></code></a></p></li>
-<li><p><strong>annotation</strong> – The parameter’s type annotation</p></li>
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><em>str</em></a>) – The parameter’s name</p></li>
+<li><p><strong>kind</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>, default: <code class="docutils literal notranslate"><span class="pre">inspect.Parameter.POSITIONAL_OR_KEYWORD</span></code>) – The parameter’s kind. See <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Parameter.kind" title="(in Python v3.10)"><code class="xref py py-attr docutils literal notranslate"><span class="pre">inspect.Parameter.kind</span></code></a> for details.</p></li>
+<li><p><strong>default</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>, default: <code class="docutils literal notranslate"><span class="pre">inspect.Parameter.empty</span></code>) – The parameter’s default value, or one of the special values <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Parameter.empty" title="(in Python v3.10)"><code class="xref py py-attr docutils literal notranslate"><span class="pre">inspect.Parameter.empty</span></code></a> and <a class="reference internal" href="#introspection.Parameter.missing" title="introspection.Parameter.missing"><code class="xref py py-attr docutils literal notranslate"><span class="pre">Parameter.missing</span></code></a></p></li>
+<li><p><strong>annotation</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>, default: <code class="docutils literal notranslate"><span class="pre">inspect.Parameter.empty</span></code>) – The parameter’s type annotation</p></li>
 </ul>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="introspection.Parameter.from_parameter">
-<em class="property"><span class="pre">classmethod</span> </em><code class="sig-name descname"><span class="pre">from_parameter</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameter</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.Parameter.from_parameter" title="Permalink to this definition">¶</a></dt>
-<dd><p>Creates a new <a class="reference internal" href="#introspection.Parameter" title="introspection.Parameter"><code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code></a> instance from an <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Parameter" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">inspect.Parameter</span></code></a> instance.</p>
+<dt class="sig sig-object py" id="introspection.Parameter.from_parameter">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameter</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.Parameter.from_parameter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a new <a class="reference internal" href="#introspection.Parameter" title="introspection.Parameter"><code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code></a> instance from an <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Parameter" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">inspect.Parameter</span></code></a> instance.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>parameter</strong> (<a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Parameter" title="(in Python v3.9)"><em>inspect.Parameter</em></a>) – An <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Parameter" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">inspect.Parameter</span></code></a> instance</p>
+<dd class="field-odd"><p><strong>parameter</strong> (<a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Parameter" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code></a>) – An <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Parameter" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">inspect.Parameter</span></code></a> instance</p>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A new <a class="reference internal" href="#introspection.Parameter" title="introspection.Parameter"><code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code></a> instance</p>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code></p>
 </dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A new <a class="reference internal" href="#introspection.Parameter" title="introspection.Parameter"><code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code></a> instance</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="introspection.Parameter.has_annotation">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">has_annotation</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a></em><a class="headerlink" href="#introspection.Parameter.has_annotation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns whether the parameter’s <code class="xref py py-attr docutils literal notranslate"><span class="pre">annotation</span></code> is not <code class="xref py py-attr docutils literal notranslate"><span class="pre">Parameter.empty</span></code>.</p>
+<dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="#introspection.Parameter" title="introspection.Parameter">Parameter</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="introspection.Parameter.is_vararg">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_vararg</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a></em><a class="headerlink" href="#introspection.Parameter.is_vararg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a boolean indicating whether this parameter accepts a variable
+number of arguments; i.e. whether the parameter’s kind is
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">inspect.Parameter.VAR_POSITIONAL</span></code> or <code class="xref py py-attr docutils literal notranslate"><span class="pre">inspect.Parameter.VAR_KEYWORD</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="introspection.Parameter.is_optional">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_optional</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a></em><a class="headerlink" href="#introspection.Parameter.is_optional" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a boolean indicating whether this parameter can be omitted or
+requires an argument.</p>
+<p>Returns <code class="docutils literal notranslate"><span class="pre">True</span></code> if the parameter has a default value or is a vararg.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt id="introspection.Parameter.has_annotation">
-<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">has_annotation</span></code><a class="headerlink" href="#introspection.Parameter.has_annotation" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns whether the parameter’s <code class="xref py py-attr docutils literal notranslate"><span class="pre">annotation</span></code> is not <code class="xref py py-attr docutils literal notranslate"><span class="pre">Parameter.empty</span></code>.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt id="introspection.Parameter.is_vararg">
-<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">is_vararg</span></code><a class="headerlink" href="#introspection.Parameter.is_vararg" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns a boolean indicating whether this parameter accepts a variable
-number of arguments; i.e. whether the parameter’s kind is
-<code class="xref py py-attr docutils literal notranslate"><span class="pre">inspect.Parameter.VAR_POSITIONAL</span></code> or <code class="xref py py-attr docutils literal notranslate"><span class="pre">inspect.Parameter.VAR_KEYWORD</span></code>.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt id="introspection.Parameter.is_optional">
-<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">is_optional</span></code><a class="headerlink" href="#introspection.Parameter.is_optional" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns a boolean indicating whether this parameter can be omitted or
-requires an argument.</p>
-<p>Returns <code class="docutils literal notranslate"><span class="pre">True</span></code> if the parameter has a default value or is a vararg.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt id="introspection.Parameter.to_string">
-<code class="sig-name descname"><span class="pre">to_string</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">implicit_typing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.Parameter.to_string" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="introspection.Parameter.to_string">
+<span class="sig-name descname"><span class="pre">to_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">implicit_typing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.Parameter.to_string" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a string representation of this parameter, similar to
 how parameters are written in function signatures.</p>
 <p>Examples:</p>
@@ -316,10 +373,64 @@ how parameters are written in function signatures.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>implicit_typing</strong> – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the “typing.” prefix will be omitted from types defined in the <code class="docutils literal notranslate"><span class="pre">typing</span></code> module</p>
+<dd class="field-odd"><p><strong>implicit_typing</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>, default: <code class="docutils literal notranslate"><span class="pre">False</span></code>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the “typing.” prefix will be omitted from types defined in the <code class="docutils literal notranslate"><span class="pre">typing</span></code> module</p>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A string representation of this parameter, like you would see in a function signature</p>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A string representation of this parameter, like you would see in a function signature</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="introspection.BoundArguments">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">BoundArguments</span></span><a class="headerlink" href="#introspection.BoundArguments" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.BoundArguments" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">inspect.BoundArguments</span></code></a></p>
+<p>Subclass of <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.BoundArguments" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">inspect.BoundArguments</span></code></a> with additional features.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="introspection.BoundArguments.from_bound_arguments">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_bound_arguments</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bound_args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.BoundArguments.from_bound_arguments" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a new <code class="docutils literal notranslate"><span class="pre">BoundArguments</span></code> instance from a
+<a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.BoundArguments" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">inspect.BoundArguments</span></code></a> instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>bound_args</strong> (<a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.BoundArguments" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">BoundArguments</span></code></a>) – An <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.BoundArguments" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">inspect.BoundArguments</span></code></a> instance</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">BoundArguments</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A new <code class="docutils literal notranslate"><span class="pre">BoundArguments</span></code> instance</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="introspection.BoundArguments.to_varargs">
+<span class="sig-name descname"><span class="pre">to_varargs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'kwargs'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.BoundArguments.to_varargs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts the arguments into an <code class="docutils literal notranslate"><span class="pre">(args,</span> <span class="pre">kwargs)</span></code> tuple.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">signature</span> <span class="o">=</span> <span class="n">Signature</span><span class="o">.</span><span class="n">from_callable</span><span class="p">(</span><span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="o">*</span><span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">:</span> <span class="mi">0</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bound_args</span> <span class="o">=</span> <span class="n">signature</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bound_args</span><span class="o">.</span><span class="n">to_varargs</span><span class="p">(</span><span class="n">prefer</span><span class="o">=</span><span class="s1">&#39;args&#39;</span><span class="p">)</span>
+<span class="go">([1], {&#39;c&#39;: 2})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bound_args</span><span class="o">.</span><span class="n">to_varargs</span><span class="p">(</span><span class="n">prefer</span><span class="o">=</span><span class="s1">&#39;kwargs&#39;</span><span class="p">)</span>
+<span class="go">([], {&#39;a&#39;: 1, &#39;c&#39;: 2})</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>prefer</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Literal</span></code></a>[‘args’, ‘kwargs’], default: <code class="docutils literal notranslate"><span class="pre">'kwargs'</span></code>) – Whether to prefer positional or keyword arguments</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>An <code class="docutils literal notranslate"><span class="pre">(args,</span> <span class="pre">kwargs)</span></code> tuple</p>
 </dd>
 </dl>
 </dd></dl>
@@ -327,12 +438,12 @@ how parameters are written in function signatures.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="introspection.signature">
-<code class="sig-prename descclassname"><span class="pre">introspection.</span></code><code class="sig-name descname"><span class="pre">signature</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.signature" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="introspection.signature">
+<span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">signature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.signature" title="Permalink to this definition">¶</a></dt>
 <dd><p>Shorthand for <a class="reference internal" href="#introspection.Signature.from_callable" title="introspection.Signature.from_callable"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Signature.from_callable()</span></code></a>.</p>
 </dd></dl>
 
-</div>
+</section>
 
 
             <div class="clearer"></div>
@@ -341,11 +452,32 @@ how parameters are written in function signatures.</p>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
+<h3><a href="index.html">Table of Contents</a></h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Function Signatures</a></li>
+<li class="toctree-l1"><a class="reference internal" href="call_stack.html">The call stack</a></li>
+<li class="toctree-l1"><a class="reference internal" href="classes.html">Functions related to classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dundermethods.html">Functions related to dundermethods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="typing.html">Introspecting the <code class="docutils literal notranslate"><span class="pre">typing</span></code> module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="misc.html">Misc. functions</a></li>
+</ul>
+
+    <div class="nav">
+        <h3>Navigation</h3>
+        
+        <a class="homepage-link" href="index.html" title="home page">
+            Introspection documentation
+        </a>
+            <a class="next-link" href="call_stack.html" title="next chapter">
+                The call stack
+            </a>
+    </div>
 <div id="searchbox" style="display: none" role="search">
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>

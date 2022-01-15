@@ -6,6 +6,7 @@ import pytest
 
 import introspection
 from introspection.classes import *
+from introspection.misc import is_abstract
 
 
 def test_get_subclasses():
@@ -474,3 +475,127 @@ def test_wrap_method_with_multiple_new():
     
     assert new1_args == ('oops',)
     assert new1_kwargs == {'what': 'are these doing here'}
+
+
+def test_wrap_method_typeerror():
+    with pytest.raises(TypeError):
+        # 2nd argument must be a class
+        wrap_method(repr, len)
+
+
+def test_is_abstract_class():
+    class Foo:
+        @abc.abstractmethod
+        def func(self):
+            pass
+    
+    class Bar(Foo):
+        def func(self):
+            pass
+    
+    assert is_abstract(Foo)
+    assert not is_abstract(Bar)
+
+
+def test_get_abstract_method_names():
+    class A:
+        class AbstractNestedClass(abc.ABC):
+            @abc.abstractmethod
+            def foo(self):
+                pass
+
+        def concrete_method(self):
+            pass
+
+        @abc.abstractmethod
+        def abstract_instance_method(self):
+            pass
+
+        @abc.abstractmethod
+        def implemented_instance_method(self):
+            pass
+
+        @classmethod
+        @abc.abstractmethod
+        def abstract_classmethod(cls):
+            pass
+
+        @staticmethod
+        @abc.abstractmethod
+        def abstract_staticmethod():
+            pass
+
+        @property
+        @abc.abstractmethod
+        def abstract_property(self):
+            pass
+
+        @property
+        def another_abstract_property(self):
+            pass
+        @another_abstract_property.deleter
+        @abc.abstractmethod
+        def another_abstract_property(self):
+            pass
+
+        @property
+        @abc.abstractmethod
+        def implemented_property(self):
+            pass
+    
+    class B(A):
+        @classmethod
+        def concrete_classmethod(cls):
+            pass
+
+        def implemented_instance_method(self):
+            pass
+
+        @A.implemented_property.getter
+        def implemented_property(self):
+            pass
+    
+    assert get_abstract_method_names(B) == {
+        'abstract_instance_method',
+        'abstract_classmethod',
+        'abstract_staticmethod',
+        'abstract_property',
+        'another_abstract_property',
+    }
+
+
+@pytest.mark.parametrize('method', [
+    staticmethod(lambda: None),
+    classmethod(lambda: None),
+])
+def test_fit_to_class_method(method):
+    class Foo:
+        pass
+
+    fit_to_class(method, Foo, 'new-name')
+    func = method.__func__
+
+    assert func.__module__ == Foo.__module__
+    assert func.__name__ == 'new-name'
+    assert func.__qualname__ == Foo.__qualname__ + '.new-name'
+
+
+@pytest.mark.parametrize('prop', [
+    property(lambda: None),
+    property(fset=lambda: None),
+    property(fdel=lambda: None),
+    property(lambda: None, lambda: None, lambda: None),
+])
+def test_fit_to_class_property(prop):
+    class Foo:
+        pass
+
+    fit_to_class(prop, Foo, 'new-name')
+    
+    for func in [prop.fget, prop.fset, prop.fdel]:
+        if func is None:
+            continue
+
+        assert func.__module__ == Foo.__module__
+        assert func.__name__ == 'new-name'
+        assert func.__qualname__ == Foo.__qualname__ + '.new-name'

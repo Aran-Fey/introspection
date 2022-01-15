@@ -1,7 +1,10 @@
 
 import inspect
+import typing
+from typing import *
 
 from .typing import annotation_to_string
+from ._utils import PARAM_EMPTY
 
 __all__ = ['Parameter']
 
@@ -40,12 +43,13 @@ class Parameter(inspect.Parameter):
     #:     <Signature (start[, stop[, step]], /)>
     missing = type('_missing', (), {})
 
-    def __init__(self,
-                 name=None,
-                 kind=inspect.Parameter.POSITIONAL_OR_KEYWORD,
-                 default=inspect.Parameter.empty,
-                 annotation=inspect.Parameter.empty,
-                 ):
+    def __init__(
+            self,
+            name: Optional[str] = None,
+            kind: Any = inspect.Parameter.POSITIONAL_OR_KEYWORD,
+            default: Any = PARAM_EMPTY,
+            annotation: Any = PARAM_EMPTY,
+        ):
         """
         :param name: The parameter's name
         :type name: str
@@ -53,6 +57,12 @@ class Parameter(inspect.Parameter):
         :param default: The parameter's default value, or one of the special values :attr:`inspect.Parameter.empty` and :attr:`Parameter.missing`
         :param annotation: The parameter's type annotation
         """
+        if default is PARAM_EMPTY:
+            default = inspect.Parameter.empty
+        
+        if annotation is PARAM_EMPTY:
+            annotation = inspect.Parameter.empty
+        
         super().__init__(name, kind, default=default, annotation=annotation)
 
     @classmethod
@@ -71,7 +81,7 @@ class Parameter(inspect.Parameter):
         )
 
     @property
-    def has_annotation(self):
+    def has_annotation(self) -> bool:
         """
         Returns whether the parameter's :attr:`annotation` is not :attr:`Parameter.empty`.
         """
@@ -125,7 +135,7 @@ class Parameter(inspect.Parameter):
 
         return text
 
-    def to_string(self, implicit_typing=False):
+    def to_string(self, implicit_typing: bool = False) -> str:
         """
         Returns a string representation of this parameter, similar to
         how parameters are written in function signatures.

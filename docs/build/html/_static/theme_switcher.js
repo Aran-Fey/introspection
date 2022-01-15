@@ -35,15 +35,14 @@ const SYNTAX_THEMES = [
 // === UTILITY FUNCTIONS ===
 
 function storageAvailable(type) {
-    var storage;
+    let storage;
     try {
         storage = window[type];
-        var x = '__storage_test__';
+        const x = '__storage_test__';
         storage.setItem(x, x);
         storage.removeItem(x);
         return true;
-    }
-    catch(e) {
+    } catch(e) {
         return e instanceof DOMException && (
             // everything except Firefox
             e.code === 22 ||

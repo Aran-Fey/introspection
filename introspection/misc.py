@@ -1,32 +1,48 @@
 
 import builtins
 import copy
+import functools
+import inspect
+import sys
 import types
 
 from collections import defaultdict, deque
-from typing import TypeVar, Any, Optional, Callable, Type, Dict, Iterable
+from typing import TypeVar, Any, Optional, Callable, Type, Iterable, Mapping, Union, Tuple, List
 
-__all__ = ['common_ancestor', 'create_class', 'resolve_bases', 'static_vars', 'static_copy']
+__all__ = [
+    'common_ancestor', 'create_class', 'resolve_bases',
+    'static_vars', 'static_copy', 'static_hasattr', 'static_mro',
+    'resolve_identifier',
+    'is_abstract',
+    'iter_wrapped', 'unwrap', 'extract_functions',
+    'rename', 'wraps',
+]
 
 T = TypeVar('T')
 
 
-def create_class(name: str,
-                 bases: Iterable = (),
-                 attrs: dict = {},
-                 metaclass: Optional[Callable[..., Type[T]]] = None,
-                 **kwargs: Any
-                 ) -> Type[T]:
+TYPE_GET_DICT = type.__dict__['__dict__'].__get__
+TYPE_GET_MRO = type.__dict__['__mro__'].__get__
+
+
+def create_class(
+        name: str,
+        bases: Iterable = (),
+        attrs: dict = {},
+        metaclass: Optional[Callable[..., Type[T]]] = None,
+        **kwargs: Any
+    ) -> Type[T]:
     """
-    Creates a new class. This is similar to :func:`types.new_class`,
-    except it calls :func:`resolve_bases` even in python versions
-    <= 3.7. (And it has a different interface.)
+    Creates a new class. This is similar to :func:`types.new_class`, except it
+    calls :func:`resolve_bases` even in python versions <= 3.7. (And it has a
+    different interface.)
 
     :param name: The name of the new class
     :param bases: An iterable of bases classes
     :param attrs: A dict of class attributes
     :param metaclass: The metaclass, or ``None``
     :param kwargs: Keyword arguments to pass to the metaclass
+    :return: A new class
     """
     if metaclass is not None:
         kwargs.setdefault('metaclass', metaclass)
@@ -46,6 +62,9 @@ def create_class(name: str,
 def resolve_bases(bases: Iterable) -> tuple:
     """
     Clone/backport of :func:`types.resolve_bases`.
+
+    :param bases: An iterable of bases, which may or may not be classes
+    :return: A tuple of base classes
     """
     result = []
 
@@ -66,21 +85,58 @@ def resolve_bases(bases: Iterable) -> tuple:
     return tuple(result)
 
 
-def static_vars(obj: Any):
+def static_vars(obj: Any) -> Mapping:
     """
-    Like :func:`vars`, but bypasses overridden ``__getattribute__`` methods.
+    Like :func:`vars`, but bypasses overridden ``__getattribute__`` methods and
+    (for the most part) ``__dict__`` descriptors.
 
-    :param obj: Any object
+    .. warning::
+        Currently, if ``obj`` is not a class, there is a chance that a class
+        attribute named ``__dict__`` can shadow the real ``__dict__``::
+
+            >>> class Demo: __dict__ = 'oops'
+            ...
+            >>> static_vars(Demo())
+            'oops'
+        
+        This is because I can't find a reliable way to access the real
+        ``__dict__`` from within python. As far as I can tell, it's only
+        possible through the C API.
+
+    :param obj: An object
     :return: The object's ``__dict__``
     :raises TypeError: If the object has no ``__dict__``
     """
+    # We'll start by invoking the __dict__ slot from the `type` class. That'll
+    # fail with a TypeError if the object is not a class.
     try:
-        return object.__getattribute__(obj, '__dict__')
-    except AttributeError:
-        raise TypeError("{!r} object has no __dict__".format(obj)) from None
+        return TYPE_GET_DICT(obj)
+    except TypeError:
+        pass
+    
+    obj_type = type(obj)
+    
+    # If it's not a class, we'll just grab the last __dict__ attribute from the
+    # MRO, which will *hopefully* be a slot
+    for cls in reversed(static_mro(obj_type)):
+        cls_dict = static_vars(cls)
+
+        if '__dict__' not in cls_dict:
+            continue
+
+        dict_slot = cls_dict['__dict__']
+
+        try:
+            descriptor_get = dict_slot.__get__
+        except AttributeError:
+            return dict_slot
+        else:
+            return descriptor_get(obj, obj_type)
+
+    raise TypeError(f"{obj!r} object has no __dict__")
 
 
-def static_copy(obj: Any):
+def static_copy(obj: T) -> T:
     """
     Creates a copy of the given object without invoking any of its methods -
     ``__new__``, ``__init__``, ``__copy__`` or anything else.
@@ -98,6 +154,8 @@ def static_copy(obj: Any):
     by calling :func:`copy.copy`.
 
     .. versionadded: 1.1
+
+    :param obj: The object to copy
     """
     from .classes import iter_slots
 
@@ -131,22 +189,62 @@ def static_copy(obj: Any):
     return new_obj
 
 
-def common_ancestor(classes: Iterable[type]):
+def static_hasattr(obj: Any, attr_name: str) -> bool:
     """
-    Finds the closest common parent class of the given classes.
-    If called with an empty iterable, :class:`object` is returned.
+    Like the builtin :func:`hasattr`, except it doesn't execute any
+    ``__getattr__`` or ``__getattribute__`` functions and also tries to avoid
+    invoking descriptors. (See :func:`static_vars` for more details.)
+
+    .. versionadded: 1.4
+
+    :param obj: The object whose attribute you want to find
+    :param attr_name: The name of the attribute to find
+    """
+    try:
+        obj_dict = static_vars(obj)
+    except TypeError:
+        pass
+    else:
+        if attr_name in obj_dict:
+            return True
+    
+    for cls in static_mro(type(obj)):
+        if attr_name in vars(cls):
+            return True
+        
+        # Note: There's no need to handle give __slots__ any
+        # special treatment, since they create descriptors in
+        # the class namespace anyway.
+
+    return False
+
+
+def static_mro(cls: type) -> Tuple[type]:
+    """
+    Given a class as input, returns the class's MRO without invoking any
+    overridden ``__getattribute__`` methods or ``__mro__`` descriptors.
+
+    .. versionadded: 1.4
+
+    :param cls: A class
+    """
+    return TYPE_GET_MRO(cls)
+
+
+def common_ancestor(classes: Iterable[type]) -> type:
+    """
+    Finds the closest common parent class of the given classes. If called with
+    an empty iterable, :class:`object` is returned.
 
     :param classes: An iterable of classes
     :return: The given classes' shared parent class
     """
-
     # How this works:
-    # We loop through all classes' MROs, popping off the left-
-    # most class from each. We keep track of how many MROs
-    # that class appeared in. If it appeared in all MROs,
-    # we return it.
+    # We loop through all classes' MROs, popping off the left-most class from
+    # each. We keep track of how many MROs that class appeared in. If it
+    # appeared in all MROs, we return it.
 
-    mros = [deque(cls.__mro__) for cls in classes]
+    mros = [deque(static_mro(cls)) for cls in classes]
     num_classes = len(mros)
     share_count = defaultdict(int)
 
@@ -165,3 +263,253 @@ def common_ancestor(classes: Iterable[type]):
         mros = [mro for mro in mros if mro]
 
     return object
+
+
+def iter_wrapped(
+        function: Union[Callable, staticmethod, classmethod],
+        stop: Optional[Callable[[Callable], bool]] = None,
+    ):
+    """
+    Given a function as input, yields the function and all the functions it
+    wraps.
+
+    Unwraps, but does not yield, instances of ``staticmethod`` and
+    ``classmethod``.
+
+    If ``stop`` is given, it must be a function that takes a function as input
+    and returns a truth value. As soon as ``stop(function)`` returns a truthy
+    result, the iteration stops. (``function`` will not be yielded.)
+
+    .. versionadded: 1.4
+
+    :param function: The function to unwrap
+    :param stop: A predicate function indicating when to stop iterating
+    """
+    while True:
+        while isinstance(function, (staticmethod, classmethod)):
+            function = function.__func__
+
+        if stop is not None and stop(function):
+            break
+
+        yield function
+
+        if function in (staticmethod, classmethod):
+            break
+
+        try:
+            function = function.__wrapped__
+        except AttributeError:
+            break
+
+
+def unwrap(
+        function: Union[Callable, staticmethod, classmethod],
+        stop: Optional[Callable[[Callable], bool]] = None,
+    ):
+    r"""
+    Like :func:`inspect.unwrap`, but always unwraps :class:`staticmethod`\ s and
+    :class:`classmethod`\ s. (:func:`inspect.unwrap` only does this since 3.10)
+
+    If ``stop`` is given, it must be a function that takes a function as input
+    and returns a truth value. As soon as ``stop(function.__wrapped__)`` returns
+    a truthy result, the unwrapping stops.
+
+    .. versionadded: 1.4
+
+    :param function: The function to unwrap
+    :param stop: A predicate function indicating when to stop iterating
+    """
+    for function in iter_wrapped(function, stop):
+        pass
+    
+    return function
+
+
+FUNCTION_CONTAINER_TYPES = (staticmethod, classmethod, property)
+
+
+def extract_functions(obj: Union[FUNCTION_CONTAINER_TYPES]) -> List[Callable]:
+    """
+    Given a :class:`staticmethod`, :class:`classmethod` or :class:`property` as
+    input, returns a list of the contained functions::
+
+        >>> extract_functions(staticmethod(foo))
+        [<function foo at 0xdeadbeef>]
+        >>> extract_functions(property(get, set))
+        [<function get at 0xdeadbeef>, <function set at 0xdeadbeef>]
+    """
+    if isinstance(obj, (staticmethod, classmethod)):
+        return [obj.__func__]
+    
+    if isinstance(obj, property):
+        return [
+            func
+            for func in (obj.fget, obj.fset, obj.fdel)
+            if func is not None
+        ]
+    
+    raise TypeError(f'Cannot extract functions from {type(obj)!r} object')
+
+
+def is_abstract(obj: Any) -> bool:
+    r"""
+    Given an object as input, returns whether it is abstract. The following
+    types are supported:
+
+    - Functions: These are considered abstract if they have an
+      ``__isabstractmethod__`` property with the value ``True``.
+    - ``staticmethod``\ s and ``classmethod``\ s: Abstract if the underlying
+      function is abstract.
+    - ``property``\ s: Abstract if their getter, setter, or deleter is abstract.
+    - Classes: Abstract if any of their attributes are abstract.
+
+    .. versionadded: 1.4
+
+    :param obj: The object to inspect
+    """
+    if isinstance(obj, FUNCTION_CONTAINER_TYPES):
+        return any(
+            is_abstract(func)
+            for func in extract_functions(obj)
+        )
+    
+    if isinstance(obj, type):
+        seen = set()
+
+        for cls in static_mro(obj):
+            for name, value in static_vars(cls).items():
+                if name in seen:
+                    continue
+                seen.add(name)
+
+                if is_abstract(value) and not isinstance(value, type):
+                    return True
+        
+        return False
+
+    return bool(getattr(obj, '__isabstractmethod__', False))
+
+
+def rename(obj: Any, name: str) -> None:
+    """
+    Updates the ``__name__`` and ``__qualname__`` of an object.
+
+    .. versionadded: 1.4
+
+    :param obj: The object to rename
+    :param name: The new name for the object
+    """
+    old_qualname = obj.__qualname__
+
+    obj.__name__ = name
+    obj.__qualname__ = old_qualname[:old_qualname.rfind('.')+1] + name
+
+    # If it's a class, update the qualnames of its methods
+    if not isinstance(obj, type):
+        return
+    
+    prefix = old_qualname + '.'
+    
+    for attr in static_vars(obj).values():
+        # staticmethods and classmethods have their own  __qualname__ that we
+        # must update
+        if isinstance(attr, (staticmethod, classmethod)):
+            functions = [attr.__func__]
+
+            if sys.version_info >= (3, 10):
+                functions.append(attr)
+        elif isinstance(attr, FUNCTION_CONTAINER_TYPES):
+            functions = extract_functions(attr)
+        elif hasattr(attr, '__qualname__'):
+            functions = [attr]
+        else:
+            continue
+        
+        for func in functions:
+            if not func.__qualname__.startswith(prefix):
+                continue
+
+            func.__qualname__ = obj.__qualname__ + func.__qualname__[len(old_qualname):]
+
+
+def wraps(
+        wrapped_func: Callable,
+        name: Optional[str] = None,
+        signature: Optional[inspect.Signature] = None,
+        remove_parameters: Optional[Iterable[Union[str, int]]] = None,
+    ) -> Callable[[Callable], Callable]:
+    """
+    Similar to :func:`functools.wraps`, but allows you to modify the function's
+    metadata.
+
+    .. versionadded: 1.4
+
+    :param wrapped_func: The wrapped function
+    :param name: A new name for the wrapper function
+    :param signature: A new signature for the wrapper function
+    :param remove_parameters: Parameter names or indices to remove from the
+        wrapper function's signature
+    """
+    from .signature import Signature
+    
+    def wrapper(wrapper_func):
+        functools.update_wrapper(wrapper_func, wrapped_func)
+
+        if name is not None:
+            rename(wrapper_func, name)
+        
+        if signature is not None or remove_parameters is not None:
+            if signature is None:
+                sig = Signature.from_callable(wrapped_func)
+            elif isinstance(signature, inspect.Signature):
+                sig = Signature.from_signature(signature)
+            else:
+                sig = Signature.from_callable(signature)
+            
+            if remove_parameters:
+                sig = sig.without_parameters(*remove_parameters)
+            
+            wrapper_func.__signature__ = sig
+
+        return wrapper_func
+
+    return wrapper
+
+
+def resolve_identifier(identifier: str) -> object:
+    """
+    Given a string as input, returns the object referenced by it.
+
+    Example::
+
+        >>> resolve_identifier('introspection.Parameter')
+        <class 'introspection.parameter.Parameter'>
+    
+    Note that this function will not import any modules; the relevant module
+    must already be present in :any:`sys.modules`.
+
+    If no matching object can be found, :exc:`NameError` is raised.
+
+    :param identifier: The identifier to resolve
+    :returns: The object referenced by the identifier
+    :raises NameError: If the identifier doesn't reference anything
+    """
+    names = identifier.split('.')
+
+    for i in range(len(names)):
+        module_name = '.'.join(names[:i])
+
+        if module_name not in sys.modules:
+            continue
+
+        obj = sys.modules[module_name]
+        for name in names[i:]:
+            try:
+                obj = getattr(obj, name)
+            except AttributeError:
+                break
+        else:
+            return obj
+    
+    raise NameError(f"Failed to resolve identifier {identifier!r}")

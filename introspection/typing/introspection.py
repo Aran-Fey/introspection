@@ -1,22 +1,22 @@
 
 import ordered_set
 
-import collections.abc
-import re
 import sys
 import types
 import typing
-import warnings
 
 from ._compat import ForwardRef
 from ..classes import safe_is_subclass
 from .._utils import weakref_cache
 
-__all__ = ['is_type', 'is_typing_type', 'is_generic', 'is_variadic_generic', 'is_forwardref',
-           'is_generic_base_class', 'is_qualified_generic', 'is_fully_qualified_generic',
-           'is_parameterized_generic', 'is_fully_parameterized_generic', 'get_generic_base_class',
-           'get_type_args', 'get_type_arguments', 'get_type_params', 'get_type_parameters',
-           'get_type_name']
+__all__ = [
+    'is_type', 'is_typing_type', 'is_generic', 'is_variadic_generic', 'is_forwardref',
+    'is_generic_base_class', 'is_parameterized_generic', 'is_fully_parameterized_generic',
+    'get_generic_base_class', 'get_type_arguments', 'get_type_parameters', 'get_type_name',
+]
+
+
+NoneType = type(None)
 
 
 def is_in(needle, haystack):
@@ -645,15 +645,6 @@ def is_generic_base_class(type_, raising=True):
     return False
 
 
-def is_qualified_generic(type_, raising=True):
-    """
-    .. deprecated:: 1.2
-       Use :func:`~introspection.typing.is_parameterized_generic` instead.
-    """
-    warnings.warn("'is_qualified_generic' is deprecated; use 'is_parameterized_generic' instead", DeprecationWarning)
-    return is_parameterized_generic(type_, raising)
-
-
 @weakref_cache
 def is_parameterized_generic(type_, raising=True):
     """
@@ -679,15 +670,6 @@ def is_parameterized_generic(type_, raising=True):
             return False
 
     return _is_parameterized_generic(type_)
-
-
-def is_fully_qualified_generic(type_, raising=True):
-    """
-    .. deprecated:: 1.2
-       Use :func:`~introspection.typing.is_fully_parameterized_generic` instead.
-    """
-    warnings.warn("'is_fully_qualified_generic' is deprecated; use 'is_fully_parameterized_generic' instead", DeprecationWarning)
-    return is_fully_parameterized_generic(type_, raising)
 
 
 @weakref_cache
@@ -731,8 +713,8 @@ def is_fully_parameterized_generic(type_, raising=True):
 @weakref_cache
 def get_generic_base_class(type_):
     """
-    Given a parameterized generic type as input, returns the
-    corresponding generic base class.
+    Given a parameterized generic type as input, returns the corresponding
+    generic base class.
 
     Example::
 
@@ -752,7 +734,6 @@ def get_generic_base_class(type_):
     if base is typing.Union:
         args = _get_type_args(type_)
         
-        NoneType = type(None)
         args = tuple(arg for arg in args if arg not in {None, NoneType})
         
         if len(args) == 1:
@@ -761,20 +742,11 @@ def get_generic_base_class(type_):
     return base
 
 
-def get_type_args(type_):
-    """
-    .. deprecated:: 1.2
-       Use :func:`~introspection.typing.get_type_arguments` instead.
-    """
-    warnings.warn("'get_type_args' is deprecated; use 'get_type_arguments' instead", DeprecationWarning)
-    return get_type_arguments(type_)
-
-
 @weakref_cache
 def get_type_arguments(type_):
     """
-    Given a parameterized generic type as input, returns a
-    tuple of its type arguments.
+    Given a parameterized generic type as input, returns a tuple of its type
+    arguments.
 
     Example::
 
@@ -783,9 +755,9 @@ def get_type_arguments(type_):
         >>> get_type_arguments(typing.Callable[[str], None])
         ([<class 'str'>], None)
     
-    Note that some generic types (like :any:`typing.Optional`) won't accept
-    a tuple as input, so take care when you try to parameterize something
-    with this function's return value::
+    Note that some generic types (like :any:`typing.Optional`) won't accept a
+    tuple as input, so take care when you try to parameterize something with
+    this function's return value::
 
         >>> get_type_arguments(typing.Optional[int])
         (<class 'int'>,)
@@ -806,24 +778,13 @@ def get_type_arguments(type_):
     # guarantees that the returned arguments are compatible with the output
     # of get_generic_base_class.
     base = _get_generic_base_class(type_)
-    if base is typing.Union:
-        NoneType = type(None)
-
+    if base in (typing.Union, typing.Optional):
         cleaned_args = tuple(arg for arg in args if arg not in {None, NoneType})
         
         if len(cleaned_args) == 1:
             args = cleaned_args
 
     return args
-
-
-def get_type_params(type_):
-    """
-    .. deprecated:: 1.2
-       Use :func:`~introspection.typing.get_type_parameters` instead.
-    """
-    warnings.warn("'get_type_params' is deprecated; use 'get_type_parameters' instead", DeprecationWarning)
-    return get_type_parameters(type_)
 
 
 @weakref_cache

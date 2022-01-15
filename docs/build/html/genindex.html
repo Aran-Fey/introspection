@@ -6,13 +6,16 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Index &#8212; Introspection documentation</title>
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="_static/nightsky.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/nightsky.css" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
     <link id="pygments_dark_css" media="(prefers-color-scheme: dark)" rel="stylesheet" type="text/css" href="_static/pygments_dark.css" />
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
+    <script src="_static/clipboard.min.js"></script>
+    <script src="_static/copybutton.js"></script>
     <script src="_static/theme_switcher.js"></script>
     <link rel="shortcut icon" href="_static/favicon.svg"/>
     <link rel="index" title="Index" href="#" />
@@ -34,6 +37,7 @@
  | <a href="#B"><strong>B</strong></a>
  | <a href="#C"><strong>C</strong></a>
  | <a href="#D"><strong>D</strong></a>
+ | <a href="#E"><strong>E</strong></a>
  | <a href="#F"><strong>F</strong></a>
  | <a href="#G"><strong>G</strong></a>
  | <a href="#H"><strong>H</strong></a>
@@ -45,6 +49,7 @@
  | <a href="#R"><strong>R</strong></a>
  | <a href="#S"><strong>S</strong></a>
  | <a href="#T"><strong>T</strong></a>
+ | <a href="#U"><strong>U</strong></a>
  | <a href="#W"><strong>W</strong></a>
  
 </div>
@@ -81,7 +86,15 @@
 <h2 id="B">B</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="call_stack.html#introspection.CallFrame.builtins">builtins() (introspection.CallFrame property)</a>
+      <li><a href="function_signatures.html#introspection.Signature.bind">bind() (introspection.Signature method)</a>
+</li>
+      <li><a href="function_signatures.html#introspection.Signature.bind_partial">bind_partial() (introspection.Signature method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="function_signatures.html#introspection.BoundArguments">BoundArguments (class in introspection)</a>
+</li>
+      <li><a href="call_stack.html#introspection.CallFrame.builtins">builtins (introspection.CallFrame property)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -89,6 +102,8 @@
 <h2 id="C">C</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="dundermethods.html#introspection.call_dundermethod">call_dundermethod() (in module introspection.dundermethods)</a>
+</li>
       <li><a href="call_stack.html#introspection.CallFrame">CallFrame (class in introspection)</a>
 </li>
       <li><a href="call_stack.html#introspection.CallStack">CallStack (class in introspection)</a>
@@ -101,7 +116,7 @@
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="call_stack.html#introspection.CallFrame.code_object">code_object() (introspection.CallFrame property)</a>
+      <li><a href="call_stack.html#introspection.CallFrame.code_object">code_object (introspection.CallFrame property)</a>
 </li>
       <li><a href="dundermethods.html#introspection.collect_class_dundermethods">collect_class_dundermethods() (in module introspection.dundermethods)</a>
 </li>
@@ -126,21 +141,33 @@
   </ul></td>
 </tr></table>
 
+<h2 id="E">E</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="misc.html#introspection.extract_functions">extract_functions() (in module introspection.misc)</a>
+</li>
+  </ul></td>
+</tr></table>
+
 <h2 id="F">F</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="call_stack.html#introspection.CallFrame.file_name">file_name() (introspection.CallFrame property)</a>
+      <li><a href="call_stack.html#introspection.CallFrame.file_name">file_name (introspection.CallFrame property)</a>
+</li>
+      <li><a href="classes.html#introspection.fit_to_class">fit_to_class() (in module introspection.classes)</a>
+</li>
+      <li><a href="function_signatures.html#introspection.BoundArguments.from_bound_arguments">from_bound_arguments() (introspection.BoundArguments class method)</a>
 </li>
       <li><a href="function_signatures.html#introspection.Signature.from_callable">from_callable() (introspection.Signature class method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="call_stack.html#introspection.CallFrame.from_frame">from_frame() (introspection.CallFrame class method)</a>
 
       <ul>
         <li><a href="call_stack.html#introspection.CallStack.from_frame">(introspection.CallStack class method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="function_signatures.html#introspection.Parameter.from_parameter">from_parameter() (introspection.Parameter class method)</a>
 </li>
       <li><a href="function_signatures.html#introspection.Signature.from_signature">from_signature() (introspection.Signature class method)</a>
@@ -151,6 +178,8 @@
 <h2 id="G">G</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="classes.html#introspection.get_abstract_method_names">get_abstract_method_names() (in module introspection.classes)</a>
+</li>
       <li><a href="classes.html#introspection.get_attributes">get_attributes() (in module introspection.classes)</a>
 </li>
       <li><a href="dundermethods.html#introspection.get_bound_dundermethod">get_bound_dundermethod() (in module introspection.dundermethods)</a>
@@ -165,17 +194,15 @@
 </li>
       <li><a href="classes.html#introspection.get_slot_counts">get_slot_counts() (in module introspection.classes)</a>
 </li>
-      <li><a href="classes.html#introspection.get_slot_names">get_slot_names() (in module introspection.classes)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="classes.html#introspection.get_slot_names">get_slot_names() (in module introspection.classes)</a>
+</li>
       <li><a href="classes.html#introspection.get_slots">get_slots() (in module introspection.classes)</a>
 </li>
       <li><a href="classes.html#introspection.get_subclasses">get_subclasses() (in module introspection.classes)</a>
 </li>
       <li><a href="call_stack.html#introspection.CallFrame.get_surrounding_function">get_surrounding_function() (introspection.CallFrame method)</a>
-</li>
-      <li><a href="typing.html#introspection.typing.get_type_args">get_type_args() (in module introspection.typing.introspection)</a>
 </li>
       <li><a href="typing.html#introspection.typing.get_type_arguments">get_type_arguments() (in module introspection.typing.introspection)</a>
 </li>
@@ -183,9 +210,7 @@
 </li>
       <li><a href="typing.html#introspection.typing.get_type_parameters">get_type_parameters() (in module introspection.typing.introspection)</a>
 </li>
-      <li><a href="typing.html#introspection.typing.get_type_params">get_type_params() (in module introspection.typing.introspection)</a>
-</li>
-      <li><a href="call_stack.html#introspection.CallFrame.globals">globals() (introspection.CallFrame property)</a>
+      <li><a href="call_stack.html#introspection.CallFrame.globals">globals (introspection.CallFrame property)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -193,11 +218,11 @@
 <h2 id="H">H</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="function_signatures.html#introspection.Parameter.has_annotation">has_annotation() (introspection.Parameter property)</a>
+      <li><a href="function_signatures.html#introspection.Parameter.has_annotation">has_annotation (introspection.Parameter property)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="function_signatures.html#introspection.Signature.has_return_annotation">has_return_annotation() (introspection.Signature property)</a>
+      <li><a href="function_signatures.html#introspection.Signature.has_return_annotation">has_return_annotation (introspection.Signature property)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -256,27 +281,25 @@
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="misc.html#introspection.is_abstract">is_abstract() (in module introspection.misc)</a>
+</li>
       <li><a href="typing.html#introspection.typing.is_forwardref">is_forwardref() (in module introspection.typing.introspection)</a>
 </li>
       <li><a href="typing.html#introspection.typing.is_fully_parameterized_generic">is_fully_parameterized_generic() (in module introspection.typing.introspection)</a>
-</li>
-      <li><a href="typing.html#introspection.typing.is_fully_qualified_generic">is_fully_qualified_generic() (in module introspection.typing.introspection)</a>
 </li>
       <li><a href="typing.html#introspection.typing.is_generic">is_generic() (in module introspection.typing.introspection)</a>
 </li>
       <li><a href="typing.html#introspection.typing.is_generic_base_class">is_generic_base_class() (in module introspection.typing.introspection)</a>
 </li>
-      <li><a href="function_signatures.html#introspection.Parameter.is_optional">is_optional() (introspection.Parameter property)</a>
+      <li><a href="function_signatures.html#introspection.Parameter.is_optional">is_optional (introspection.Parameter property)</a>
 </li>
       <li><a href="typing.html#introspection.typing.is_parameterized_generic">is_parameterized_generic() (in module introspection.typing.introspection)</a>
-</li>
-      <li><a href="typing.html#introspection.typing.is_qualified_generic">is_qualified_generic() (in module introspection.typing.introspection)</a>
 </li>
       <li><a href="typing.html#introspection.typing.is_type">is_type() (in module introspection.typing.introspection)</a>
 </li>
       <li><a href="typing.html#introspection.typing.is_typing_type">is_typing_type() (in module introspection.typing.introspection)</a>
 </li>
-      <li><a href="function_signatures.html#introspection.Parameter.is_vararg">is_vararg() (introspection.Parameter property)</a>
+      <li><a href="function_signatures.html#introspection.Parameter.is_vararg">is_vararg (introspection.Parameter property)</a>
 </li>
       <li><a href="typing.html#introspection.typing.is_variadic_generic">is_variadic_generic() (in module introspection.typing.introspection)</a>
 </li>
@@ -284,13 +307,15 @@
 </li>
       <li><a href="classes.html#introspection.iter_slots">iter_slots() (in module introspection.classes)</a>
 </li>
+      <li><a href="misc.html#introspection.iter_wrapped">iter_wrapped() (in module introspection.misc)</a>
+</li>
   </ul></td>
 </tr></table>
 
 <h2 id="L">L</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="call_stack.html#introspection.CallFrame.locals">locals() (introspection.CallFrame property)</a>
+      <li><a href="call_stack.html#introspection.CallFrame.locals">locals (introspection.CallFrame property)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -325,7 +350,7 @@
 <h2 id="N">N</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="function_signatures.html#introspection.Signature.num_required_arguments">num_required_arguments() (introspection.Signature property)</a>
+      <li><a href="function_signatures.html#introspection.Signature.num_required_arguments">num_required_arguments (introspection.Signature property)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -333,16 +358,14 @@
 <h2 id="P">P</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="function_signatures.html#introspection.Signature.param_list">param_list() (introspection.Signature property)</a>
-</li>
       <li><a href="function_signatures.html#introspection.Parameter">Parameter (class in introspection)</a>
 </li>
-      <li><a href="function_signatures.html#introspection.Signature.parameter_list">parameter_list() (introspection.Signature property)</a>
+      <li><a href="function_signatures.html#introspection.Signature.parameter_list">parameter_list (introspection.Signature property)</a>
+</li>
+      <li><a href="call_stack.html#introspection.CallFrame.parent">parent (introspection.CallFrame property)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="call_stack.html#introspection.CallFrame.parent">parent() (introspection.CallFrame property)</a>
-</li>
       <li>
     Python Enhancement Proposals
 
@@ -358,11 +381,15 @@
 <h2 id="R">R</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="misc.html#introspection.rename">rename() (in module introspection.misc)</a>
+</li>
       <li><a href="misc.html#introspection.resolve_bases">resolve_bases() (in module introspection.misc)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="typing.html#introspection.typing.resolve_forward_refs">resolve_forward_refs() (in module introspection.typing.misc)</a>
+</li>
+      <li><a href="misc.html#introspection.resolve_identifier">resolve_identifier() (in module introspection.misc)</a>
 </li>
       <li><a href="call_stack.html#introspection.CallFrame.resolve_name">resolve_name() (introspection.CallFrame method)</a>
 </li>
@@ -374,17 +401,23 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="classes.html#introspection.safe_is_subclass">safe_is_subclass() (in module introspection.classes)</a>
 </li>
-      <li><a href="call_stack.html#introspection.CallFrame.scope_name">scope_name() (introspection.CallFrame property)</a>
+      <li><a href="call_stack.html#introspection.CallFrame.scope_name">scope_name (introspection.CallFrame property)</a>
 </li>
       <li><a href="function_signatures.html#introspection.Signature">Signature (class in introspection)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="function_signatures.html#introspection.signature">signature() (in module introspection)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="misc.html#introspection.static_copy">static_copy() (in module introspection.misc)</a>
 </li>
+      <li><a href="misc.html#introspection.static_hasattr">static_hasattr() (in module introspection.misc)</a>
+</li>
+      <li><a href="misc.html#introspection.static_mro">static_mro() (in module introspection.misc)</a>
+</li>
       <li><a href="misc.html#introspection.static_vars">static_vars() (in module introspection.misc)</a>
+</li>
+      <li><a href="misc.html#introspection.super">super (class in introspection)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -404,6 +437,16 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="typing.html#introspection.typing.to_typing">to_typing() (in module introspection.typing.type_compat)</a>
 </li>
+      <li><a href="function_signatures.html#introspection.BoundArguments.to_varargs">to_varargs() (introspection.BoundArguments method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="U">U</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="misc.html#introspection.unwrap">unwrap() (in module introspection.misc)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -416,6 +459,8 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="classes.html#introspection.wrap_method">wrap_method() (in module introspection.classes)</a>
 </li>
+      <li><a href="misc.html#introspection.wraps">wraps() (in module introspection.misc)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -427,11 +472,29 @@
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
+<h3><a href="index.html">Table of Contents</a></h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="function_signatures.html">Function Signatures</a></li>
+<li class="toctree-l1"><a class="reference internal" href="call_stack.html">The call stack</a></li>
+<li class="toctree-l1"><a class="reference internal" href="classes.html">Functions related to classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dundermethods.html">Functions related to dundermethods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="typing.html">Introspecting the <code class="docutils literal notranslate"><span class="pre">typing</span></code> module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="misc.html">Misc. functions</a></li>
+</ul>
+
+    <div class="nav">
+        <h3>Navigation</h3>
+        
+        <a class="homepage-link" href="index.html" title="home page">
+            Introspection documentation
+        </a>
+    </div>
 <div id="searchbox" style="display: none" role="search">
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>

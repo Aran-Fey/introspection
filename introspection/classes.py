@@ -2,18 +2,18 @@
 import collections
 import inspect
 import functools
-
+import typing
 from typing import Dict, Any, Set, Iterator, Tuple
 
 import sentinel
 
-from .misc import static_vars
+from .misc import static_vars, is_abstract, static_mro
 
 __all__ = [
-    'get_subclasses', 'get_attributes', 'safe_is_subclass',
+    'get_subclasses', 'get_attributes', 'get_abstract_method_names', 'safe_is_subclass',
     'iter_slots', 'get_slot_names', 'get_slot_counts', 'get_slots',
     'get_implicit_method_type',
-    'add_method_to_class', 'wrap_method',
+    'fit_to_class', 'add_method_to_class', 'wrap_method',
 ]
 
 
@@ -57,7 +57,7 @@ def iter_slots(cls: type) -> Iterator[Tuple[str, Any]]:
     :param cls: The class whose slots to yield
     :return: An iterator yielding ``(slot_name, slot_descriptor)`` tuples
     """
-    for cls in cls.__mro__:  # pragma: no branch
+    for cls in static_mro(cls):  # pragma: no branch
         cls_vars = static_vars(cls)
 
         try:
@@ -132,7 +132,8 @@ def get_attributes(obj: Any, include_weakref: bool = False) -> Dict[str, Any]:
     attributes stored in the object's ``__dict__`` as well as in ``__slots__``.
 
     :param obj: The object whose attributes will be returned
-    :param include_weakref: Whether the value of the ``__weakref__`` slot should be included in the result
+    :param include_weakref: Whether the value of the ``__weakref__`` slot should
+        be included in the result
     :return: A dict of ``{attr_name: attr_value}``
     """
     cls = type(obj)
@@ -143,6 +144,7 @@ def get_attributes(obj: Any, include_weakref: bool = False) -> Dict[str, Any]:
     if not include_weakref:
         slots.pop('__weakref__', None)
 
+    # FIXME: Is this the correct way to invoke the descriptor's __get__?
     attrs = {name: slot.__get__(obj, cls) for name, slot in slots.items()}
 
     try:
@@ -155,11 +157,41 @@ def get_attributes(obj: Any, include_weakref: bool = False) -> Dict[str, Any]:
     return attrs
 
 
+def get_abstract_method_names(cls: type) -> Set[str]:
+    """
+    Returns a set of names of abstract methods (and other things) in the given
+    class. See also :func:`is_abstract`.
+
+    .. versionadded: 1.4
+
+    :param cls: A class
+    :return: The names of all abstract methods in that class
+    """
+    result = set()
+    seen = set()
+
+    for cls_ in static_mro(cls):
+        for name, value in static_vars(cls_).items():
+            if name in seen:
+                continue
+            seen.add(name)
+
+            if is_abstract(value) and not isinstance(value, type):
+                result.add(name)
+    
+    return result
+
+
 def safe_is_subclass(subclass, superclass) -> bool:
     """
-    A clone of :func:`issubclass` that returns ``False`` instead of throwing a :exc:`TypeError`.
+    A clone of :func:`issubclass` that returns ``False`` instead of throwing a
+    :exc:`TypeError`.
     
     .. versionadded:: 1.2
+
+    :param subclass: The subclass
+    :param superclass: The superclass
+    :return: Whether ``subclass`` is a subclass of ``superclass``
     """
     try:
         return issubclass(subclass, superclass)
@@ -167,7 +199,11 @@ def safe_is_subclass(subclass, superclass) -> bool:
         return False
 
 
-def get_implicit_method_type(method_name: str):
+def get_implicit_method_type(method_name: str) -> (
+        typing.Literal[None, classmethod, staticmethod]
+        if hasattr(typing, 'Literal') else
+        Any
+    ):
     """
     Given the name of a method as input, returns what kind of method python automatically
     converts it to. The return value can be :class:`staticmethod`, :class:`classmethod`,
@@ -182,6 +218,9 @@ def get_implicit_method_type(method_name: str):
         <class 'classmethod'>
     
     .. versionadded:: 1.3
+
+    :param method_name: The name of a dundermethod
+    :return: The type of that method
     """
     TYPES_BY_NAME = {
         '__new__': staticmethod,
@@ -192,7 +231,52 @@ def get_implicit_method_type(method_name: str):
     return TYPES_BY_NAME.get(method_name)
 
 
-def add_method_to_class(method, cls: type, name: str = None, method_type=auto):
+def fit_to_class(thing, cls: type, name: str = None):
+    r"""
+    Updates ``thing``\ 's metadata to match ``cls``\ 's.
+
+    ``thing`` can be one of the following:
+    
+    - A function
+    - A :any:`staticmethod`
+    - A :any:`classmethod`
+    - A :any:`property`
+
+    If ``name`` is not ``None``, ``thing`` will be renamed accordingly.
+
+    .. versionadded: 1.4
+
+    :param thing: The thing whose metadata should be updated
+    :param cls: The class to copy the metadata from
+    :param name: The name to rename ``thing`` to
+    """
+    if isinstance(thing, (classmethod, staticmethod)):
+        methods = [thing.__func__]
+    elif isinstance(thing, property):
+        methods = [
+            method for method in (thing.fget, thing.fset, thing.fdel)
+            if method is not None
+        ]
+    else:
+        methods = [thing]
+
+    for method in methods:
+        if name is None:
+            method_name = method.__name__
+        else:
+            method_name = name
+        
+        method.__name__ = method_name
+        method.__qualname__ = cls.__qualname__ + '.' + method_name
+        method.__module__ = cls.__module__
+
+
+def add_method_to_class(
+        method,
+        cls: type,
+        name: str = None,
+        method_type=auto,
+    ) -> None:
     r"""
     Adds ``method`` to ``cls``\ 's namespace under the given ``name``.
 
@@ -213,20 +297,16 @@ def add_method_to_class(method, cls: type, name: str = None, method_type=auto):
     :param name: The name under which the method is registered in the class namespace
     :param method_type: One of :class:`staticmethod`, :class:`classmethod`, or ``None`` (or omitted)
     """
-    if name is None:
-        name = method.__name__
-    
-    method.__name__ = name
-    method.__qualname__ = cls.__qualname__.rsplit('.', 1)[0] + '.' + name
-    method.__module__ = cls.__module__
+    fit_to_class(method, cls, name)
+    method_name = method.__name__
 
     if method_type is auto:
-        method_type = get_implicit_method_type(name)
+        method_type = get_implicit_method_type(method_name)
     
     if method_type is not None:
         method = method_type(method)
 
-    setattr(cls, name, method)
+    setattr(cls, method_name, method)
 
 
 def wrap_method(method, cls, name=None, method_type=auto):
@@ -340,6 +420,9 @@ def wrap_method(method, cls, name=None, method_type=auto):
     :param name: The name under which the method is registered in the class namespace
     :param method_type: One of :class:`staticmethod`, :class:`classmethod`, or ``None`` (or omitted)
     """
+    if not isinstance(cls, type):
+        raise TypeError(f"'cls' argument must be a class, not {cls!r}")
+
     if name is None:
         name = method.__name__
     
@@ -416,7 +499,7 @@ def _make_original_new_method(cls):
             # consumed all the arguments.
             forward_args = False
 
-            for c in class_.__mro__:  # pragma: no branch
+            for c in static_mro(class_):  # pragma: no branch
                 if c is object:
                     break
 

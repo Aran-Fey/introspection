@@ -13,4 +13,5 @@ Signatures can be created through the :func:`signature` function or the ``Signat
 
 .. autoclass:: introspection.Signature
 .. autoclass:: introspection.Parameter
+.. autoclass:: introspection.BoundArguments
 .. autofunction:: introspection.signature

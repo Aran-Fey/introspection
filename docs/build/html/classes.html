@@ -4,15 +4,19 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
     <title>Functions related to classes &#8212; Introspection documentation</title>
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="_static/nightsky.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/nightsky.css" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
     <link id="pygments_dark_css" media="(prefers-color-scheme: dark)" rel="stylesheet" type="text/css" href="_static/pygments_dark.css" />
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
+    <script src="_static/clipboard.min.js"></script>
+    <script src="_static/copybutton.js"></script>
     <script src="_static/theme_switcher.js"></script>
     <link rel="shortcut icon" href="_static/favicon.svg"/>
     <link rel="index" title="Index" href="genindex.html" />
@@ -27,55 +31,95 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="module-introspection.classes">
+  <section id="module-introspection.classes">
 <span id="functions-related-to-classes"></span><h1>Functions related to classes<a class="headerlink" href="#module-introspection.classes" title="Permalink to this headline">¶</a></h1>
 <dl class="py function">
-<dt id="introspection.get_subclasses">
-<span id="introspection.classes.get_subclasses"></span><code class="sig-prename descclassname"><span class="pre">introspection.</span></code><code class="sig-name descname"><span class="pre">get_subclasses</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_abstract</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.get_subclasses" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="introspection.get_subclasses">
+<span id="introspection.classes.get_subclasses"></span><span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">get_subclasses</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_abstract</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.get_subclasses" title="Permalink to this definition">¶</a></dt>
 <dd><p>Collects all subclasses of the given class.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>cls</strong> – A base class</p></li>
-<li><p><strong>include_abstract</strong> – Whether abstract base classes should be included</p></li>
+<li><p><strong>cls</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></a>) – A base class</p></li>
+<li><p><strong>include_abstract</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>, default: <code class="docutils literal notranslate"><span class="pre">False</span></code>) – Whether abstract base classes should be included</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A set of all subclasses</p>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Set" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Set</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></a>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A set of all subclasses</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
-<dt id="introspection.get_attributes">
-<span id="introspection.classes.get_attributes"></span><code class="sig-prename descclassname"><span class="pre">introspection.</span></code><code class="sig-name descname"><span class="pre">get_attributes</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_weakref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.get_attributes" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="introspection.get_attributes">
+<span id="introspection.classes.get_attributes"></span><span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">get_attributes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_weakref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.get_attributes" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a dictionary of all of <code class="docutils literal notranslate"><span class="pre">obj</span></code>’s attributes. This includes
 attributes stored in the object’s <code class="docutils literal notranslate"><span class="pre">__dict__</span></code> as well as in <code class="docutils literal notranslate"><span class="pre">__slots__</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>obj</strong> – The object whose attributes will be returned</p></li>
-<li><p><strong>include_weakref</strong> – Whether the value of the <code class="docutils literal notranslate"><span class="pre">__weakref__</span></code> slot should be included in the result</p></li>
+<li><p><strong>obj</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>) – The object whose attributes will be returned</p></li>
+<li><p><strong>include_weakref</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>, default: <code class="docutils literal notranslate"><span class="pre">False</span></code>) – Whether the value of the <code class="docutils literal notranslate"><span class="pre">__weakref__</span></code> slot should
+be included in the result</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A dict of <code class="docutils literal notranslate"><span class="pre">{attr_name:</span> <span class="pre">attr_value}</span></code></p>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A dict of <code class="docutils literal notranslate"><span class="pre">{attr_name:</span> <span class="pre">attr_value}</span></code></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
-<dt id="introspection.safe_is_subclass">
-<span id="introspection.classes.safe_is_subclass"></span><code class="sig-prename descclassname"><span class="pre">introspection.</span></code><code class="sig-name descname"><span class="pre">safe_is_subclass</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subclass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">superclass</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.safe_is_subclass" title="Permalink to this definition">¶</a></dt>
-<dd><p>A clone of <a class="reference external" href="https://docs.python.org/3/library/functions.html#issubclass" title="(in Python v3.9)"><code class="xref py py-func docutils literal notranslate"><span class="pre">issubclass()</span></code></a> that returns <code class="docutils literal notranslate"><span class="pre">False</span></code> instead of throwing a <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.9)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">TypeError</span></code></a>.</p>
-<div class="versionadded">
-<p><span class="versionmodified added">New in version 1.2.</span></p>
-</div>
+<dt class="sig sig-object py" id="introspection.get_abstract_method_names">
+<span id="introspection.classes.get_abstract_method_names"></span><span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">get_abstract_method_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.get_abstract_method_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a set of names of abstract methods (and other things) in the given
+class. See also <code class="xref py py-func docutils literal notranslate"><span class="pre">is_abstract()</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>cls</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></a>) – A class</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Set" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Set</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The names of all abstract methods in that class</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
-<dt id="introspection.iter_slots">
-<span id="introspection.classes.iter_slots"></span><code class="sig-prename descclassname"><span class="pre">introspection.</span></code><code class="sig-name descname"><span class="pre">iter_slots</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.iter_slots" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="introspection.safe_is_subclass">
+<span id="introspection.classes.safe_is_subclass"></span><span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">safe_is_subclass</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subclass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">superclass</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.safe_is_subclass" title="Permalink to this definition">¶</a></dt>
+<dd><p>A clone of <a class="reference external" href="https://docs.python.org/3/library/functions.html#issubclass" title="(in Python v3.10)"><code class="xref py py-func docutils literal notranslate"><span class="pre">issubclass()</span></code></a> that returns <code class="docutils literal notranslate"><span class="pre">False</span></code> instead of throwing a
+<a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.10)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">TypeError</span></code></a>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version 1.2.</span></p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>subclass</strong> – The subclass</p></li>
+<li><p><strong>superclass</strong> – The superclass</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Whether <code class="docutils literal notranslate"><span class="pre">subclass</span></code> is a subclass of <code class="docutils literal notranslate"><span class="pre">superclass</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="introspection.iter_slots">
+<span id="introspection.classes.iter_slots"></span><span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">iter_slots</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.iter_slots" title="Permalink to this definition">¶</a></dt>
 <dd><p>Iterates over all <code class="docutils literal notranslate"><span class="pre">__slots__</span></code> of the given class, yielding
 <code class="docutils literal notranslate"><span class="pre">(slot_name,</span> <span class="pre">slot_descriptor)</span></code> tuples.</p>
 <p>If a slot name is used more than once, <em>all</em> of them will be
@@ -85,64 +129,76 @@ attribute - deleting or altering this attribute in any way may
 yield incorrect results.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>cls</strong> – The class whose slots to yield</p>
+<dd class="field-odd"><p><strong>cls</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></a>) – The class whose slots to yield</p>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>An iterator yielding <code class="docutils literal notranslate"><span class="pre">(slot_name,</span> <span class="pre">slot_descriptor)</span></code> tuples</p>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterator" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>An iterator yielding <code class="docutils literal notranslate"><span class="pre">(slot_name,</span> <span class="pre">slot_descriptor)</span></code> tuples</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
-<dt id="introspection.get_slot_names">
-<span id="introspection.classes.get_slot_names"></span><code class="sig-prename descclassname"><span class="pre">introspection.</span></code><code class="sig-name descname"><span class="pre">get_slot_names</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.get_slot_names" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="introspection.get_slot_names">
+<span id="introspection.classes.get_slot_names"></span><span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">get_slot_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.get_slot_names" title="Permalink to this definition">¶</a></dt>
 <dd><p>Collects all of the given class’s <code class="docutils literal notranslate"><span class="pre">__slots__</span></code>, returning a
 set of slot names.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>cls</strong> – The class whose slots to collect</p>
+<dd class="field-odd"><p><strong>cls</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></a>) – The class whose slots to collect</p>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A set containing the names of all slots</p>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Set" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Set</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A set containing the names of all slots</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
-<dt id="introspection.get_slot_counts">
-<span id="introspection.classes.get_slot_counts"></span><code class="sig-prename descclassname"><span class="pre">introspection.</span></code><code class="sig-name descname"><span class="pre">get_slot_counts</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.get_slot_counts" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="introspection.get_slot_counts">
+<span id="introspection.classes.get_slot_counts"></span><span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">get_slot_counts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.get_slot_counts" title="Permalink to this definition">¶</a></dt>
 <dd><p>Collects all of the given class’s <code class="docutils literal notranslate"><span class="pre">__slots__</span></code>, returning a
 dict of the form <code class="docutils literal notranslate"><span class="pre">{slot_name:</span> <span class="pre">count}</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>cls</strong> – The class whose slots to collect</p>
+<dd class="field-odd"><p><strong>cls</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></a>) – The class whose slots to collect</p>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A <a class="reference external" href="https://docs.python.org/3/library/collections.html#collections.Counter" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">collections.Counter</span></code></a> counting the number of occurrences of each slot</p>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A <a class="reference external" href="https://docs.python.org/3/library/collections.html#collections.Counter" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">collections.Counter</span></code></a> counting the number of occurrences of each slot</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
-<dt id="introspection.get_slots">
-<span id="introspection.classes.get_slots"></span><code class="sig-prename descclassname"><span class="pre">introspection.</span></code><code class="sig-name descname"><span class="pre">get_slots</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.get_slots" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="introspection.get_slots">
+<span id="introspection.classes.get_slots"></span><span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">get_slots</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.get_slots" title="Permalink to this definition">¶</a></dt>
 <dd><p>Collects all of the given class’s <code class="docutils literal notranslate"><span class="pre">__slots__</span></code>, returning a
 dict of the form <code class="docutils literal notranslate"><span class="pre">{slot_name:</span> <span class="pre">slot_descriptor}</span></code>.</p>
 <p>If a slot name is used more than once, only the descriptor
 that shadows all other descriptors of the same name is returned.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>cls</strong> – The class whose slots to collect</p>
+<dd class="field-odd"><p><strong>cls</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></a>) – The class whose slots to collect</p>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A dict mapping slot names to descriptors</p>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A dict mapping slot names to descriptors</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
-<dt id="introspection.get_implicit_method_type">
-<span id="introspection.classes.get_implicit_method_type"></span><code class="sig-prename descclassname"><span class="pre">introspection.</span></code><code class="sig-name descname"><span class="pre">get_implicit_method_type</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.get_implicit_method_type" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="introspection.get_implicit_method_type">
+<span id="introspection.classes.get_implicit_method_type"></span><span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">get_implicit_method_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.get_implicit_method_type" title="Permalink to this definition">¶</a></dt>
 <dd><p>Given the name of a method as input, returns what kind of method python automatically
 converts it to. The return value can be <code class="xref py py-class docutils literal notranslate"><span class="pre">staticmethod</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">classmethod</span></code>,
 or <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
@@ -157,11 +213,45 @@ or <code class="docutils literal notranslate"><span class="pre">None</span></cod
 <div class="versionadded">
 <p><span class="versionmodified added">New in version 1.3.</span></p>
 </div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>method_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – The name of a dundermethod</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Literal</span></code></a>[None, &lt;class ‘classmethod’&gt;, &lt;class ‘staticmethod’&gt;]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The type of that method</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
-<dt id="introspection.add_method_to_class">
-<span id="introspection.classes.add_method_to_class"></span><code class="sig-prename descclassname"><span class="pre">introspection.</span></code><code class="sig-name descname"><span class="pre">add_method_to_class</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">auto</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.add_method_to_class" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="introspection.fit_to_class">
+<span id="introspection.classes.fit_to_class"></span><span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">fit_to_class</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">thing</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.fit_to_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates <code class="docutils literal notranslate"><span class="pre">thing</span></code>‘s metadata to match <code class="docutils literal notranslate"><span class="pre">cls</span></code>‘s.</p>
+<p><code class="docutils literal notranslate"><span class="pre">thing</span></code> can be one of the following:</p>
+<ul class="simple">
+<li><p>A function</p></li>
+<li><p>A <a class="reference external" href="https://docs.python.org/3/library/functions.html#staticmethod" title="(in Python v3.10)"><code class="xref any docutils literal notranslate"><span class="pre">staticmethod</span></code></a></p></li>
+<li><p>A <a class="reference external" href="https://docs.python.org/3/library/functions.html#classmethod" title="(in Python v3.10)"><code class="xref any docutils literal notranslate"><span class="pre">classmethod</span></code></a></p></li>
+<li><p>A <a class="reference external" href="https://docs.python.org/3/library/functions.html#property" title="(in Python v3.10)"><code class="xref any docutils literal notranslate"><span class="pre">property</span></code></a></p></li>
+</ul>
+<p>If <code class="docutils literal notranslate"><span class="pre">name</span></code> is not <code class="docutils literal notranslate"><span class="pre">None</span></code>, <code class="docutils literal notranslate"><span class="pre">thing</span></code> will be renamed accordingly.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>thing</strong> – The thing whose metadata should be updated</p></li>
+<li><p><strong>cls</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></a>) – The class to copy the metadata from</p></li>
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>], default: <code class="docutils literal notranslate"><span class="pre">None</span></code>) – The name to rename <code class="docutils literal notranslate"><span class="pre">thing</span></code> to</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="introspection.add_method_to_class">
+<span id="introspection.classes.add_method_to_class"></span><span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">add_method_to_class</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">auto</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.add_method_to_class" title="Permalink to this definition">¶</a></dt>
 <dd><p>Adds <code class="docutils literal notranslate"><span class="pre">method</span></code> to <code class="docutils literal notranslate"><span class="pre">cls</span></code>‘s namespace under the given <code class="docutils literal notranslate"><span class="pre">name</span></code>.</p>
 <p>If <code class="docutils literal notranslate"><span class="pre">name</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code>, it defaults to <code class="docutils literal notranslate"><span class="pre">method.__name__</span></code>.</p>
 <p>The method’s metadata (<code class="docutils literal notranslate"><span class="pre">__name__</span></code>, <code class="docutils literal notranslate"><span class="pre">__qualname__</span></code>, and <code class="docutils literal notranslate"><span class="pre">__module__</span></code>)
@@ -177,17 +267,20 @@ wrapped with the appropriate descriptor.</p>
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>method</strong> – The method to add to the class</p></li>
-<li><p><strong>cls</strong> – The class to which to add the method</p></li>
-<li><p><strong>name</strong> – The name under which the method is registered in the class namespace</p></li>
+<li><p><strong>cls</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></a>) – The class to which to add the method</p></li>
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>], default: <code class="docutils literal notranslate"><span class="pre">None</span></code>) – The name under which the method is registered in the class namespace</p></li>
 <li><p><strong>method_type</strong> – One of <code class="xref py py-class docutils literal notranslate"><span class="pre">staticmethod</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">classmethod</span></code>, or <code class="docutils literal notranslate"><span class="pre">None</span></code> (or omitted)</p></li>
 </ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.10)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
-<dt id="introspection.wrap_method">
-<span id="introspection.classes.wrap_method"></span><code class="sig-prename descclassname"><span class="pre">introspection.</span></code><code class="sig-name descname"><span class="pre">wrap_method</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">auto</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.wrap_method" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="introspection.wrap_method">
+<span id="introspection.classes.wrap_method"></span><span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">wrap_method</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">auto</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.wrap_method" title="Permalink to this definition">¶</a></dt>
 <dd><p>Adds <code class="docutils literal notranslate"><span class="pre">method</span></code> to <code class="docutils literal notranslate"><span class="pre">cls</span></code>‘s namespace under the given <code class="docutils literal notranslate"><span class="pre">name</span></code>,
 wrapping the existing method (if one exists).</p>
 <p>The replaced method will be passed in as the first positional argument
@@ -302,7 +395,7 @@ setting its <code class="docutils literal notranslate"><span class="pre">_forwar
 </dl>
 </dd></dl>
 
-</div>
+</section>
 
 
             <div class="clearer"></div>
@@ -311,11 +404,35 @@ setting its <code class="docutils literal notranslate"><span class="pre">_forwar
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
+<h3><a href="index.html">Table of Contents</a></h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="function_signatures.html">Function Signatures</a></li>
+<li class="toctree-l1"><a class="reference internal" href="call_stack.html">The call stack</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Functions related to classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dundermethods.html">Functions related to dundermethods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="typing.html">Introspecting the <code class="docutils literal notranslate"><span class="pre">typing</span></code> module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="misc.html">Misc. functions</a></li>
+</ul>
+
+    <div class="nav">
+        <h3>Navigation</h3>
+        
+        <a class="homepage-link" href="index.html" title="home page">
+            Introspection documentation
+        </a>
+            <a class="prev-link" href="call_stack.html" title="previous chapter">
+                The call stack
+            </a>
+            <a class="next-link" href="dundermethods.html" title="next chapter">
+                Functions related to dundermethods
+            </a>
+    </div>
 <div id="searchbox" style="display: none" role="search">
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>

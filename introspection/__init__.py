@@ -2,10 +2,11 @@
 New and improved introspection functions
 """
 
-__version__ = '1.3'
+__version__ = '1.4'
 
 from .parameter import *
 from .signature import *
+from .bound_arguments import *
 from .call_stack import *
 from .call_frame import *
 
@@ -13,9 +14,12 @@ from .convenience import *
 from .classes import *
 from .dundermethods import *
 from .misc import *
+from .hazmat import *
 
-# Make sure a ``from introspection import *`` doesn't
-# import the ``typing`` submodule
+from . import dunder
+
+# Make sure a ``from introspection import *`` doesn't import the ``typing``
+# submodule
 import types
 __all__ = [
     name for name, obj in globals().items()

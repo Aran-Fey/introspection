@@ -6,12 +6,14 @@ import os
 import sys
 import types
 import typing
-import warnings
 from numbers import Number
-from typing import Union, List, Dict, Callable, Any, Iterator, Iterable, Mapping, Tuple, Optional, TypeVar, ByteString, Type
+from typing import *
 
+from .bound_arguments import BoundArguments
 from .parameter import Parameter
 from .typing import annotation_to_string
+from .misc import unwrap
+from ._utils import SIG_EMPTY
 
 __all__ = ['Signature']
 
@@ -26,10 +28,17 @@ FilePath = Union[str, bytes, os.PathLike]
 
 BUILTIN_SIGNATURES = {
     'abs': (Any, [
-        Parameter('x', Parameter.POSITIONAL_ONLY, annotation=typing.SupportsAbs)
+        Parameter('x', Parameter.POSITIONAL_ONLY, annotation=SupportsAbs)
+    ]),
+    'aiter': (AsyncIterator[T], [
+        Parameter('async_iterable', Parameter.POSITIONAL_ONLY, annotation=AsyncIterable[T])
     ]),
     'all': (bool, [
         Parameter('iterable', Parameter.POSITIONAL_ONLY, annotation=Iterable)
+    ]),
+    'anext': (Awaitable[Union[A, B]], [
+        Parameter('async_iterator', Parameter.POSITIONAL_ONLY, annotation=AsyncIterator[A]),
+        Parameter('default', Parameter.POSITIONAL_ONLY, default=Parameter.missing, annotation=B),
     ]),
     'any': (bool, [
         Parameter('iterable', Parameter.POSITIONAL_ONLY, annotation=Iterable)
@@ -53,7 +62,7 @@ BUILTIN_SIGNATURES = {
         Parameter('errors', Parameter.POSITIONAL_OR_KEYWORD, Parameter.missing, str)
     ]),
     'bytes': (bytes, [
-        Parameter('source', Parameter.POSITIONAL_OR_KEYWORD, Parameter.missing, Union[str, ByteString, typing.SupportsBytes]),
+        Parameter('source', Parameter.POSITIONAL_OR_KEYWORD, Parameter.missing, Union[str, ByteString, SupportsBytes]),
         Parameter('encoding', Parameter.POSITIONAL_OR_KEYWORD, Parameter.missing, str),
         Parameter('errors', Parameter.POSITIONAL_OR_KEYWORD, Parameter.missing, str)
     ]),
@@ -69,7 +78,7 @@ BUILTIN_SIGNATURES = {
     'compile': (types.CodeType, [
         Parameter('source', Parameter.POSITIONAL_OR_KEYWORD, annotation=Union[str, ByteString, ast.AST]),
         Parameter('filename', Parameter.POSITIONAL_OR_KEYWORD, annotation=str),
-        Parameter('mode', Parameter.POSITIONAL_OR_KEYWORD, annotation=typing.Literal['eval', 'exec'] if hasattr(typing, 'Literal') else str),
+        Parameter('mode', Parameter.POSITIONAL_OR_KEYWORD, annotation=Literal['eval', 'exec'] if hasattr(typing, 'Literal') else str),
         Parameter('flags', Parameter.POSITIONAL_OR_KEYWORD, 0, int),
         Parameter('dont_inherit', Parameter.POSITIONAL_OR_KEYWORD, False, bool),
         Parameter('optimize', Parameter.POSITIONAL_OR_KEYWORD, -1, int),
@@ -112,13 +121,13 @@ BUILTIN_SIGNATURES = {
         Parameter('iterable', Parameter.POSITIONAL_ONLY, annotation=Iterable[T]),
     ]),
     'float': (float, [
-        Parameter('x', Parameter.POSITIONAL_ONLY, Parameter.missing, typing.SupportsFloat)
+        Parameter('x', Parameter.POSITIONAL_ONLY, Parameter.missing, SupportsFloat)
     ]),
     'format': (str, [
         Parameter('value', Parameter.POSITIONAL_ONLY, annotation=Any),
         Parameter('format_spec', Parameter.POSITIONAL_ONLY, Parameter.missing, str),
     ]),
-    'frozenset': (typing.FrozenSet[T], [
+    'frozenset': (FrozenSet[T], [
         Parameter('iterable', Parameter.POSITIONAL_ONLY, Parameter.missing, Iterable[T])
     ]),
     'getattr': (Any, [
@@ -147,7 +156,7 @@ BUILTIN_SIGNATURES = {
         Parameter('prompt', Parameter.POSITIONAL_ONLY, Parameter.missing, Any)
     ]),
     'int': (int, [
-        Parameter('x', Parameter.POSITIONAL_ONLY, Parameter.missing, Union[str, ByteString, typing.SupportsInt]),
+        Parameter('x', Parameter.POSITIONAL_ONLY, Parameter.missing, Union[str, ByteString, SupportsInt]),
         Parameter('base', Parameter.POSITIONAL_ONLY, 10, int)
     ]),
     'isinstance': (bool, [
@@ -163,7 +172,7 @@ BUILTIN_SIGNATURES = {
         Parameter('sentinel', Parameter.POSITIONAL_ONLY, Parameter.missing, Any)
     ]),
     'len': (int, [
-        Parameter('s', Parameter.POSITIONAL_ONLY, annotation=typing.Sized)
+        Parameter('s', Parameter.POSITIONAL_ONLY, annotation=Sized)
     ]),
     'list': (List[T], [
         Parameter('iterable', Parameter.POSITIONAL_ONLY, Parameter.missing, Iterable[T])
@@ -238,13 +247,13 @@ BUILTIN_SIGNATURES = {
         Parameter('object', Parameter.POSITIONAL_ONLY, annotation=Any)
     ]),
     'reversed': (Iterator[T], [
-        Parameter('seq', Parameter.POSITIONAL_ONLY, annotation=typing.Reversible[T])
+        Parameter('seq', Parameter.POSITIONAL_ONLY, annotation=Reversible[T])
     ]),
     'round': (Number, [
         Parameter('number', Parameter.POSITIONAL_ONLY, annotation=Number),
         Parameter('ndigits', Parameter.POSITIONAL_ONLY, Parameter.missing, int),
     ]),
-    'set': (typing.Set[T], [
+    'set': (Set[T], [
         Parameter('iterable', Parameter.POSITIONAL_ONLY, Parameter.missing, Iterable[T])
     ]),
     'setattr': (None, [
@@ -294,7 +303,11 @@ BUILTIN_SIGNATURES = {
     ]),
     'zip': (Iterator[tuple], [
         Parameter('iterables', Parameter.VAR_POSITIONAL, annotation=Iterable)
-    ]),
+    ] + (
+        [Parameter('strict', Parameter.KEYWORD_ONLY, default=False, annotation=bool)]
+        if sys.version_info >= (3, 10) else
+        []
+    )),
     '__import__': (types.ModuleType, [
         Parameter('name', Parameter.POSITIONAL_OR_KEYWORD, annotation=str),
         Parameter('globals', Parameter.POSITIONAL_OR_KEYWORD, None, Optional[dict]),
@@ -315,8 +328,8 @@ for key in list(BUILTIN_SIGNATURES):
 
     try:
         key = getattr(builtins, key)
-    except AttributeError:  # pragma: no cover
-        continue            # pragma: no cover
+    except AttributeError:
+        continue
 
     BUILTIN_SIGNATURES[key] = value
 
@@ -332,15 +345,20 @@ class Signature(inspect.Signature):
     """
     __slots__ = ()
 
-    def __init__(self,
-                 parameters: Union[Iterable[Parameter], Dict[str, Parameter], None] = None,
-                 return_annotation: Any = inspect.Signature.empty,
-                 validate_parameters: bool = True,
-                 ):
+    def __init__(
+            self,
+            parameters: Union[Iterable[Parameter], Dict[str, Parameter], None] = None,
+            return_annotation: Any = SIG_EMPTY,
+            validate_parameters: bool = True,
+        ):
         """
         :param parameters: A list or dict of :class:`Parameter` objects
         :param return_annotation: The annotation for the function's return value
+        :param validate_parameters: Whether to check if the signature is valid
         """
+        if return_annotation is SIG_EMPTY:
+            return_annotation = inspect.Signature.empty
+        
         super().__init__(
             parameters,
             return_annotation=return_annotation,
@@ -348,21 +366,18 @@ class Signature(inspect.Signature):
         )
 
     @classmethod
-    def from_signature(cls, signature: inspect.Signature, parameter_type: type = Parameter, *, param_type=None) -> 'Signature':
+    def from_signature(cls, signature: inspect.Signature, parameter_type: type = Parameter) -> 'Signature':
         """
-        Creates a new ``Signature`` instance from an :class:`inspect.Signature` instance.
+        Creates a new ``Signature`` instance from an :class:`inspect.Signature`
+        instance.
         
-        .. deprecated:: 1.2
-           The ``param_type`` parameter. Use ``parameter_type`` instead.
-
+        .. versionchanged:: 1.4
+            ``param_type`` parameter renamed to ``parameter_type``.
+        
         :param signature: An :class:`inspect.Signature` instance
         :param parameter_type: The class to use for the signature's parameters
         :return: A new ``Signature`` instance
         """
-        if param_type is not None:
-            warnings.warn("The 'param_type' parameter is deprecated; use 'parameter_type' instead", DeprecationWarning)
-            parameter_type = param_type
-        
         params = [
             parameter_type.from_parameter(param)
             for param in signature.parameters.values()
@@ -370,14 +385,13 @@ class Signature(inspect.Signature):
         return cls(params, return_annotation=signature.return_annotation)
 
     @classmethod
-    def from_callable(cls,
-                      callable_: Callable,
-                      parameter_type: Type[Parameter] = Parameter,
-                      follow_wrapped: bool = True,
-                      use_signature_db: bool = True,
-                      *,
-                      param_type=None,
-                      ) -> 'Signature':
+    def from_callable(
+            cls,
+            callable_: Callable,
+            parameter_type: Type[Parameter] = Parameter,
+            follow_wrapped: bool = True,
+            use_signature_db: bool = True,
+        ) -> 'Signature':
         """
         Returns a matching :class:`Signature` instance for the given ``callable_``.
         
@@ -391,33 +405,30 @@ class Signature(inspect.Signature):
         database.
 
         .. versionchanged:: 1.1
-           Returns more accurate signatures for builtin functions.
-           Also added missing "value" parameter for ``setattr``.
+            Returns more accurate signatures for builtin functions.
+            Also added missing "value" parameter for ``setattr``.
         
         .. versionadded:: 1.2
-           Added ``use_signature_db`` parameter.
+            Added ``use_signature_db`` parameter.
         
         .. versionchanged:: 1.2
-           Signature database updated for python 3.9.
+            Signature database updated for python 3.9.
         
-        .. deprecated:: 1.2
-           The ``param_type`` parameter. Use ``parameter_type`` instead.
-
+        .. versionchanged:: 1.4
+            Signature database updated for python 3.10.
+            ``param_type`` parameter renamed to ``parameter_type``.
+        
         :param callable_: A function or any other callable object
         :param parameter_type: The class to use for the signature's parameters
         :param follow_wrapped: Whether to unwrap decorated callables
         :param use_signature_db: Whether to look up the signature
         :return: A corresponding ``Signature`` instance
         :raises TypeError: If ``callable_`` isn't a callable object
-        :raises ValueError: If the signature can't be determined (can happen for functions defined in C extensions)
+        :raises ValueError: If the signature can't be determined (can happen for
+            functions defined in C extensions)
         """
-        if param_type is not None:
-            warnings.warn("The 'param_type' parameter is deprecated; use 'parameter_type' instead", DeprecationWarning)
-            parameter_type = param_type
-        
         if follow_wrapped:
-            while hasattr(callable_, '__wrapped__'):
-                callable_ = callable_.__wrapped__
+            callable_ = unwrap(callable_, lambda func: hasattr(func, '__signature__'))
 
         if not callable(callable_):
             raise TypeError("Expected a callable, not {!r}".format(callable_))
@@ -434,8 +445,8 @@ class Signature(inspect.Signature):
         else:
             return cls.from_signature(sig, parameter_type=parameter_type)
 
-        # builtin exceptions also need special handling, but we don't want to hard-code
-        # all of them in BUILTIN_SIGNATURES
+        # builtin exceptions also need special handling, but we don't want to
+        # hard-code all of them in BUILTIN_SIGNATURES
         if isinstance(callable_, type) and issubclass(callable_, BaseException):
             return cls([
                 parameter_type('args', Parameter.VAR_POSITIONAL),
@@ -476,38 +487,43 @@ class Signature(inspect.Signature):
         return self.replace(parameters=parameters)
 
     @property
-    def param_list(self):
-        """
-        Returns a list of the signature's parameters.
-        
-        .. deprecated:: 1.2
-           Use :attr:`parameter_list` instead.
-        """
-        warnings.warn("The 'param_list' property is deprecated; use 'parameter_list' instead", DeprecationWarning)
-        return self.parameter_list
-    
-    @property
-    def parameter_list(self):
+    def parameter_list(self) -> List[Parameter]:
         """
         Returns a list of the signature's parameters.
         """
         return list(self.parameters.values())
 
     @property
-    def has_return_annotation(self):
+    def has_return_annotation(self) -> bool:
         """
         Returns whether the signature's return annotation is not :attr:`Signature.empty`.
         """
         return self.return_annotation is not Signature.empty
 
     @property
-    def num_required_arguments(self):
+    def num_required_arguments(self) -> int:
         """
         Returns the number of required arguments, i.e. arguments with no default value.
         """
         return sum(not p.is_optional for p in self.parameters.values())
+    
+    def bind(self, *args, **kwargs) -> BoundArguments:
+        """
+        Similar to :meth:`inspect.Signature.bind`, but returns a
+        :class:`introspection.BoundArguments` object.
+        """
+        bound_args = super().bind(*args, **kwargs)
+        return BoundArguments.from_bound_arguments(bound_args)
+    
+    def bind_partial(self, *args, **kwargs) -> BoundArguments:
+        """
+        Similar to :meth:`inspect.Signature.bind`, but returns a
+        :class:`introspection.BoundArguments` object.
+        """
+        bound_args = super().bind_partial(*args, **kwargs)
+        return BoundArguments.from_bound_arguments(bound_args)
 
-    def to_string(self, implicit_typing=False) -> str:
+    def to_string(self, implicit_typing: bool = False) -> str:
         """
         Returns a string representation of this signature.
 
@@ -518,8 +534,10 @@ class Signature(inspect.Signature):
             ... ], return_annotation=int).to_string()
             '(*nums: int) -> int'
         
-        :param implicit_typing: If ``True``, the "typing." prefix will be omitted from types defined in the ``typing`` module
-        :return: A string representation of this signature, like you would see in python code
+        :param implicit_typing: If ``True``, the "typing." prefix will be
+            omitted from types defined in the ``typing`` module
+        :return: A string representation of this signature, like you would see
+            in python code
         """
         # Because parameters with a default of Parameter.missing have a special bracket
         # notation (like "[a[, b]]" for positional-only parameters and "[a][, b]" otherwise),
@@ -552,7 +570,7 @@ class Signature(inspect.Signature):
                         param = param_list[i]
 
                         if (param.kind is not Parameter.POSITIONAL_ONLY or
-                           param.default is not Parameter.missing):
+                            param.default is not Parameter.missing):
                             break
 
                         group.append(param)
@@ -580,10 +598,10 @@ class Signature(inspect.Signature):
                         prev_param = prev_param[-1]
 
                 if (prev_param is None or
-                   prev_param.kind not in {
+                    prev_param.kind not in {
                             Parameter.KEYWORD_ONLY,
                             Parameter.VAR_POSITIONAL
-                   }):
+                    }):
                     if is_first:
                         chunks.append('*')
                         is_first = False
@@ -623,7 +641,7 @@ class Signature(inspect.Signature):
                         next_param = next_param[0]
 
                 if (next_param is None or
-                   next_param.kind is not Parameter.POSITIONAL_ONLY):
+                    next_param.kind is not Parameter.POSITIONAL_ONLY):
                     chunks.append(', /')
 
             is_first = False

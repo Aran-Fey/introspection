@@ -178,6 +178,34 @@ def test_num_required_arguments():
     assert sig.num_required_arguments == 2
 
 
+@pytest.mark.parametrize('func, args, kwargs, expected_result', [
+    ((lambda a, b: 0), ['A', 'B'], {}, {'a': 'A', 'b': 'B'}),
+    ((lambda a, *, b: 0), ['A'], {'b': 'B'}, {'a': 'A', 'b': 'B'}),
+    ((lambda a, b='B': 0), ['A'], {}, {'a': 'A'}),
+    ((lambda a, b='X': 0), ['A'], {'b': 'B'}, {'a': 'A', 'b': 'B'}),
+    ((lambda a, b='B': 0), ['A'], {}, {'a': 'A'}),
+    ((lambda *a, b='B': 0), ['A', 'B'], {}, {'a': ('A', 'B')}),
+    ((lambda *a, b='B', **c: 0), ['A', 'B'], {'d': 'D'}, {'a': ('A', 'B'), 'c': {'d': 'D'}}),
+])
+def test_bind(func, args, kwargs, expected_result):
+    sig = Signature.from_callable(func)
+    assert sig.bind(*args, **kwargs).arguments == expected_result
+
+
+@pytest.mark.parametrize('func, args, kwargs, expected_result', [
+    ((lambda a, b: 0), ['A', 'B'], {}, {'a': 'A', 'b': 'B'}),
+    ((lambda a, *, b: 0), ['A'], {'b': 'B'}, {'a': 'A', 'b': 'B'}),
+    ((lambda a, b='B': 0), ['A'], {}, {'a': 'A'}),
+    ((lambda a, b='X': 0), ['A'], {'b': 'B'}, {'a': 'A', 'b': 'B'}),
+    ((lambda a, b='B': 0), ['A'], {}, {'a': 'A'}),
+    ((lambda *a, b='B': 0), ['A', 'B'], {}, {'a': ('A', 'B')}),
+    ((lambda *a, b='B', **c: 0), ['A', 'B'], {'d': 'D'}, {'a': ('A', 'B'), 'c': {'d': 'D'}}),
+])
+def test_bind_partial(func, args, kwargs, expected_result):
+    sig = Signature.from_callable(func)
+    assert sig.bind_partial(*args, **kwargs).arguments == expected_result
+
+
 @pytest.mark.parametrize('signature, expected', [
     (Signature([
         Parameter('a', Parameter.POSITIONAL_ONLY),

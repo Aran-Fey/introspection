@@ -12,8 +12,8 @@ body.light-theme {
   --placeholder_fg: #444;
   --less_important_fg: #333;
   --code_color: #572857;
-  --info_bg: #506977;
-  --info_fg: var(--font_color_regular);
+  --info_bg: rgba(80,105,119,0.667);
+  --warning_bg: rgba(170,170,0,0.533);
   --feature_added_color: #008000;
   --feature_changed_color: #ffa500;
   --feature_deprecated_color: #f00;
@@ -22,6 +22,7 @@ body.light-theme {
   --header_highlight_bg1: #cfa9da;
   --header_highlight_bg2: #dcc5dc;
   --header_highlight_bg3: #fae9fe;
+  --search_result_highlight_bg: rgba(119,119,0,0.333);
 }
 body.dark-theme {
   --bg_color_regular: #252525;
@@ -32,8 +33,8 @@ body.dark-theme {
   --placeholder_fg: #aaa;
   --less_important_fg: #b8b8b8;
   --code_color: #c1acc1;
-  --info_bg: #506977;
-  --info_fg: var(--font_color_regular);
+  --info_bg: rgba(80,105,119,0.667);
+  --warning_bg: rgba(119,119,0,0.533);
   --feature_added_color: #00ac00;
   --feature_changed_color: #ffa500;
   --feature_deprecated_color: #f00;
@@ -42,6 +43,7 @@ body.dark-theme {
   --header_highlight_bg1: #342a37;
   --header_highlight_bg2: #302a30;
   --header_highlight_bg3: #2e2a2f;
+  --search_result_highlight_bg: rgba(119,119,0,0.333);
 }
 @media (prefers-color-scheme: dark) {
   body {
@@ -53,8 +55,8 @@ body.dark-theme {
     --placeholder_fg: #aaa;
     --less_important_fg: #b8b8b8;
     --code_color: #c1acc1;
-    --info_bg: #506977;
-    --info_fg: var(--font_color_regular);
+    --info_bg: rgba(80,105,119,0.667);
+    --warning_bg: rgba(119,119,0,0.533);
     --feature_added_color: #00ac00;
     --feature_changed_color: #ffa500;
     --feature_deprecated_color: #f00;
@@ -63,11 +65,11 @@ body.dark-theme {
     --header_highlight_bg1: #342a37;
     --header_highlight_bg2: #302a30;
     --header_highlight_bg3: #2e2a2f;
+    --search_result_highlight_bg: rgba(119,119,0,0.333);
   }
 }
 :root {
   font-family: Verdana;
-  font-size: 1.1em;
 }
 body {
   background-color: var(--bg_color_regular);
@@ -145,9 +147,12 @@ blockquote.epigraph .attribution {
   color: var(--font_color_dark);
   font-style: italic;
 }
-code {
+code,
+span.sig-prename,
+span.sig-name {
   color: var(--code_color);
   font-size: 1rem;
+  font-family: 'Courier New', Courier, monospace;
 }
 pre {
   background: var(--bg_color_dark2);
@@ -209,6 +214,7 @@ body {
 }
 .searchformwrapper form.search input[type="submit"] {
   box-sizing: border-box;
+  font-size: 1rem;
 }
 .nav {
   display: flex;
@@ -238,7 +244,7 @@ body {
   margin-left: 0.3em;
 }
 #theme-switcher {
-  margin-top: 1.5em;
+  margin-top: 2.5em;
 }
 #syntax-themes-container {
   margin-top: 0.5em;
@@ -284,6 +290,9 @@ body {
   border-right: 8px solid transparent;
   border-bottom: 5px solid var(--font_color_regular);
 }
+.highlighted {
+  background: var(--search_result_highlight_bg);
+}
 .toctree-wrapper {
   margin-top: 2em;
 }
@@ -324,8 +333,12 @@ blockquote {
   margin-bottom: 0;
 }
 .admonition.note {
-  border-color: #62629b;
-  background: rgba(98,98,155,0.2);
+  border: none;
+  background: var(--info_bg);
+}
+.admonition.warning {
+  border: none;
+  background: var(--warning_bg);
 }
 div.versionadded span.added {
   color: var(--feature_added_color);
@@ -382,35 +395,42 @@ h3:not(:hover) a.headerlink,
 h4:not(:hover) a.headerlink,
 h5:not(:hover) a.headerlink,
 dl dt:not(:hover) a.headerlink {
-  display: none;
+  visibility: hidden;
 }
-.section dl + dl {
+section dl + dl {
   margin-top: 2em;
 }
-.section > dl > dt {
+section > dl > dt {
   border-top: thin dotted var(--border_color);
   padding-top: 0.3em;
 }
-.section code.sig-name {
+section dt {
+  padding-left: 0.2em;
+}
+section .sig-name {
   font-weight: bold;
 }
-.section dl.class > dt,
-.section dl.function > dt {
+section dl.class > dt,
+section dl.function > dt {
   background: var(--header_highlight_bg1);
 }
-.section dl.method > dt {
+section dl.method > dt {
   background: var(--header_highlight_bg2);
 }
-.section dl.field-list > dt {
+section dl.field-list > dt {
   background: var(--header_highlight_bg3);
 }
-.section dl.field-list dt {
+section dl.field-list dt {
   margin-top: 0.5em;
 }
-.section dl.field-list dd > p:first-child {
+section dl.field-list dd > p:first-child {
   margin-top: 0.5em;
 }
-.section dl.field-list dd > p:last-child {
+section dl.field-list dd > p:last-child {
   margin-bottom: 0.5em;
+}
+button.copybtn {
+  background: var(--code_color);
+  border: none;
 }
 

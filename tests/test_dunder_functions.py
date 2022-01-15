@@ -1,6 +1,7 @@
 
 import pytest
 
+import introspection.dunder
 from introspection import *
 
 
@@ -125,6 +126,40 @@ def test_get_bound_dundermethod_handles_instance_method():
     assert method() == 3
 
 
+def test_get_bound_dundermethod_without_descriptor():
+    class Callable:
+        def __call__(self, *args):
+            return args
+        
+    class Demo:
+        __len__ = Callable()
+
+    obj = Demo()
+    method = get_bound_dundermethod(obj, '__len__')
+
+    assert method() == ()
+
+
 def test_get_bound_dundermethod_error():
     with pytest.raises(AttributeError):
         get_bound_dundermethod([1, 2], '__int__')
+
+
+def test_get_bound_dundermethod_noneable_error():
+    class Foo:
+        __hash__ = None
+    
+    with pytest.raises(AttributeError):
+        get_bound_dundermethod(Foo(), '__hash__')
+
+
+@pytest.mark.parametrize('func, obj', [
+    (len, 'foo'),
+    (str, object()),
+    (int, 293.5),
+])
+def test_dunder_module(func, obj):
+    expected_result = func(obj)
+    dunder_func = getattr(introspection.dunder, func.__name__)
+
+    assert dunder_func(obj) == expected_result

@@ -23,8 +23,10 @@ def setup(app):
     augment = sphinx_utils.augment(app)
     augment.bugfixes()
     augment.public_identifiers()
-    augment.repr_defaults_by_identifier()
+    augment.better_reprs()
+    # augment.copy_init_params_to_class()
     augment.no_wrong_aliases()
+    # augment.no_object_base()
     augment.theme_switcher(
         [
             {'id': 'light', 'icon': '☼'},
@@ -38,29 +40,33 @@ def setup(app):
         default_theme=f'window.matchMedia("(prefers-color-scheme: dark)").matches ? "{DEFAULT_DARK_SYNTAX_THEME}" : "{DEFAULT_LIGHT_SYNTAX_THEME}"',
         default_syntax_theme=f'siteThemeId === "dark" ? "{DEFAULT_DARK_SYNTAX_THEME}" : "{DEFAULT_LIGHT_SYNTAX_THEME}"',
     )
-    # augment.no_object_base()
-    # augment.run_directive()
 
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = '3.0.0'
+# needs_sphinx = '3.0.0'
 
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
     'sphinx.ext.autosectionlabel',
+    'sphinx_autodoc_typehints',
+    'sphinx_copybutton',
 ]
 
 intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
-autodoc_typehints = 'description'
+autodoc_class_signature = 'separated'
 autodoc_default_options = {
     'members': True,
     'member-order': 'bysource',
-    'special-members': '__init__',
-    #  'undoc-members': True,
-    'exclude-members': '__weakref__'
+    'show-inheritance': True,
+    # 'special-members': '__init__',
+    # 'undoc-members': True,
+    'exclude-members': '__weakref__',
 }
+typehints_defaults = 'comma'
+copybutton_prompt_text = r">>> |\.\.\. "
+copybutton_prompt_is_regexp = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -107,8 +113,19 @@ todo_include_todos = False
 html_show_copyright = False
 html_show_sphinx = False
 
+html_copy_source = False
+
 html_title = "Introspection documentation"
 html_favicon = "favicon.svg"
 
 html_theme = "nightsky"
 html_theme_path = [sphinx_utils.HTML_THEMES_DIR]
+html_sidebars = {
+    '**': [
+        'globaltoc.html',
+        'localtoc.html',
+        'relations.html',
+        'searchbox.html',
+        'theme_switcher.html',
+    ],
+}

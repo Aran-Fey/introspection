@@ -73,8 +73,8 @@ light_theme()
     --less_important_fg: #333
     --code_color: #572857
     
-    --info_bg: #506977
-    --info_fg: var(--font_color_regular)
+    --info_bg: #506977aa
+    --warning_bg: #aa08
     
     --feature_added_color: green
     --feature_changed_color: orange
@@ -87,6 +87,8 @@ light_theme()
     --header_highlight_bg1: #cfa9da
     --header_highlight_bg2: #dcc5dc
     --header_highlight_bg3: #fae9fe
+
+    --search_result_highlight_bg: #7705
 
 
 dark_theme()
@@ -107,8 +109,8 @@ dark_theme()
     --less_important_fg: darken(font_color_regular, increments)
     --code_color: mix(font_color_regular, accent_color, 75%)
     
-    --info_bg: #506977
-    --info_fg: var(--font_color_regular)
+    --info_bg: #506977aa
+    --warning_bg: #7708
     
     --feature_added_color: #00ac00
     --feature_changed_color: orange
@@ -121,6 +123,8 @@ dark_theme()
     --header_highlight_bg1: #342a37
     --header_highlight_bg2: #302a30
     --header_highlight_bg3: #2e2a2f
+
+    --search_result_highlight_bg: #7705
 
 
 /* ===================================
@@ -145,7 +149,6 @@ body.dark-theme
 
 :root
     font-family: Verdana
-    font-size: 1.1em
 
 body
     background-color: var(--bg_color_regular)
@@ -227,10 +230,13 @@ blockquote.epigraph
 
 
 code
+span.sig-prename
+span.sig-name
     color: var(--code_color)
     
     font-size: 1rem
-    
+    font-family: 'Courier New', Courier, monospace
+
 
 pre 
     background: var(--bg_color_dark2)
@@ -317,6 +323,7 @@ body
     
     input[type="submit"]
         box-sizing: border-box
+        font-size: 1rem
 
 // navigation
 
@@ -351,7 +358,7 @@ body
 // theme switcher
 
 #theme-switcher
-    margin-top: 1.5em
+    margin-top: 2.5em
     
 #syntax-themes-container
     margin-top: 0.5em
@@ -420,6 +427,10 @@ body
 
 // === END OF SIDEBAR WIDGETS ===
 
+// highlight search results
+.highlighted
+    background: var(--search_result_highlight_bg)
+
 // increase space above toctrees
 .toctree-wrapper
     margin-top: 2em
@@ -454,8 +465,8 @@ blockquote
 
 // notes, warnings, etc
 admonition(color)
-    border-color: color
-    background: alpha(color, 20%)
+    border: none
+    background: color
 
 .admonition
     border: thin solid
@@ -475,7 +486,10 @@ admonition(color)
         margin-bottom: 0
     
     &.note
-        admonition(#62629b)
+        admonition(var(--info_bg))
+    
+    &.warning
+        admonition(var(--warning_bg))
 
 
 div.versionadded
@@ -545,11 +559,11 @@ dl dt
 
     &:not(:hover)
         a.headerlink
-            display: none
+            visibility: hidden
 
 // === class/function definitions ===
 
-.section
+section
     // increase spacing between definitions
     dl + dl
         margin-top: 2em
@@ -559,8 +573,11 @@ dl dt
         border-top: thin dotted var(--border_color)
         padding-top: 0.3em
     
+    dt
+        padding-left: 0.2em
+    
     // make class/function names bold
-    code.sig-name
+    .sig-name
         font-weight: bold
     
     // highlight class/function definitions' and their sub-sections' headers
@@ -585,3 +602,10 @@ dl dt
             
             & > p:last-child
                 margin-bottom: 0.5em
+
+
+// Extension: sphinx-copybutton
+
+button.copybtn
+    background: var(--code_color)
+    border: none

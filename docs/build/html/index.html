@@ -4,15 +4,19 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
     <title>Introspection &#8212; Introspection documentation</title>
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="_static/nightsky.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/nightsky.css" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
     <link id="pygments_dark_css" media="(prefers-color-scheme: dark)" rel="stylesheet" type="text/css" href="_static/pygments_dark.css" />
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
+    <script src="_static/clipboard.min.js"></script>
+    <script src="_static/copybutton.js"></script>
     <script src="_static/theme_switcher.js"></script>
     <link rel="shortcut icon" href="_static/favicon.svg"/>
     <link rel="index" title="Index" href="genindex.html" />
@@ -26,13 +30,13 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="introspection">
+  <section id="introspection">
 <h1>Introspection<a class="headerlink" href="#introspection" title="Permalink to this headline">¶</a></h1>
 <p>This module is a collection of new or improved introspection functions.
-Some functions are improved versions of the functions found in the <a class="reference external" href="https://docs.python.org/3/library/inspect.html#module-inspect" title="(in Python v3.9)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">inspect</span></code></a> module, others are completely new.</p>
+Some functions are improved versions of the functions found in the <a class="reference external" href="https://docs.python.org/3/library/inspect.html#module-inspect" title="(in Python v3.10)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">inspect</span></code></a> module, others are completely new.</p>
 <p>The available functions have been roughly categorized by what they return or what kind of objects they operate on.</p>
 <div class="toctree-wrapper compound">
-<p class="caption"><span class="caption-text">Contents:</span></p>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="function_signatures.html">Function Signatures</a></li>
 <li class="toctree-l1"><a class="reference internal" href="call_stack.html">The call stack</a></li>
@@ -42,7 +46,7 @@ Some functions are improved versions of the functions found in the <a class="ref
 <li class="toctree-l1"><a class="reference internal" href="misc.html">Misc. functions</a></li>
 </ul>
 </div>
-</div>
+</section>
 
 
             <div class="clearer"></div>
@@ -51,11 +55,22 @@ Some functions are improved versions of the functions found in the <a class="ref
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
+<h3><a href="#">Table of Contents</a></h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="function_signatures.html">Function Signatures</a></li>
+<li class="toctree-l1"><a class="reference internal" href="call_stack.html">The call stack</a></li>
+<li class="toctree-l1"><a class="reference internal" href="classes.html">Functions related to classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dundermethods.html">Functions related to dundermethods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="typing.html">Introspecting the <code class="docutils literal notranslate"><span class="pre">typing</span></code> module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="misc.html">Misc. functions</a></li>
+</ul>
+
 <div id="searchbox" style="display: none" role="search">
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
