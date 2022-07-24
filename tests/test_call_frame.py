@@ -76,8 +76,8 @@ def test_class_scope_name():
     assert Class.frame.scope_name == 'Class'
 
 
-# FIXME: This test randomly fails, apparently because of the file
-# path being cached in a .pyc file
+# FIXME: This test randomly fails, apparently because of the file path being
+# cached in a .pyc file
 def test_file_name():
     frame = CallFrame.current()
 

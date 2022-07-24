@@ -4,6 +4,20 @@ import inspect
 import weakref
 
 
+def eval_or_discard(mapping, namespace=None):
+    result = {}
+
+    for key, value in mapping.items():
+        try:
+            key = eval(key, namespace)
+        except AttributeError:
+            continue
+
+        result[key] = value
+    
+    return result
+
+
 def weakref_cache(func):
     """
     (This cache is designed for the functions in the ``introspection.typing.introspection`` module.)

@@ -1,12 +1,18 @@
 
 import inspect
-import typing
 from typing import *
 
-from .typing import annotation_to_string
 from ._utils import PARAM_EMPTY
 
 __all__ = ['Parameter']
+
+
+# I hate circular imports
+def annotation_to_string(*args, **kwargs):
+    global annotation_to_string
+    from .typing import annotation_to_string
+
+    return annotation_to_string(*args, **kwargs)
 
 
 class Parameter(inspect.Parameter):
@@ -44,12 +50,12 @@ class Parameter(inspect.Parameter):
     missing = type('_missing', (), {})
 
     def __init__(
-            self,
-            name: Optional[str] = None,
-            kind: Any = inspect.Parameter.POSITIONAL_OR_KEYWORD,
-            default: Any = PARAM_EMPTY,
-            annotation: Any = PARAM_EMPTY,
-        ):
+        self,
+        name: Optional[str] = None,
+        kind: Any = inspect.Parameter.POSITIONAL_OR_KEYWORD,
+        default: Any = PARAM_EMPTY,
+        annotation: Any = PARAM_EMPTY,
+    ):
         """
         :param name: The parameter's name
         :type name: str
@@ -123,7 +129,7 @@ class Parameter(inspect.Parameter):
             ann = annotation_to_string(self.annotation, implicit_typing)
             text += ': {}'.format(ann)
 
-        if self.default not in {__class__.empty, __class__.missing}:
+        if self.default is not __class__.empty and self.default is not __class__.missing:
             if self.has_annotation:
                 template = '{} = {}'
             else:

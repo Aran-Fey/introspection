@@ -1,5 +1,4 @@
 
-from xml.etree.ElementPath import xpath_tokenizer_re
 import pytest
 
 import inspect
@@ -56,3 +55,58 @@ def test_to_varargs_invalid_prefer_arg():
 
     with pytest.raises(ValueError):
         bound_args.to_varargs(prefer='foobar')
+
+
+def test_iter():
+    bound_args = Signature.from_callable(lambda x, y, z: x).bind_partial(3, 4)
+
+    assert tuple(bound_args) == ('x', 'y')
+
+
+def test_len():
+    bound_args = Signature.from_callable(lambda x, y: x).bind_partial(3)
+
+    assert len(bound_args) == 1
+
+
+def test_getitem():
+    bound_args = Signature.from_callable(lambda x: x).bind(3)
+
+    assert bound_args['x'] == 3
+
+
+def test_getitem_keyerror():
+    bound_args = Signature.from_callable(lambda x: x).bind(3)
+
+    with pytest.raises(KeyError):
+        bound_args['y']
+
+
+def test_setitem():
+    bound_args = Signature.from_callable(lambda x: x).bind(3)
+
+    bound_args['x'] = 17
+    assert bound_args['x'] == 17
+
+
+@pytest.mark.parametrize('func, args, kwargs, expected', [
+    (lambda x: 0, [], {}, {'x'}),
+    (lambda x=3: 0, [], {}, set()),
+    (lambda x: 0, [3], {}, set()),
+])
+def test_get_missing_parameter_names(func, args, kwargs, expected):
+    bound_args = Signature.from_callable(func).bind_partial(*args, **kwargs)
+
+    assert bound_args.get_missing_parameter_names() == expected
+
+
+@pytest.mark.parametrize('func, args, kwargs, expected', [
+    (lambda x=3: 0, [], {}, {'x'}),
+    (lambda *args: 0, [], {}, set()),
+    (lambda **kwargs: 0, [], {}, set()),
+])
+def test_get_missing_parameter_names_with_optionals(func, args, kwargs, expected):
+    bound_args = Signature.from_callable(func).bind_partial(*args, **kwargs)
+
+    result = bound_args.get_missing_parameter_names(include_optional_parameters=True)
+    assert result == expected

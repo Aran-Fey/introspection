@@ -11,8 +11,8 @@ from introspection import Signature, Parameter
 
 
 def make_fake_c_function(doc, monkeypatch):
-    # Functions written in C don't have signatures; we'll
-    # fake one by creating an object with a __doc__ attribute
+    # Functions written in C don't have signatures; we'll fake one by creating
+    # an object with a __doc__ attribute
     def fake_sig(*a, **kw):
         raise ValueError
     monkeypatch.setattr(inspect, 'signature', fake_sig)
@@ -138,6 +138,26 @@ def test_dont_follow_wrapped():
 
     sig = introspection.signature(func, follow_wrapped=False)
     assert list(sig.parameters) == ['args', 'kwargs']
+
+
+def test_method_signature():
+    class A:
+        def method(self, foo: int = 3) -> None:
+            pass
+    
+    class B(A):
+        def method(self, *args, bar: bool = True, **kwargs):
+            return super().method(*args, **kwargs)
+    
+    sig = Signature.for_method(B, 'method')
+    assert list(sig.parameters) == ['self', 'foo', 'bar']
+    assert sig.return_annotation is None
+    assert sig.parameters['foo'].annotation is int
+    assert sig.parameters['foo'].default == 3
+    assert sig.parameters['foo'].kind is Parameter.POSITIONAL_OR_KEYWORD
+    assert sig.parameters['bar'].annotation is bool
+    assert sig.parameters['bar'].default is True
+    assert sig.parameters['bar'].kind is Parameter.KEYWORD_ONLY
 
 
 def test_replace():

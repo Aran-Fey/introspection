@@ -2,13 +2,15 @@
 New and improved introspection functions
 """
 
-__version__ = '1.4'
+__version__ = '1.5'
 
 from .parameter import *
 from .signature import *
+from .argument_bundle import *
 from .bound_arguments import *
 from .call_stack import *
 from .call_frame import *
+from .exceptions import *
 
 from .convenience import *
 from .classes import *

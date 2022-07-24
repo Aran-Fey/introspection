@@ -6,8 +6,10 @@ import typing
 
 from .introspection import is_parameterized_generic, get_generic_base_class, get_type_arguments, get_type_name, _get_forward_ref_code
 from . import _compat
+from ..parameter import Parameter
+from ..signature import Signature
 
-__all__ = ['resolve_forward_refs', 'annotation_to_string']
+__all__ = ['resolve_forward_refs', 'annotation_to_string', 'annotation_for_callable']
 
 
 def resolve_forward_refs(annotation, module=None, eval_=True, strict=True):
@@ -161,3 +163,52 @@ def annotation_to_string(annotation, implicit_typing=True):
             return '{}.{}'.format(annotation.__module__, annotation.__qualname__)
 
     return repr(annotation)
+
+
+def annotation_for_callable(callable_: typing.Callable):
+    """
+    Given a callable object as input, returns a matching type annotation.
+
+    Examples::
+
+        >>> annotation_for_callable(len)
+        typing.Callable[[typing.Sized], int]
+    
+    Note: How ``*args``, ``**kwargs``, and keyword-only parameters are handled
+    is currently undefined.
+
+    .. versionadded:: 1.5
+    """
+    signature = Signature.from_callable(callable_)
+    parameters = signature.parameters.values()
+
+    if signature.return_annotation is Signature.empty:
+        return_type = typing.Any
+    else:
+        return_type = signature.return_annotation
+    
+    param_types = [
+        typing.Any if param.annotation is Parameter.empty else param.annotation
+        for param in parameters
+        if param.kind <= Parameter.POSITIONAL_OR_KEYWORD
+    ]  # TODO: Raise an exception if keyword-only parameters exist?
+
+    # If some parameters are optional, we have to return a Union of Callable
+    # types with fewer and fewer parameters
+    options = [param_types]
+
+    for param in reversed(parameters):
+        if not param.is_optional:
+            break
+
+        param_types = param_types[:-1]
+        options.append(param_types)
+
+    if len(options) == 1:
+        return typing.Callable[param_types, return_type]
+    
+    options = tuple(
+        typing.Callable[option, return_type]
+        for option in options
+    )
+    return typing.Union[options]

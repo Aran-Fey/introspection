@@ -55,12 +55,12 @@ def _is_implemented(name, method):
 
 
 def iter_class_attributes(
-        cls,
-        *,
-        start: Optional[type] = None,
-        start_after: Optional[type] = None,
-        bound: Optional[type] = None,
-    ):
+    cls,
+    *,
+    start: Optional[type] = None,
+    start_after: Optional[type] = None,
+    bound: Optional[type] = None,
+):
     mro = static_mro(cls)
 
     if start is not None:
@@ -79,12 +79,12 @@ def iter_class_attributes(
 
 
 def iter_class_dundermethods(
-        cls: type,
-        *,
-        start: Optional[type] = None,
-        start_after: Optional[type] = None,
-        bound: Optional[type] = None,
-    ) -> Iterator[Tuple[str, Any]]:
+    cls: type,
+    *,
+    start: Optional[type] = None,
+    start_after: Optional[type] = None,
+    bound: Optional[type] = None,
+) -> Iterator[Tuple[str, Any]]:
     """
     Yields all dundermethods implemented by the given class as
     ``(method_name, method)`` tuples.
@@ -123,12 +123,12 @@ def iter_class_dundermethods(
 
 
 def collect_class_dundermethods(
-        cls: type,
-        *,
-        start: Optional[type] = None,
-        start_after: Optional[type] = None,
-        bound: Optional[type] = None,
-    ) -> Dict[str, Any]:
+    cls: type,
+    *,
+    start: Optional[type] = None,
+    start_after: Optional[type] = None,
+    bound: Optional[type] = None,
+) -> Dict[str, Any]:
     """
     Generates a dict of the form ``{method_name: method}`` containing all
     dundermethods implemented by the given class.
@@ -158,13 +158,13 @@ def collect_class_dundermethods(
 
 
 def class_implements_dundermethod(
-        cls: type,
-        method_name: str,
-        *,
-        start: Optional[type] = None,
-        start_after: Optional[type] = None,
-        bound: Optional[type] = None,
-    ) -> bool:
+    cls: type,
+    method_name: str,
+    *,
+    start: Optional[type] = None,
+    start_after: Optional[type] = None,
+    bound: Optional[type] = None,
+) -> bool:
     """
     Checks whether the given class implements a certain dundermethod.
 
@@ -199,13 +199,13 @@ def class_implements_dundermethod(
 
 
 def class_implements_dundermethods(
-        cls: type,
-        methods: Iterable[str],
-        *,
-        start: Optional[type] = None,
-        start_after: Optional[type] = None,
-        bound: Optional[type] = None,
-    ) -> bool:
+    cls: type,
+    methods: Iterable[str],
+    *,
+    start: Optional[type] = None,
+    start_after: Optional[type] = None,
+    bound: Optional[type] = None,
+) -> bool:
     """
     Checks whether the given class implements all given dundermethods.
 
@@ -238,13 +238,13 @@ def class_implements_dundermethods(
 
 
 def class_implements_any_dundermethod(
-        cls: type,
-        methods: Iterable[str],
-        *,
-        start: Optional[type] = None,
-        start_after: Optional[type] = None,
-        bound: Optional[type] = None,
-    ) -> bool:
+    cls: type,
+    methods: Iterable[str],
+    *,
+    start: Optional[type] = None,
+    start_after: Optional[type] = None,
+    bound: Optional[type] = None,
+) -> bool:
     """
     Checks whether the given class implements at least one of the given
     dundermethods.
@@ -283,13 +283,13 @@ def class_implements_any_dundermethod(
 
 
 def get_class_dundermethod(
-        cls: type,
-        method_name: str,
-        *,
-        start: Optional[type] = None,
-        start_after: Optional[type] = None,
-        bound: Optional[type] = None,
-    ) -> Optional[Callable]:
+    cls: type,
+    method_name: str,
+    *,
+    start: Optional[type] = None,
+    start_after: Optional[type] = None,
+    bound: Optional[type] = None,
+) -> Optional[Callable]:
     """
     Retrieves a class's implementation of the given dundermethod.
 
@@ -316,13 +316,13 @@ def get_class_dundermethod(
 
 
 def get_bound_dundermethod(
-        instance: Any,
-        method_name: str,
-        *,
-        start: Optional[type] = None,
-        start_after: Optional[type] = None,
-        bound: Optional[type] = None,
-    ) -> Optional[Callable]:
+    instance: Any,
+    method_name: str,
+    *,
+    start: Optional[type] = None,
+    start_after: Optional[type] = None,
+    bound: Optional[type] = None,
+) -> Optional[Callable]:
     """
     Retrieves an instance's implementation of the given dundermethod.
 
@@ -405,11 +405,11 @@ def get_bound_dundermethod(
 
 
 def call_dundermethod(
-        instance: Any,
-        method_name: str,
-        *args,
-        **kwargs,
-    ):
+    instance: Any,
+    method_name: str,
+    *args,
+    **kwargs,
+):
     """
     Given an instance and the name of a dundermethod, calls the object's
     corresponding dundermethod. Excess arguments are passed to the dundermethod.

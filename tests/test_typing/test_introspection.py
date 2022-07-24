@@ -13,6 +13,7 @@ from introspection.typing._compat import ForwardRef, Protocol
 is_py39_plus = sys.version_info >= (3, 9)
 
 
+T = typing.TypeVar('T')
 T_co = typing.TypeVar('T_co', covariant=True)
 E = typing.TypeVar('E', bound=Exception)
 
@@ -810,3 +811,44 @@ if hasattr(typing, 'Annotated'):
     def test_get_annotated_params(type_, expected):
         params = get_type_parameters(type_)
         assert str(params) == expected
+
+
+# === new Union syntax ===
+if sys.version_info >= (3, 10):
+    @pytest.mark.parametrize('type_, expected', [
+        (str|None, True),
+        (str|int, True),
+        (str|T, True),
+        ((str|T)[int], True),
+    ])
+    def test_is_type_py310(type_, expected):
+        assert is_type(type_) == expected
+
+    @pytest.mark.parametrize('type_, expected', [
+        (str|None, True),
+        (str|int, True),
+        (str|T, True),
+        ((str|T)[int], True),
+    ])
+    def test_is_typing_type_py310(type_, expected):
+        assert is_typing_type(type_, raising=True) == expected
+    
+    @pytest.mark.parametrize('type_, expected', [
+        (str|None, False),
+        (str|int, False),
+        (str|T, True),
+        (E|T|str, True),
+        ((str|T)[int], False),
+    ])
+    def test_is_generic_py310(type_, expected):
+        assert is_generic(type_) == expected
+    
+    @pytest.mark.parametrize('type_, expected', [
+        (str|None, True),
+        (str|int, True),
+        (str|T, False),
+        (E|T|str, False),
+        ((str|T)[float], True),
+    ])
+    def test_is_fully_parameterized_generic_py310(type_, expected):
+        assert is_fully_parameterized_generic(type_) == expected

@@ -54,7 +54,7 @@ class super(super):
             def attr(self, value):
                 super().attr = value + 1
     
-    .. versionadded: 1.4
+    .. versionadded:: 1.4
     """
     def __setattr__(self, attr, value):
         _call_descriptor_func(self, attr, '__set__', value)

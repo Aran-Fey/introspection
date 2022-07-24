@@ -9,13 +9,22 @@ import typing
 from numbers import Number
 from typing import *
 
+from renumerate import renumerate
+
 from .bound_arguments import BoundArguments
 from .parameter import Parameter
-from .typing import annotation_to_string
-from .misc import unwrap
+from .misc import unwrap, static_mro, static_vars
 from ._utils import SIG_EMPTY
 
 __all__ = ['Signature']
+
+
+# I hate circular imports
+def annotation_to_string(*args, **kwargs):
+    global annotation_to_string
+    from .typing import annotation_to_string
+
+    return annotation_to_string(*args, **kwargs)
 
 
 T = TypeVar('T')
@@ -345,12 +354,14 @@ class Signature(inspect.Signature):
     """
     __slots__ = ()
 
+    parameters: Dict[str, Parameter]
+
     def __init__(
-            self,
-            parameters: Union[Iterable[Parameter], Dict[str, Parameter], None] = None,
-            return_annotation: Any = SIG_EMPTY,
-            validate_parameters: bool = True,
-        ):
+        self,
+        parameters: Union[Iterable[Parameter], Dict[str, Parameter], None] = None,
+        return_annotation: Any = SIG_EMPTY,
+        validate_parameters: bool = True,
+    ):
         """
         :param parameters: A list or dict of :class:`Parameter` objects
         :param return_annotation: The annotation for the function's return value
@@ -366,7 +377,11 @@ class Signature(inspect.Signature):
         )
 
     @classmethod
-    def from_signature(cls, signature: inspect.Signature, parameter_type: type = Parameter) -> 'Signature':
+    def from_signature(
+        cls,
+        signature: inspect.Signature,
+        parameter_type: type = Parameter,
+    ) -> 'Signature':
         """
         Creates a new ``Signature`` instance from an :class:`inspect.Signature`
         instance.
@@ -386,12 +401,12 @@ class Signature(inspect.Signature):
 
     @classmethod
     def from_callable(
-            cls,
-            callable_: Callable,
-            parameter_type: Type[Parameter] = Parameter,
-            follow_wrapped: bool = True,
-            use_signature_db: bool = True,
-        ) -> 'Signature':
+        cls,
+        callable_: Callable,
+        parameter_type: Type[Parameter] = Parameter,
+        follow_wrapped: bool = True,
+        use_signature_db: bool = True,
+    ) -> 'Signature':
         """
         Returns a matching :class:`Signature` instance for the given ``callable_``.
         
@@ -431,7 +446,7 @@ class Signature(inspect.Signature):
             callable_ = unwrap(callable_, lambda func: hasattr(func, '__signature__'))
 
         if not callable(callable_):
-            raise TypeError("Expected a callable, not {!r}".format(callable_))
+            raise TypeError(f"Expected a callable, not {callable_!r}")
 
         if use_signature_db and callable_ in BUILTIN_SIGNATURES:
             ret_type, params = BUILTIN_SIGNATURES[callable_]
@@ -440,36 +455,148 @@ class Signature(inspect.Signature):
 
         try:
             sig = inspect.signature(callable_, follow_wrapped=False)
-        except ValueError:  # callables written in C don't have an accessible signature
-            pass
+        except ValueError as error:
+            # Callables written in C don't have an accessible signature.
+            #
+            # However, a ValueError can also be raised if `functools.partial` is
+            # used to pass invalid arguments to a function, for example:
+            #
+            # partial(open, hello_kitty=True)
+            if not str(error).startswith('no signature found'):
+                raise
         else:
             return cls.from_signature(sig, parameter_type=parameter_type)
 
-        # builtin exceptions also need special handling, but we don't want to
+        # Builtin exceptions also need special handling, but we don't want to
         # hard-code all of them in BUILTIN_SIGNATURES
         if isinstance(callable_, type) and issubclass(callable_, BaseException):
             return cls([
                 parameter_type('args', Parameter.VAR_POSITIONAL),
-                parameter_type('kwargs', Parameter.VAR_KEYWORD),
             ])
 
-        raise ValueError("Can't determine signature of {}".format(callable_))
+        raise ValueError(f"Can't determine signature of {callable_!r}")
+    
+    @classmethod
+    def for_method(cls, class_or_mro, method_name, *, parameter_type=Parameter):
+        """
+        Creates a combined signature for the method in the given class and all
+        parent classes, assuming that all `*args` and `**kwargs` are passed to
+        the parent method.
+        
+        Example::
+
+            class A:
+                def method(self, foo: int = 3) -> None:
+                    pass
+            
+            class B(A):
+                def method(self, *args, bar: bool = True, **kwargs):
+                    return super().method(*args, **kwargs)
+            
+            print(Signature.for_method(B, 'method'))
+            # (self, foo: int = 3, *, bar: bool = True) -> None
+        
+        .. versionadded:: 1.5
+        """
+        if isinstance(class_or_mro, type):
+            mro = static_mro(class_or_mro)
+        else:
+            mro = tuple(class_or_mro)
+        
+        return_annotation = Signature.empty
+        
+        param_lists = []
+        for class_ in mro:
+            class_vars = static_vars(class_)
+
+            if method_name not in class_vars:
+                continue
+
+            method = class_vars[method_name]
+            signature = cls.from_callable(method, parameter_type=parameter_type)
+
+            param_lists.append(signature.parameter_list)
+
+            if return_annotation is Signature.empty:
+                return_annotation = signature.return_annotation
+        
+        if not param_lists:
+            raise ValueError(f'No method named {method_name!r} found in {class_or_mro}')
+        
+        # Extract the "self" parameter from the first signature, if it has one
+        self_param = []
+        if param_lists[0]:
+            param = param_lists[0][0]
+
+            if param.kind <= Parameter.POSITIONAL_OR_KEYWORD:
+                self_param = [param]
+
+        positional_params = []
+        keyword_params = []
+
+        for param_list in param_lists:
+            var_positional = None
+            var_keyword = None
+
+            for param in param_list:
+                # Skip the "self" parameter
+                if (
+                    param is param_list[0] and
+                    param.kind <= Parameter.POSITIONAL_OR_KEYWORD
+                ):
+                    continue
+                
+                if param.kind <= Parameter.POSITIONAL_OR_KEYWORD:
+                    positional_params.append(param)
+                elif param.kind is Parameter.VAR_POSITIONAL:
+                    var_positional = param
+                elif param.kind is Parameter.KEYWORD_ONLY:
+                    keyword_params.append(param)
+                else:
+                    var_keyword = param
+        
+        # If the last signature has varargs, don't ignore them
+        if var_positional is not None:
+            positional_params.append(var_positional)
+
+        if var_keyword is not None:
+            keyword_params.append(var_keyword)
+        
+        # Merge the parameters into a single list and make sure they all have a
+        # valid kind
+        parameters = self_param + positional_params + keyword_params
+
+        max_kind = Parameter.VAR_KEYWORD
+        for i, param in renumerate(parameters):
+            if param.kind < max_kind:
+                max_kind = param.kind
+            elif param.kind > max_kind:
+                parameters[i] = param.replace(kind=max_kind)
+        
+        return cls(parameters, return_annotation=return_annotation)
 
     def without_parameters(self, *params_to_remove) -> 'Signature':
         """
         Returns a copy of this signature with some parameters removed.
 
-        Parameters can be referenced by their name or index.
+        Parameters can be referenced by the following things:
+
+        1. index
+        2. name
+        3. kind
 
         Example::
 
             >>> sig = Signature([
             ...     Parameter('foo'),
             ...     Parameter('bar'),
-            ...     Parameter('baz')
+            ...     Parameter('baz'),
             ... ])
             >>> sig.without_parameters(0, 'baz')
             <Signature (bar)>
+        
+        .. versionchanged:: 1.5
+            Parameters can now be referenced by kind.
 
         :param parameters: Names or indices of the parameters to remove
         :return: A copy of this signature without the given parameters
@@ -479,7 +606,11 @@ class Signature(inspect.Signature):
         parameters = []
 
         for i, param in enumerate(self.parameters.values()):
-            if i in params_to_remove or param.name in params_to_remove:
+            if (
+                i in params_to_remove or
+                param.name in params_to_remove or
+                param.kind in params_to_remove
+            ):
                 continue
 
             parameters.append(param)
@@ -517,7 +648,7 @@ class Signature(inspect.Signature):
     
     def bind_partial(self, *args, **kwargs) -> BoundArguments:
         """
-        Similar to :meth:`inspect.Signature.bind`, but returns a
+        Similar to :meth:`inspect.Signature.bind_partial`, but returns a
         :class:`introspection.BoundArguments` object.
         """
         bound_args = super().bind_partial(*args, **kwargs)

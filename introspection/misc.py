@@ -12,10 +12,12 @@ from typing import TypeVar, Any, Optional, Callable, Type, Iterable, Mapping, Un
 __all__ = [
     'common_ancestor', 'create_class', 'resolve_bases',
     'static_vars', 'static_copy', 'static_hasattr', 'static_mro',
-    'resolve_identifier',
+    'resolve_identifier', 'is_sub_qualname',
     'is_abstract',
     'iter_wrapped', 'unwrap', 'extract_functions',
     'rename', 'wraps',
+    'compile_function',
+    'camel_to_snake', 'snake_to_camel',
 ]
 
 T = TypeVar('T')
@@ -26,12 +28,12 @@ TYPE_GET_MRO = type.__dict__['__mro__'].__get__
 
 
 def create_class(
-        name: str,
-        bases: Iterable = (),
-        attrs: dict = {},
-        metaclass: Optional[Callable[..., Type[T]]] = None,
-        **kwargs: Any
-    ) -> Type[T]:
+    name: str,
+    bases: Iterable = (),
+    attrs: dict = {},
+    metaclass: Optional[Callable[..., Type[T]]] = None,
+    **kwargs: Any
+) -> Type[T]:
     """
     Creates a new class. This is similar to :func:`types.new_class`, except it
     calls :func:`resolve_bases` even in python versions <= 3.7. (And it has a
@@ -153,7 +155,7 @@ def static_copy(obj: T) -> T:
     An exception are instances of builtin classes - these are copied
     by calling :func:`copy.copy`.
 
-    .. versionadded: 1.1
+    .. versionadded:: 1.1
 
     :param obj: The object to copy
     """
@@ -195,7 +197,7 @@ def static_hasattr(obj: Any, attr_name: str) -> bool:
     ``__getattr__`` or ``__getattribute__`` functions and also tries to avoid
     invoking descriptors. (See :func:`~introspection.static_vars` for more details.)
 
-    .. versionadded: 1.4
+    .. versionadded:: 1.4
 
     :param obj: The object whose attribute you want to find
     :param attr_name: The name of the attribute to find
@@ -224,7 +226,7 @@ def static_mro(cls: type) -> Tuple[type]:
     Given a class as input, returns the class's MRO without invoking any
     overridden ``__getattribute__`` methods or ``__mro__`` descriptors.
 
-    .. versionadded: 1.4
+    .. versionadded:: 1.4
 
     :param cls: A class
     """
@@ -280,7 +282,7 @@ def iter_wrapped(
     and returns a truth value. As soon as ``stop(function)`` returns a truthy
     result, the iteration stops. (``function`` will not be yielded.)
 
-    .. versionadded: 1.4
+    .. versionadded:: 1.4
 
     :param function: The function to unwrap
     :param stop: A predicate function indicating when to stop iterating
@@ -315,7 +317,7 @@ def unwrap(
     and returns a truth value. As soon as ``stop(function.__wrapped__)`` returns
     a truthy result, the unwrapping stops.
 
-    .. versionadded: 1.4
+    .. versionadded:: 1.4
 
     :param function: The function to unwrap
     :param stop: A predicate function indicating when to stop iterating
@@ -364,7 +366,7 @@ def is_abstract(obj: Any) -> bool:
     - ``property``\ s: Abstract if their getter, setter, or deleter is abstract.
     - Classes: Abstract if any of their attributes are abstract.
 
-    .. versionadded: 1.4
+    .. versionadded:: 1.4
 
     :param obj: The object to inspect
     """
@@ -395,7 +397,7 @@ def rename(obj: Any, name: str) -> None:
     """
     Updates the ``__name__`` and ``__qualname__`` of an object.
 
-    .. versionadded: 1.4
+    .. versionadded:: 1.4
 
     :param obj: The object to rename
     :param name: The new name for the object
@@ -434,16 +436,16 @@ def rename(obj: Any, name: str) -> None:
 
 
 def wraps(
-        wrapped_func: Callable,
-        name: Optional[str] = None,
-        signature: Optional[inspect.Signature] = None,
-        remove_parameters: Optional[Iterable[Union[str, int]]] = None,
-    ) -> Callable[[Callable], Callable]:
+    wrapped_func: Callable,
+    name: Optional[str] = None,
+    signature: Optional[inspect.Signature] = None,
+    remove_parameters: Optional[Iterable[Union[str, int]]] = None,
+) -> Callable[[Callable], Callable]:
     """
     Similar to :func:`functools.wraps`, but allows you to modify the function's
     metadata.
 
-    .. versionadded: 1.4
+    .. versionadded:: 1.4
 
     :param wrapped_func: The wrapped function
     :param name: A new name for the wrapper function
@@ -513,3 +515,116 @@ def resolve_identifier(identifier: str) -> object:
             return obj
     
     raise NameError(f"Failed to resolve identifier {identifier!r}")
+
+
+def is_sub_qualname(sub_name: str, base_name: str) -> bool:
+    """
+    Given two dotted names as input, returns whether the first is a child of the
+    second.
+
+    Examples::
+
+        >>> is_sub_qualname('foo.bar', 'foo')
+        True
+        >>> is_sub_qualname('foo', 'foo')
+        True
+        >>> is_sub_qualname('foo.bar', 'foo.qux')
+        False
+
+    .. versionadded:: 1.5
+    """
+    sub_name = sub_name.split('.')
+    base_name = base_name.split('.')
+
+    return sub_name[:len(base_name)] == base_name
+
+
+def compile_function(
+    code,
+    *,
+    globals_=None,
+    allow_builtins=True,
+    file_name='<string>',
+    **kwargs,
+):
+    if globals_ is None:
+        globals_ = {}
+    
+    if allow_builtins:
+        globals_['__builtins__'] = builtins
+    
+    if not isinstance(code, str):
+        code = '\n'.join(code)
+    
+    code = compile(code, file_name, 'exec', **kwargs)
+
+    variables = set(globals_)
+    exec(code, globals_)
+    [function_name] = globals_.keys() - variables
+
+    return globals_[function_name]
+
+
+def camel_to_snake(camel: str) -> str:
+    """
+    Converts a camel-case name to a snake-case name.
+
+    Examples::
+
+        >>> camel_to_snake('FooBar')
+        'foo_bar'
+        >>> camel_to_snake('HTTPAdapater')
+        'http_adapter'
+
+    .. versionadded:: 1.5
+    """
+    chars = []
+    last_char_was_upper = True
+
+    for i, char in enumerate(camel):
+        is_upper = char.isupper()
+
+        if is_upper:
+            char = char.lower()
+
+            if (
+                not last_char_was_upper or
+                (i > 0 and i+1 < len(camel) and not camel[i+1].isupper())
+            ):
+                chars.append('_')
+        
+        chars.append(char)
+        
+        last_char_was_upper = is_upper
+
+    return ''.join(chars)
+
+
+def snake_to_camel(snake: str) -> str:
+    """
+    Converts a snake-case name to a camel-case name.
+
+    Examples::
+
+        >>> snake_to_camel('foo_bar')
+        'FooBar'
+        >>> snake_to_camel('http_adapter')
+        'HttpAdapter'
+
+    .. versionadded:: 1.5
+    """
+    chars = []
+    last_char_was_underscore = True
+
+    for char in snake:
+        if char == '_':
+            last_char_was_underscore = True
+            continue
+        
+        if last_char_was_underscore:
+            char = char.upper()
+            last_char_was_underscore = False
+        
+        chars.append(char)
+    
+    return ''.join(chars)

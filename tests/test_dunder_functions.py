@@ -1,8 +1,24 @@
 
 import pytest
 
+from functools import partial
+
 import introspection.dunder
 from introspection import *
+
+
+@pytest.mark.parametrize('func', [
+    lambda *args, **kwargs: list(iter_class_dundermethods(*args, **kwargs)),
+    collect_class_dundermethods,
+    partial(class_implements_dundermethod, method_name='__len__'),
+    partial(class_implements_dundermethods, methods=['__len__']),
+    partial(class_implements_any_dundermethod, methods=['__len__']),
+    partial(get_class_dundermethod, method_name='__len__'),
+    partial(get_bound_dundermethod, method_name='__len__'),
+])
+def test_conflicting_start_and_start_after(func):
+    with pytest.raises(TypeError):
+        func(bool, start=int, start_after=bool)
 
 
 def test_collect_dundermethods():

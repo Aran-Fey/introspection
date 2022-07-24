@@ -1,4 +1,5 @@
 
+import collections.abc
 import inspect
 import typing
 from typing import *
@@ -6,11 +7,13 @@ from typing import *
 __all__ = ['BoundArguments']
 
 
-class BoundArguments(inspect.BoundArguments):
+class BoundArguments(inspect.BoundArguments, collections.abc.MutableMapping):
     """
     Subclass of :class:`inspect.BoundArguments` with additional features.
 
-    .. versionadded: 1.4
+    .. versionadded:: 1.4
+    .. versionchanged: 1.5
+        Now implements the :class:`~collections.abc.MutableMapping` interface.
     """
     __slots__ = ()
 
@@ -32,10 +35,40 @@ class BoundArguments(inspect.BoundArguments):
 
         return cls(signature, bound_args.arguments)
     
+    def get_missing_parameter_names(self, include_optional_parameters=False):
+        """
+        .. versionadded:: 1.5
+        """
+        missing = self.signature.parameters.keys() - self.arguments.keys()
+
+        for name, param in self.signature.parameters.items():
+            if name not in missing:
+                continue
+
+            if param.is_vararg or (not include_optional_parameters and param.is_optional):
+                missing.remove(name)
+
+        return missing
+    
+    def __getitem__(self, param_name):
+        return self.arguments[param_name]
+    
+    def __setitem__(self, param_name, value):
+        self.arguments[param_name] = value
+    
+    def __delitem__(self, param_name):
+        del self.arguments[param_name]
+    
+    def __iter__(self):
+        return iter(self.arguments)
+    
+    def __len__(self):
+        return len(self.arguments)
+    
     def to_varargs(
-            self,
-            prefer: (typing.Literal['args', 'kwargs'] if hasattr(typing, 'Literal') else str) = 'kwargs',
-        ) -> Tuple[list, Dict[str, Any]]:
+        self,
+        prefer: (typing.Literal['args', 'kwargs'] if hasattr(typing, 'Literal') else str) = 'kwargs',
+    ) -> Tuple[list, Dict[str, Any]]:
         """
         Converts the arguments into an ``(args, kwargs)`` tuple.
 

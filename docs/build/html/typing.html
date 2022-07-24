@@ -14,6 +14,7 @@
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/clipboard.min.js"></script>
     <script src="_static/copybutton.js"></script>
@@ -32,13 +33,13 @@
           <div class="body" role="main">
             
   <section id="module-introspection.typing">
-<span id="introspecting-the-typing-module"></span><h1>Introspecting the <code class="docutils literal notranslate"><span class="pre">typing</span></code> module<a class="headerlink" href="#module-introspection.typing" title="Permalink to this headline">¶</a></h1>
+<span id="introspecting-the-typing-module"></span><h1>Introspecting the <code class="docutils literal notranslate"><span class="pre">typing</span></code> module<a class="headerlink" href="#module-introspection.typing" title="Permalink to this heading">¶</a></h1>
 <div class="versionadded">
 <p><span class="versionmodified added">New in version 1.1.</span></p>
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">introspection.typing</span></code> submodule provides functions for the purpose
 of dissecting <a class="reference external" href="https://docs.python.org/3/library/typing.html#module-typing" title="(in Python v3.10)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">typing</span></code></a> types. It is recommended to familiarize yourself
-with the <code class="docutils literal notranslate"><span class="pre">typing</span></code> module’s core concepts by reading <span class="target" id="index-0"></span><a class="pep reference external" href="https://www.python.org/dev/peps/pep-0483"><strong>PEP 0483</strong></a> before
+with the <code class="docutils literal notranslate"><span class="pre">typing</span></code> module’s core concepts by reading <span class="target" id="index-0"></span><a class="pep reference external" href="https://peps.python.org/pep-0483/"><strong>PEP 0483</strong></a> before
 working with its internals.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -78,7 +79,7 @@ TypeError: ClassVar cannot be further subscripted
 </div>
 <span class="target" id="module-introspection.typing.introspection"></span><dl class="py function">
 <dt class="sig sig-object py" id="introspection.typing.is_type">
-<span id="introspection.typing.introspection.is_type"></span><span class="sig-prename descclassname"><span class="pre">introspection.typing.</span></span><span class="sig-name descname"><span class="pre">is_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_forwardref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.typing.is_type" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">introspection.typing.</span></span><span class="sig-name descname"><span class="pre">is_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_forwardref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.typing.is_type" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns whether <code class="docutils literal notranslate"><span class="pre">type_</span></code> is a type - i.e. something that is a valid type annotation.</p>
 <p>Examples:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">is_type</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
@@ -116,8 +117,8 @@ TypeError: ClassVar cannot be further subscripted
 
 <dl class="py function">
 <dt class="sig sig-object py" id="introspection.typing.is_typing_type">
-<span id="introspection.typing.introspection.is_typing_type"></span><span class="sig-prename descclassname"><span class="pre">introspection.typing.</span></span><span class="sig-name descname"><span class="pre">is_typing_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raising</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.typing.is_typing_type" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns whether <code class="docutils literal notranslate"><span class="pre">type_</span></code> is a type added by <span class="target" id="index-1"></span><a class="pep reference external" href="https://www.python.org/dev/peps/pep-0484"><strong>PEP 0484</strong></a>.
+<span class="sig-prename descclassname"><span class="pre">introspection.typing.</span></span><span class="sig-name descname"><span class="pre">is_typing_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raising</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.typing.is_typing_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns whether <code class="docutils literal notranslate"><span class="pre">type_</span></code> is a type added by <span class="target" id="index-1"></span><a class="pep reference external" href="https://peps.python.org/pep-0484/"><strong>PEP 0484</strong></a>.
 This includes parameterized generics and all types defined in
 the <a class="reference external" href="https://docs.python.org/3/library/typing.html#module-typing" title="(in Python v3.10)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">typing</span></code></a> module (but not custom subclasses thereof)
 <em>except</em> for <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.ForwardRef" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">typing.ForwardRef</span></code></a>.</p>
@@ -145,7 +146,7 @@ and <code class="docutils literal notranslate"><span class="pre">raising</span><
 
 <dl class="py function">
 <dt class="sig sig-object py" id="introspection.typing.is_generic">
-<span id="introspection.typing.introspection.is_generic"></span><span class="sig-prename descclassname"><span class="pre">introspection.typing.</span></span><span class="sig-name descname"><span class="pre">is_generic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raising</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.typing.is_generic" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">introspection.typing.</span></span><span class="sig-name descname"><span class="pre">is_generic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raising</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.typing.is_generic" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns whether <code class="docutils literal notranslate"><span class="pre">type_</span></code> is any kind of generic type,
 for example <code class="docutils literal notranslate"><span class="pre">List</span></code>, <code class="docutils literal notranslate"><span class="pre">List[T]</span></code> or even <code class="docutils literal notranslate"><span class="pre">List[Tuple[T]]</span></code>.
 This includes “special” types like <code class="docutils literal notranslate"><span class="pre">Union</span></code>, <code class="docutils literal notranslate"><span class="pre">Tuple</span></code>
@@ -172,7 +173,7 @@ and <code class="docutils literal notranslate"><span class="pre">raising</span><
 
 <dl class="py function">
 <dt class="sig sig-object py" id="introspection.typing.is_variadic_generic">
-<span id="introspection.typing.introspection.is_variadic_generic"></span><span class="sig-prename descclassname"><span class="pre">introspection.typing.</span></span><span class="sig-name descname"><span class="pre">is_variadic_generic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raising</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.typing.is_variadic_generic" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">introspection.typing.</span></span><span class="sig-name descname"><span class="pre">is_variadic_generic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raising</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.typing.is_variadic_generic" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns whether <code class="docutils literal notranslate"><span class="pre">type_</span></code> is a generic type that accepts an
 arbitrary number of type arguments. (e.g. <code class="docutils literal notranslate"><span class="pre">Union</span></code>, <code class="docutils literal notranslate"><span class="pre">Tuple</span></code>,
 <code class="docutils literal notranslate"><span class="pre">Literal</span></code>, etc.)</p>
@@ -197,7 +198,7 @@ and <code class="docutils literal notranslate"><span class="pre">raising</span><
 
 <dl class="py function">
 <dt class="sig sig-object py" id="introspection.typing.is_forwardref">
-<span id="introspection.typing.introspection.is_forwardref"></span><span class="sig-prename descclassname"><span class="pre">introspection.typing.</span></span><span class="sig-name descname"><span class="pre">is_forwardref</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raising</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.typing.is_forwardref" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">introspection.typing.</span></span><span class="sig-name descname"><span class="pre">is_forwardref</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raising</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.typing.is_forwardref" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns whether <code class="docutils literal notranslate"><span class="pre">type_</span></code> is a forward reference.</p>
 <p>Examples:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">is_forwardref</span><span class="p">(</span><span class="s1">&#39;List&#39;</span><span class="p">)</span>
@@ -226,7 +227,7 @@ and <code class="docutils literal notranslate"><span class="pre">raising</span><
 
 <dl class="py function">
 <dt class="sig sig-object py" id="introspection.typing.is_generic_base_class">
-<span id="introspection.typing.introspection.is_generic_base_class"></span><span class="sig-prename descclassname"><span class="pre">introspection.typing.</span></span><span class="sig-name descname"><span class="pre">is_generic_base_class</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raising</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.typing.is_generic_base_class" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">introspection.typing.</span></span><span class="sig-name descname"><span class="pre">is_generic_base_class</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raising</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.typing.is_generic_base_class" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns whether <code class="docutils literal notranslate"><span class="pre">type_</span></code> is a generic base class,
 for example <code class="docutils literal notranslate"><span class="pre">List</span></code> (but not <code class="docutils literal notranslate"><span class="pre">List[int]</span></code> or
 <code class="docutils literal notranslate"><span class="pre">List[T]</span></code>).</p>
@@ -251,7 +252,7 @@ and <code class="docutils literal notranslate"><span class="pre">raising</span><
 
 <dl class="py function">
 <dt class="sig sig-object py" id="introspection.typing.is_parameterized_generic">
-<span id="introspection.typing.introspection.is_parameterized_generic"></span><span class="sig-prename descclassname"><span class="pre">introspection.typing.</span></span><span class="sig-name descname"><span class="pre">is_parameterized_generic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raising</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.typing.is_parameterized_generic" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">introspection.typing.</span></span><span class="sig-name descname"><span class="pre">is_parameterized_generic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raising</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.typing.is_parameterized_generic" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns whether <code class="docutils literal notranslate"><span class="pre">type_</span></code> is a generic type with some
 type arguments supplied, for example <code class="docutils literal notranslate"><span class="pre">List[int]</span></code>
 or <code class="docutils literal notranslate"><span class="pre">List[T]</span></code> (but not <code class="docutils literal notranslate"><span class="pre">List</span></code>) - in other words, a
@@ -277,7 +278,7 @@ and <code class="docutils literal notranslate"><span class="pre">raising</span><
 
 <dl class="py function">
 <dt class="sig sig-object py" id="introspection.typing.is_fully_parameterized_generic">
-<span id="introspection.typing.introspection.is_fully_parameterized_generic"></span><span class="sig-prename descclassname"><span class="pre">introspection.typing.</span></span><span class="sig-name descname"><span class="pre">is_fully_parameterized_generic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raising</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.typing.is_fully_parameterized_generic" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">introspection.typing.</span></span><span class="sig-name descname"><span class="pre">is_fully_parameterized_generic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raising</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.typing.is_fully_parameterized_generic" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns whether <code class="docutils literal notranslate"><span class="pre">type_</span></code> is a generic type with all
 type arguments supplied, for example <code class="docutils literal notranslate"><span class="pre">List[int]</span></code>
 (but not <code class="docutils literal notranslate"><span class="pre">List[T]</span></code> or <code class="docutils literal notranslate"><span class="pre">List[Tuple[T]]</span></code>).</p>
@@ -315,7 +316,7 @@ and <code class="docutils literal notranslate"><span class="pre">raising</span><
 
 <dl class="py function">
 <dt class="sig sig-object py" id="introspection.typing.get_generic_base_class">
-<span id="introspection.typing.introspection.get_generic_base_class"></span><span class="sig-prename descclassname"><span class="pre">introspection.typing.</span></span><span class="sig-name descname"><span class="pre">get_generic_base_class</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.typing.get_generic_base_class" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">introspection.typing.</span></span><span class="sig-name descname"><span class="pre">get_generic_base_class</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.typing.get_generic_base_class" title="Permalink to this definition">¶</a></dt>
 <dd><p>Given a parameterized generic type as input, returns the corresponding
 generic base class.</p>
 <p>Example:</p>
@@ -335,7 +336,7 @@ generic base class.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="introspection.typing.get_type_arguments">
-<span id="introspection.typing.introspection.get_type_arguments"></span><span class="sig-prename descclassname"><span class="pre">introspection.typing.</span></span><span class="sig-name descname"><span class="pre">get_type_arguments</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.typing.get_type_arguments" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">introspection.typing.</span></span><span class="sig-name descname"><span class="pre">get_type_arguments</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.typing.get_type_arguments" title="Permalink to this definition">¶</a></dt>
 <dd><p>Given a parameterized generic type as input, returns a tuple of its type
 arguments.</p>
 <p>Example:</p>
@@ -366,7 +367,7 @@ this function’s return value:</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="introspection.typing.get_type_parameters">
-<span id="introspection.typing.introspection.get_type_parameters"></span><span class="sig-prename descclassname"><span class="pre">introspection.typing.</span></span><span class="sig-name descname"><span class="pre">get_type_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.typing.get_type_parameters" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">introspection.typing.</span></span><span class="sig-name descname"><span class="pre">get_type_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.typing.get_type_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the TypeVars of a generic type.</p>
 <p>If <code class="docutils literal notranslate"><span class="pre">type_</span></code> is not a type, <code class="docutils literal notranslate"><span class="pre">TypeError</span></code> is raised.
 If <code class="docutils literal notranslate"><span class="pre">type_</span></code> is a type, but not generic, a <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> is raised.
@@ -423,7 +424,7 @@ input is a type, but not generic.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="introspection.typing.get_type_name">
-<span id="introspection.typing.introspection.get_type_name"></span><span class="sig-prename descclassname"><span class="pre">introspection.typing.</span></span><span class="sig-name descname"><span class="pre">get_type_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.typing.get_type_name" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">introspection.typing.</span></span><span class="sig-name descname"><span class="pre">get_type_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.typing.get_type_name" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the name of a type.</p>
 <p>Examples:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">get_type_name</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
@@ -447,7 +448,7 @@ input is a type, but not generic.</p>
 
 <span class="target" id="module-introspection.typing.misc"></span><dl class="py function">
 <dt class="sig sig-object py" id="introspection.typing.resolve_forward_refs">
-<span id="introspection.typing.misc.resolve_forward_refs"></span><span class="sig-prename descclassname"><span class="pre">introspection.typing.</span></span><span class="sig-name descname"><span class="pre">resolve_forward_refs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">annotation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.typing.resolve_forward_refs" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">introspection.typing.</span></span><span class="sig-name descname"><span class="pre">resolve_forward_refs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">annotation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.typing.resolve_forward_refs" title="Permalink to this definition">¶</a></dt>
 <dd><p>Resolves forward references in a type annotation.</p>
 <p>Examples:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">resolve_forward_refs</span><span class="p">(</span><span class="n">List</span><span class="p">[</span><span class="s1">&#39;int&#39;</span><span class="p">])</span>
@@ -473,7 +474,7 @@ input is a type, but not generic.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="introspection.typing.annotation_to_string">
-<span id="introspection.typing.misc.annotation_to_string"></span><span class="sig-prename descclassname"><span class="pre">introspection.typing.</span></span><span class="sig-name descname"><span class="pre">annotation_to_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">annotation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">implicit_typing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.typing.annotation_to_string" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">introspection.typing.</span></span><span class="sig-name descname"><span class="pre">annotation_to_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">annotation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">implicit_typing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.typing.annotation_to_string" title="Permalink to this definition">¶</a></dt>
 <dd><p>Converts a type annotation to string. The result is
 valid python code.</p>
 <p>Examples:</p>
@@ -498,9 +499,25 @@ valid python code.</p>
 </dl>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="introspection.typing.annotation_for_callable">
+<span class="sig-prename descclassname"><span class="pre">introspection.typing.</span></span><span class="sig-name descname"><span class="pre">annotation_for_callable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">callable_</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.typing.annotation_for_callable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a callable object as input, returns a matching type annotation.</p>
+<p>Examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">annotation_for_callable</span><span class="p">(</span><span class="nb">len</span><span class="p">)</span>
+<span class="go">typing.Callable[[typing.Sized], int]</span>
+</pre></div>
+</div>
+<p>Note: How <code class="docutils literal notranslate"><span class="pre">*args</span></code>, <code class="docutils literal notranslate"><span class="pre">**kwargs</span></code>, and keyword-only parameters are handled
+is currently undefined.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version 1.5.</span></p>
+</div>
+</dd></dl>
+
 <span class="target" id="module-introspection.typing.type_compat"></span><dl class="py function">
 <dt class="sig sig-object py" id="introspection.typing.to_python">
-<span id="introspection.typing.type_compat.to_python"></span><span class="sig-prename descclassname"><span class="pre">introspection.typing.</span></span><span class="sig-name descname"><span class="pre">to_python</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.typing.to_python" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">introspection.typing.</span></span><span class="sig-name descname"><span class="pre">to_python</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.typing.to_python" title="Permalink to this definition">¶</a></dt>
 <dd><p>Given a <code class="docutils literal notranslate"><span class="pre">typing</span></code> type as input, returns the corresponding “regular” python
 class.</p>
 <p>Examples:</p>
@@ -552,7 +569,7 @@ are converted to their regular python counterparts:</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="introspection.typing.to_typing">
-<span id="introspection.typing.type_compat.to_typing"></span><span class="sig-prename descclassname"><span class="pre">introspection.typing.</span></span><span class="sig-name descname"><span class="pre">to_typing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.typing.to_typing" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">introspection.typing.</span></span><span class="sig-name descname"><span class="pre">to_typing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.typing.to_typing" title="Permalink to this definition">¶</a></dt>
 <dd><p>Given a python class as input, returns the corresponding
 <code class="docutils literal notranslate"><span class="pre">typing</span></code> annotation.</p>
 <p>Examples:</p>
@@ -619,7 +636,7 @@ are converted to their regular python counterparts:</p>
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script><div id="theme-switcher"></div>
+<script>document.getElementById('searchbox').style.display = "block"</script><div id="theme-switcher"></div>
         </div>
       </div>
       <div class="clearer"></div>

@@ -14,6 +14,7 @@
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/clipboard.min.js"></script>
     <script src="_static/copybutton.js"></script>
@@ -32,16 +33,39 @@
           <div class="body" role="main">
             
   <section id="module-introspection.classes">
-<span id="functions-related-to-classes"></span><h1>Functions related to classes<a class="headerlink" href="#module-introspection.classes" title="Permalink to this headline">¶</a></h1>
+<span id="functions-related-to-classes"></span><h1>Functions related to classes<a class="headerlink" href="#module-introspection.classes" title="Permalink to this heading">¶</a></h1>
 <dl class="py function">
-<dt class="sig sig-object py" id="introspection.get_subclasses">
-<span id="introspection.classes.get_subclasses"></span><span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">get_subclasses</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_abstract</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.get_subclasses" title="Permalink to this definition">¶</a></dt>
-<dd><p>Collects all subclasses of the given class.</p>
+<dt class="sig sig-object py" id="introspection.iter_subclasses">
+<span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">iter_subclasses</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_abstract</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.iter_subclasses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Yields subclasses of the given class.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version 1.5.</span></p>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>cls</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></a>) – A base class</p></li>
 <li><p><strong>include_abstract</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>, default: <code class="docutils literal notranslate"><span class="pre">False</span></code>) – Whether abstract base classes should be included</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterator" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></a>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>An iterator yielding subclasses</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="introspection.get_subclasses">
+<span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">get_subclasses</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.get_subclasses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Collects all subclasses of the given class.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cls</strong> – A base class</p></li>
+<li><p><strong>include_abstract</strong> – Whether abstract base classes should be included</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -55,7 +79,7 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="introspection.get_attributes">
-<span id="introspection.classes.get_attributes"></span><span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">get_attributes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_weakref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.get_attributes" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">get_attributes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_weakref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.get_attributes" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a dictionary of all of <code class="docutils literal notranslate"><span class="pre">obj</span></code>’s attributes. This includes
 attributes stored in the object’s <code class="docutils literal notranslate"><span class="pre">__dict__</span></code> as well as in <code class="docutils literal notranslate"><span class="pre">__slots__</span></code>.</p>
 <dl class="field-list simple">
@@ -77,9 +101,12 @@ be included in the result</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="introspection.get_abstract_method_names">
-<span id="introspection.classes.get_abstract_method_names"></span><span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">get_abstract_method_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.get_abstract_method_names" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">get_abstract_method_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.get_abstract_method_names" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a set of names of abstract methods (and other things) in the given
-class. See also <code class="xref py py-func docutils literal notranslate"><span class="pre">is_abstract()</span></code>.</p>
+class. See also <a class="reference internal" href="misc.html#introspection.is_abstract" title="introspection.is_abstract"><code class="xref py py-func docutils literal notranslate"><span class="pre">is_abstract()</span></code></a>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version 1.4.</span></p>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>cls</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></a>) – A class</p>
@@ -95,7 +122,7 @@ class. See also <code class="xref py py-func docutils literal notranslate"><span
 
 <dl class="py function">
 <dt class="sig sig-object py" id="introspection.safe_is_subclass">
-<span id="introspection.classes.safe_is_subclass"></span><span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">safe_is_subclass</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subclass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">superclass</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.safe_is_subclass" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">safe_is_subclass</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subclass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">superclass</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.safe_is_subclass" title="Permalink to this definition">¶</a></dt>
 <dd><p>A clone of <a class="reference external" href="https://docs.python.org/3/library/functions.html#issubclass" title="(in Python v3.10)"><code class="xref py py-func docutils literal notranslate"><span class="pre">issubclass()</span></code></a> that returns <code class="docutils literal notranslate"><span class="pre">False</span></code> instead of throwing a
 <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.10)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">TypeError</span></code></a>.</p>
 <div class="versionadded">
@@ -119,14 +146,13 @@ class. See also <code class="xref py py-func docutils literal notranslate"><span
 
 <dl class="py function">
 <dt class="sig sig-object py" id="introspection.iter_slots">
-<span id="introspection.classes.iter_slots"></span><span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">iter_slots</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.iter_slots" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">iter_slots</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.iter_slots" title="Permalink to this definition">¶</a></dt>
 <dd><p>Iterates over all <code class="docutils literal notranslate"><span class="pre">__slots__</span></code> of the given class, yielding
 <code class="docutils literal notranslate"><span class="pre">(slot_name,</span> <span class="pre">slot_descriptor)</span></code> tuples.</p>
-<p>If a slot name is used more than once, <em>all</em> of them will be
-yielded in the order they appear in the class’s MRO.</p>
-<p>Note that this function relies on the class-level <code class="docutils literal notranslate"><span class="pre">__slots__</span></code>
-attribute - deleting or altering this attribute in any way may
-yield incorrect results.</p>
+<p>If a slot name is used more than once, <em>all</em> of them will be yielded in the
+order they appear in the class’s MRO.</p>
+<p>Note that this function relies on the class-level <code class="docutils literal notranslate"><span class="pre">__slots__</span></code> attribute -
+deleting or altering this attribute in any way may yield incorrect results.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>cls</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></a>) – The class whose slots to yield</p>
@@ -142,7 +168,7 @@ yield incorrect results.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="introspection.get_slot_names">
-<span id="introspection.classes.get_slot_names"></span><span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">get_slot_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.get_slot_names" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">get_slot_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.get_slot_names" title="Permalink to this definition">¶</a></dt>
 <dd><p>Collects all of the given class’s <code class="docutils literal notranslate"><span class="pre">__slots__</span></code>, returning a
 set of slot names.</p>
 <dl class="field-list simple">
@@ -160,7 +186,7 @@ set of slot names.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="introspection.get_slot_counts">
-<span id="introspection.classes.get_slot_counts"></span><span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">get_slot_counts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.get_slot_counts" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">get_slot_counts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.get_slot_counts" title="Permalink to this definition">¶</a></dt>
 <dd><p>Collects all of the given class’s <code class="docutils literal notranslate"><span class="pre">__slots__</span></code>, returning a
 dict of the form <code class="docutils literal notranslate"><span class="pre">{slot_name:</span> <span class="pre">count}</span></code>.</p>
 <dl class="field-list simple">
@@ -178,7 +204,7 @@ dict of the form <code class="docutils literal notranslate"><span class="pre">{s
 
 <dl class="py function">
 <dt class="sig sig-object py" id="introspection.get_slots">
-<span id="introspection.classes.get_slots"></span><span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">get_slots</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.get_slots" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">get_slots</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.get_slots" title="Permalink to this definition">¶</a></dt>
 <dd><p>Collects all of the given class’s <code class="docutils literal notranslate"><span class="pre">__slots__</span></code>, returning a
 dict of the form <code class="docutils literal notranslate"><span class="pre">{slot_name:</span> <span class="pre">slot_descriptor}</span></code>.</p>
 <p>If a slot name is used more than once, only the descriptor
@@ -198,7 +224,7 @@ that shadows all other descriptors of the same name is returned.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="introspection.get_implicit_method_type">
-<span id="introspection.classes.get_implicit_method_type"></span><span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">get_implicit_method_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.get_implicit_method_type" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">get_implicit_method_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.get_implicit_method_type" title="Permalink to this definition">¶</a></dt>
 <dd><p>Given the name of a method as input, returns what kind of method python automatically
 converts it to. The return value can be <code class="xref py py-class docutils literal notranslate"><span class="pre">staticmethod</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">classmethod</span></code>,
 or <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
@@ -228,7 +254,7 @@ or <code class="docutils literal notranslate"><span class="pre">None</span></cod
 
 <dl class="py function">
 <dt class="sig sig-object py" id="introspection.fit_to_class">
-<span id="introspection.classes.fit_to_class"></span><span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">fit_to_class</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">thing</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.fit_to_class" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">fit_to_class</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">thing</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.fit_to_class" title="Permalink to this definition">¶</a></dt>
 <dd><p>Updates <code class="docutils literal notranslate"><span class="pre">thing</span></code>‘s metadata to match <code class="docutils literal notranslate"><span class="pre">cls</span></code>‘s.</p>
 <p><code class="docutils literal notranslate"><span class="pre">thing</span></code> can be one of the following:</p>
 <ul class="simple">
@@ -238,6 +264,9 @@ or <code class="docutils literal notranslate"><span class="pre">None</span></cod
 <li><p>A <a class="reference external" href="https://docs.python.org/3/library/functions.html#property" title="(in Python v3.10)"><code class="xref any docutils literal notranslate"><span class="pre">property</span></code></a></p></li>
 </ul>
 <p>If <code class="docutils literal notranslate"><span class="pre">name</span></code> is not <code class="docutils literal notranslate"><span class="pre">None</span></code>, <code class="docutils literal notranslate"><span class="pre">thing</span></code> will be renamed accordingly.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version 1.4.</span></p>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -251,7 +280,7 @@ or <code class="docutils literal notranslate"><span class="pre">None</span></cod
 
 <dl class="py function">
 <dt class="sig sig-object py" id="introspection.add_method_to_class">
-<span id="introspection.classes.add_method_to_class"></span><span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">add_method_to_class</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">auto</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.add_method_to_class" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">add_method_to_class</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">auto</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.add_method_to_class" title="Permalink to this definition">¶</a></dt>
 <dd><p>Adds <code class="docutils literal notranslate"><span class="pre">method</span></code> to <code class="docutils literal notranslate"><span class="pre">cls</span></code>‘s namespace under the given <code class="docutils literal notranslate"><span class="pre">name</span></code>.</p>
 <p>If <code class="docutils literal notranslate"><span class="pre">name</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code>, it defaults to <code class="docutils literal notranslate"><span class="pre">method.__name__</span></code>.</p>
 <p>The method’s metadata (<code class="docutils literal notranslate"><span class="pre">__name__</span></code>, <code class="docutils literal notranslate"><span class="pre">__qualname__</span></code>, and <code class="docutils literal notranslate"><span class="pre">__module__</span></code>)
@@ -280,7 +309,7 @@ wrapped with the appropriate descriptor.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="introspection.wrap_method">
-<span id="introspection.classes.wrap_method"></span><span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">wrap_method</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">auto</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.wrap_method" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">wrap_method</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">auto</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.wrap_method" title="Permalink to this definition">¶</a></dt>
 <dd><p>Adds <code class="docutils literal notranslate"><span class="pre">method</span></code> to <code class="docutils literal notranslate"><span class="pre">cls</span></code>‘s namespace under the given <code class="docutils literal notranslate"><span class="pre">name</span></code>,
 wrapping the existing method (if one exists).</p>
 <p>The replaced method will be passed in as the first positional argument
@@ -437,7 +466,7 @@ setting its <code class="docutils literal notranslate"><span class="pre">_forwar
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script><div id="theme-switcher"></div>
+<script>document.getElementById('searchbox').style.display = "block"</script><div id="theme-switcher"></div>
         </div>
       </div>
       <div class="clearer"></div>

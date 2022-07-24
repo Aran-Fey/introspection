@@ -117,8 +117,10 @@ GENERIC_INHERITANCE = {
     'typing.Optional': [('Generic', T_co)],
     'typing.Union': [('Generic', T_co)],
     
-    'typing.Callable': [('Generic', typing.TypeVar('A_contra', contravariant=True),
-                             typing.TypeVar('R_co', covariant=True))],
+    'typing.Callable': [('Generic',
+                            typing.TypeVar('A_contra', contravariant=True),
+                            typing.TypeVar('R_co', covariant=True)
+                        )],
     
     'typing.Dict': [('MutableMapping', K, V)],
     'typing.DefaultDict': [('MutableMapping', K, V)],
@@ -251,6 +253,10 @@ PARAMETERIZED_GENERIC_META = (
 PARAMETERIZED_GENERIC_META = resolve_dotted_names(PARAMETERIZED_GENERIC_META)
 
 def _get_type_parameters(type_):
+    if sys.version_info >= (3, 10):
+        if isinstance(type_, types.UnionType):
+            return type_.__parameters__
+
     if safe_is_subclass(type_, typing.Generic):
         # Classes that inherit from Generic directly (like
         # ``class Protocol(Generic):``) and Generic itself don't
@@ -364,6 +370,9 @@ if sys.version_info >= (3, 7):
     def _is_typing_type(cls):
         if isinstance(cls, typing._GenericAlias):
             return True
+        
+        if isinstance(cls, getattr(types, 'UnionType', ())):
+            return True
 
         try:
             module = cls.__module__
@@ -399,8 +408,12 @@ if sys.version_info >= (3, 9):
         return isinstance(cls, (types.GenericAlias, typing._GenericAlias))
     
     def _get_generic_base_class(cls):
-        if isinstance(cls, typing._GenericAlias) and cls._name is not None:
-            return getattr(typing, cls._name)
+        if isinstance(cls, typing._GenericAlias):
+            if cls._name is not None:
+                return getattr(typing, cls._name)
+            
+            if isinstance(cls, typing._AnnotatedAlias):
+                return typing.Annotated
 
         return cls.__origin__
 
@@ -488,7 +501,7 @@ def is_forwardref(type_: typing.Any, raising: bool = True):
 
 
 @weakref_cache
-def is_type(type_: typing.Any, allow_forwardref : bool = True) -> bool:
+def is_type(type_: typing.Any, allow_forwardref: bool = True) -> bool:
     """
     Returns whether ``type_`` is a type - i.e. something that is a valid type annotation.
 

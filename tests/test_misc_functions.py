@@ -428,3 +428,48 @@ def test_super_with_2_classes():
 
     with pytest.raises(AttributeError):
         del sup.desc
+
+
+@pytest.mark.parametrize('identifier, expected', [
+    ('builtins.int', int),
+    ('builtins.float.is_integer', float.is_integer),
+])
+def test_resolve_identifier(identifier, expected):
+    assert resolve_identifier(identifier) is expected
+
+
+@pytest.mark.parametrize('identifier', [
+    '',
+    'not-builtins',
+    'builtins.frank',
+])
+def test_resolve_identifier_error(identifier):
+    with pytest.raises(NameError):
+        resolve_identifier(identifier)
+
+
+@pytest.mark.parametrize('sub_name, super_name, expected', [
+    ('foo', 'foo', True),
+    ('foo.bar', 'foo', True),
+    ('foo.bar', 'foo.bar', True),
+    ('foo', 'foo.bar', False),
+    ('foo', 'bar.foo', False),
+])
+def test_is_sub_qualname(sub_name, super_name, expected):
+    assert is_sub_qualname(sub_name, super_name) == expected
+
+
+@pytest.mark.parametrize('camel, expected', [
+    ('FooBar', 'foo_bar'),
+    ('HTTPAdapter', 'http_adapter'),
+])
+def test_camel_to_snake(camel, expected):
+    assert camel_to_snake(camel) == expected
+
+
+@pytest.mark.parametrize('snake, expected', [
+    ('foo_bar', 'FooBar'),
+    ('http_adapter', 'HttpAdapter'),
+])
+def test_snake_to_camel(snake, expected):
+    assert snake_to_camel(snake) == expected

@@ -153,8 +153,7 @@ class CallFrame:
         except KeyError:
             pass
 
-        msg = "Name {!r} not visible from frame {!r}"
-        raise NameError(msg.format(name, self))
+        raise NameError(f"Name {name!r} not visible from frame {self!r}")
 
     def get_surrounding_function(self):
         """

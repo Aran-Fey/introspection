@@ -10,6 +10,8 @@ from typing import *
 from introspection.typing.misc import *
 
 
+T = TypeVar('T')
+
 THIS_MODULE = sys.modules[__name__]
 
 
@@ -139,4 +141,40 @@ def test_resolve_forward_refs_error(annotation, kwargs):
 ])
 def test_resolve_forward_refs_non_strict(annotation, kwargs, expected):
     ann = resolve_forward_refs(annotation, strict=False, **kwargs)
+    assert ann == expected
+
+
+def no_args():
+    pass
+
+def nil__nil(x):
+    pass
+
+def args_nil(*args):
+    pass
+
+def str_args__float(foo: str, *args) -> float:
+    return 3
+
+def t_args__t(foo: T, *args) -> T:
+    return foo
+
+@pytest.mark.parametrize('callable_, expected', [
+    (len, Callable[[Sized], int]),
+    (range, Union[
+        Callable[[int, int, int], range],
+        Callable[[int, int], range],
+        Callable[[int], range],
+    ]),
+    (nil__nil, Callable[[Any], Any]),
+    (no_args, Callable[[], Any]),
+    # (args_nil, Callable),
+    # (str_args__float, Callable[..., float]),
+    # (t_args__t, Union[
+    #     Callable[[T], T],
+    #     Callable[..., T],
+    # ]),
+])
+def test_annotation_for_callable(callable_, expected):
+    ann = annotation_for_callable(callable_)
     assert ann == expected

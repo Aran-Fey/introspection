@@ -123,10 +123,11 @@ def test_get_attributes_slots_and_dict():
 
 def test_get_attributes_slots():
     class Foo:
-        __slots__ = 'foo'
+        __slots__ = ['foo', 'bar']
 
     obj = Foo()
     obj.foo = 3
+    # bar intentionally left empty
 
     assert get_attributes(obj) == {'foo': 3}
 

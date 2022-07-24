@@ -10,7 +10,7 @@ import sentinel
 from .misc import static_vars, is_abstract, static_mro
 
 __all__ = [
-    'get_subclasses', 'get_attributes', 'get_abstract_method_names', 'safe_is_subclass',
+    'iter_subclasses', 'get_subclasses', 'get_attributes', 'get_abstract_method_names', 'safe_is_subclass',
     'iter_slots', 'get_slot_names', 'get_slot_counts', 'get_slots',
     'get_implicit_method_type',
     'fit_to_class', 'add_method_to_class', 'wrap_method',
@@ -20,7 +20,33 @@ __all__ = [
 auto = sentinel.create('auto')
 
 
-def get_subclasses(cls: type, include_abstract: bool = False) -> Set[type]:
+def iter_subclasses(cls: type, include_abstract: bool = False) -> Iterator[type]:
+    """
+    Yields subclasses of the given class.
+    
+    .. versionadded:: 1.5
+
+    :param cls: A base class
+    :param include_abstract: Whether abstract base classes should be included
+    :return: An iterator yielding subclasses
+    """
+    seen = set()
+    queue = cls.__subclasses__()
+
+    while queue:
+        cls = queue.pop()
+
+        if cls in seen:
+            continue
+        seen.add(cls)
+
+        if include_abstract or not inspect.isabstract(cls):
+            yield cls
+
+        queue += cls.__subclasses__()
+
+
+def get_subclasses(*args, **kwargs) -> Set[type]:
     """
     Collects all subclasses of the given class.
 
@@ -28,18 +54,7 @@ def get_subclasses(cls: type, include_abstract: bool = False) -> Set[type]:
     :param include_abstract: Whether abstract base classes should be included
     :return: A set of all subclasses
     """
-    subclasses = set()
-    queue = cls.__subclasses__()
-
-    while queue:
-        cls = queue.pop()
-
-        if include_abstract or not inspect.isabstract(cls):
-            subclasses.add(cls)
-
-        queue += cls.__subclasses__()
-
-    return subclasses
+    return set(iter_subclasses(*args, **kwargs))
 
 
 def iter_slots(cls: type) -> Iterator[Tuple[str, Any]]:
@@ -47,12 +62,11 @@ def iter_slots(cls: type) -> Iterator[Tuple[str, Any]]:
     Iterates over all ``__slots__`` of the given class, yielding
     ``(slot_name, slot_descriptor)`` tuples.
 
-    If a slot name is used more than once, *all* of them will be
-    yielded in the order they appear in the class's MRO.
+    If a slot name is used more than once, *all* of them will be yielded in the
+    order they appear in the class's MRO.
 
-    Note that this function relies on the class-level ``__slots__``
-    attribute - deleting or altering this attribute in any way may
-    yield incorrect results.
+    Note that this function relies on the class-level ``__slots__`` attribute -
+    deleting or altering this attribute in any way may yield incorrect results.
 
     :param cls: The class whose slots to yield
     :return: An iterator yielding ``(slot_name, slot_descriptor)`` tuples
@@ -136,6 +150,11 @@ def get_attributes(obj: Any, include_weakref: bool = False) -> Dict[str, Any]:
         be included in the result
     :return: A dict of ``{attr_name: attr_value}``
     """
+    try:
+        attrs = static_vars(obj)
+    except TypeError:
+        attrs = {}
+    
     cls = type(obj)
     slots = get_slots(cls)
 
@@ -145,14 +164,11 @@ def get_attributes(obj: Any, include_weakref: bool = False) -> Dict[str, Any]:
         slots.pop('__weakref__', None)
 
     # FIXME: Is this the correct way to invoke the descriptor's __get__?
-    attrs = {name: slot.__get__(obj, cls) for name, slot in slots.items()}
-
-    try:
-        dict_ = static_vars(obj)
-    except TypeError:
-        pass
-    else:
-        attrs.update(dict_)
+    for name, slot in slots.items():
+        try:
+            attrs[name] = slot.__get__(obj, cls)
+        except AttributeError:
+            continue
 
     return attrs
 
@@ -160,9 +176,9 @@ def get_attributes(obj: Any, include_weakref: bool = False) -> Dict[str, Any]:
 def get_abstract_method_names(cls: type) -> Set[str]:
     """
     Returns a set of names of abstract methods (and other things) in the given
-    class. See also :func:`is_abstract`.
+    class. See also :func:`~introspection.is_abstract`.
 
-    .. versionadded: 1.4
+    .. versionadded:: 1.4
 
     :param cls: A class
     :return: The names of all abstract methods in that class
@@ -244,7 +260,7 @@ def fit_to_class(thing, cls: type, name: str = None):
 
     If ``name`` is not ``None``, ``thing`` will be renamed accordingly.
 
-    .. versionadded: 1.4
+    .. versionadded:: 1.4
 
     :param thing: The thing whose metadata should be updated
     :param cls: The class to copy the metadata from

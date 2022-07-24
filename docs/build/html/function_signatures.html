@@ -14,6 +14,7 @@
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/clipboard.min.js"></script>
     <script src="_static/copybutton.js"></script>
@@ -32,7 +33,7 @@
           <div class="body" role="main">
             
   <section id="function-signatures">
-<h1>Function Signatures<a class="headerlink" href="#function-signatures" title="Permalink to this headline">¶</a></h1>
+<h1>Function Signatures<a class="headerlink" href="#function-signatures" title="Permalink to this heading">¶</a></h1>
 <p>Function signatures are represented by the <a class="reference internal" href="#introspection.Signature" title="introspection.Signature"><code class="xref py py-class docutils literal notranslate"><span class="pre">Signature</span></code></a> class.
 Function parameters are represented by the <a class="reference internal" href="#introspection.Parameter" title="introspection.Parameter"><code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code></a> class.</p>
 <p>Signatures can be created through the <a class="reference internal" href="#introspection.signature" title="introspection.signature"><code class="xref py py-func docutils literal notranslate"><span class="pre">signature()</span></code></a> function or the <code class="docutils literal notranslate"><span class="pre">Signature</span></code> class’s various <code class="docutils literal notranslate"><span class="pre">from_X</span></code> methods - <a class="reference internal" href="#introspection.Signature.from_callable" title="introspection.Signature.from_callable"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Signature.from_callable()</span></code></a>, <a class="reference internal" href="#introspection.Signature.from_signature" title="introspection.Signature.from_signature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Signature.from_signature()</span></code></a>.</p>
@@ -42,7 +43,7 @@ Function parameters are represented by the <a class="reference internal" href="#
 <dl class="py class">
 <dt class="sig sig-object py" id="introspection.Signature">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">Signature</span></span><a class="headerlink" href="#introspection.Signature" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Signature" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">inspect.Signature</span></code></a></p>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Signature" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Signature</span></code></a></p>
 <p>An <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Signature" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">inspect.Signature</span></code></a> subclass that represents a function’s parameter signature and return annotation.</p>
 <p>Instances of this class are immutable.</p>
 <dl class="field-list simple">
@@ -142,19 +143,51 @@ functions defined in C extensions)</p></li>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="introspection.Signature.for_method">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">for_method</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">class_or_mro</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method_name</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">introspection.Parameter</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.Signature.for_method" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a combined signature for the method in the given class and all
+parent classes, assuming that all <cite>*args</cite> and <cite>**kwargs</cite> are passed to
+the parent method.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">A</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">method</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">foo</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+<span class="k">class</span> <span class="nc">B</span><span class="p">(</span><span class="n">A</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">method</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">bar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">method</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">Signature</span><span class="o">.</span><span class="n">for_method</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="s1">&#39;method&#39;</span><span class="p">))</span>
+<span class="c1"># (self, foo: int = 3, *, bar: bool = True) -&gt; None</span>
+</pre></div>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version 1.5.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="introspection.Signature.without_parameters">
 <span class="sig-name descname"><span class="pre">without_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">params_to_remove</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.Signature.without_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a copy of this signature with some parameters removed.</p>
-<p>Parameters can be referenced by their name or index.</p>
+<p>Parameters can be referenced by the following things:</p>
+<ol class="arabic simple">
+<li><p>index</p></li>
+<li><p>name</p></li>
+<li><p>kind</p></li>
+</ol>
 <p>Example:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sig</span> <span class="o">=</span> <span class="n">Signature</span><span class="p">([</span>
 <span class="gp">... </span>    <span class="n">Parameter</span><span class="p">(</span><span class="s1">&#39;foo&#39;</span><span class="p">),</span>
 <span class="gp">... </span>    <span class="n">Parameter</span><span class="p">(</span><span class="s1">&#39;bar&#39;</span><span class="p">),</span>
-<span class="gp">... </span>    <span class="n">Parameter</span><span class="p">(</span><span class="s1">&#39;baz&#39;</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">Parameter</span><span class="p">(</span><span class="s1">&#39;baz&#39;</span><span class="p">),</span>
 <span class="gp">... </span><span class="p">])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">sig</span><span class="o">.</span><span class="n">without_parameters</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;baz&#39;</span><span class="p">)</span>
 <span class="go">&lt;Signature (bar)&gt;</span>
 </pre></div>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 1.5: </span>Parameters can now be referenced by kind.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -171,7 +204,7 @@ functions defined in C extensions)</p></li>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="introspection.Signature.parameter_list">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">parameter_list</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#introspection.Parameter" title="introspection.Parameter"><span class="pre">introspection.Parameter</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#introspection.Signature.parameter_list" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">parameter_list</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.10)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#introspection.Parameter" title="introspection.Parameter"><span class="pre">Parameter</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#introspection.Signature.parameter_list" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a list of the signature’s parameters.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -217,7 +250,7 @@ functions defined in C extensions)</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="introspection.Signature.bind_partial">
 <span class="sig-name descname"><span class="pre">bind_partial</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.Signature.bind_partial" title="Permalink to this definition">¶</a></dt>
-<dd><p>Similar to <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Signature.bind" title="(in Python v3.10)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">inspect.Signature.bind()</span></code></a>, but returns a
+<dd><p>Similar to <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Signature.bind_partial" title="(in Python v3.10)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">inspect.Signature.bind_partial()</span></code></a>, but returns a
 <a class="reference internal" href="#introspection.BoundArguments" title="introspection.BoundArguments"><code class="xref py py-class docutils literal notranslate"><span class="pre">introspection.BoundArguments</span></code></a> object.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -257,7 +290,7 @@ in python code</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="introspection.Parameter">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">Parameter</span></span><a class="headerlink" href="#introspection.Parameter" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Parameter" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">inspect.Parameter</span></code></a></p>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Parameter" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code></a></p>
 <p>An <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.Parameter" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">inspect.Parameter</span></code></a> subclass that represents a function parameter.</p>
 <p>Instances of this class are immutable.</p>
 <p>This class adds a new special value for the <code class="docutils literal notranslate"><span class="pre">default</span></code> attribute: <a class="reference internal" href="#introspection.Parameter.missing" title="introspection.Parameter.missing"><code class="xref py py-attr docutils literal notranslate"><span class="pre">Parameter.missing</span></code></a>.</p>
@@ -389,8 +422,11 @@ how parameters are written in function signatures.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="introspection.BoundArguments">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">introspection.</span></span><span class="sig-name descname"><span class="pre">BoundArguments</span></span><a class="headerlink" href="#introspection.BoundArguments" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.BoundArguments" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">inspect.BoundArguments</span></code></a></p>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.BoundArguments" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">BoundArguments</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">MutableMapping</span></code></a></p>
 <p>Subclass of <a class="reference external" href="https://docs.python.org/3/library/inspect.html#inspect.BoundArguments" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">inspect.BoundArguments</span></code></a> with additional features.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version 1.4.</span></p>
+</div>
 <dl class="py method">
 <dt class="sig sig-object py" id="introspection.BoundArguments.from_bound_arguments">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_bound_arguments</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bound_args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.BoundArguments.from_bound_arguments" title="Permalink to this definition">¶</a></dt>
@@ -407,6 +443,14 @@ how parameters are written in function signatures.</p>
 <dd class="field-odd"><p>A new <code class="docutils literal notranslate"><span class="pre">BoundArguments</span></code> instance</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="introspection.BoundArguments.get_missing_parameter_names">
+<span class="sig-name descname"><span class="pre">get_missing_parameter_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">include_optional_parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.BoundArguments.get_missing_parameter_names" title="Permalink to this definition">¶</a></dt>
+<dd><div class="versionadded">
+<p><span class="versionmodified added">New in version 1.5.</span></p>
+</div>
 </dd></dl>
 
 <dl class="py method">
@@ -482,7 +526,7 @@ how parameters are written in function signatures.</p>
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script><div id="theme-switcher"></div>
+<script>document.getElementById('searchbox').style.display = "block"</script><div id="theme-switcher"></div>
         </div>
       </div>
       <div class="clearer"></div>
