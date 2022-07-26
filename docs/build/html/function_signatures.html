@@ -448,7 +448,22 @@ how parameters are written in function signatures.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="introspection.BoundArguments.get_missing_parameter_names">
 <span class="sig-name descname"><span class="pre">get_missing_parameter_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">include_optional_parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#introspection.BoundArguments.get_missing_parameter_names" title="Permalink to this definition">¶</a></dt>
-<dd><div class="versionadded">
+<dd><p>Returns the set of parameter names that were omitted in the call to
+<a class="reference internal" href="#introspection.Signature.bind_partial" title="introspection.Signature.bind_partial"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Signature.bind_partial()</span></code></a>.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">include_optional_parameters</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, parameters with a
+default value are included in the output.</p>
+<p><code class="docutils literal notranslate"><span class="pre">*args</span></code> and <code class="docutils literal notranslate"><span class="pre">**kwargs</span></code> are never included in the output.</p>
+<p>Examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">signature</span>
+<span class="go">(foo, bar, *args, baz=3)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bound_args</span> <span class="o">=</span> <span class="n">signature</span><span class="o">.</span><span class="n">bind_partial</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bound_args</span><span class="o">.</span><span class="n">get_missing_parameter_names</span><span class="p">()</span>
+<span class="go">{&#39;bar&#39;}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bound_args</span><span class="o">.</span><span class="n">get_missing_parameter_names</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+<span class="go">{&#39;bar&#39;, &#39;baz&#39;}</span>
+</pre></div>
+</div>
+<div class="versionadded">
 <p><span class="versionmodified added">New in version 1.5.</span></p>
 </div>
 </dd></dl>

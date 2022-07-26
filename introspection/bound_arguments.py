@@ -37,6 +37,24 @@ class BoundArguments(inspect.BoundArguments, collections.abc.MutableMapping):
     
     def get_missing_parameter_names(self, include_optional_parameters=False):
         """
+        Returns the set of parameter names that were omitted in the call to
+        :meth:`Signature.bind_partial`.
+
+        If ``include_optional_parameters`` is ``True``, parameters with a
+        default value are included in the output.
+
+        ``*args`` and ``**kwargs`` are never included in the output.
+
+        Examples::
+
+            >>> signature
+            (foo, bar, *args, baz=3)
+            >>> bound_args = signature.bind_partial(1)
+            >>> bound_args.get_missing_parameter_names()
+            {'bar'}
+            >>> bound_args.get_missing_parameter_names(True)
+            {'bar', 'baz'}
+
         .. versionadded:: 1.5
         """
         missing = self.signature.parameters.keys() - self.arguments.keys()
