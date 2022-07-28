@@ -7,7 +7,6 @@ import typing
 
 from ._compat import ForwardRef
 from ..classes import safe_is_subclass
-from .._utils import weakref_cache
 
 __all__ = [
     'is_type', 'is_typing_type', 'is_generic', 'is_variadic_generic', 'is_forwardref',
@@ -371,8 +370,9 @@ if sys.version_info >= (3, 7):
         if isinstance(cls, typing._GenericAlias):
             return True
         
-        if isinstance(cls, getattr(types, 'UnionType', ())):
-            return True
+        if sys.version_info >= (3, 10):
+            if cls is types.UnionType or isinstance(cls, types.UnionType):
+                return True
 
         try:
             module = cls.__module__
@@ -405,6 +405,9 @@ if sys.version_info >= (3, 9):
         return False
         
     def _is_parameterized_generic(cls):
+        if sys.version_info >= (3, 10) and isinstance(cls, types.UnionType):
+            return True
+        
         return isinstance(cls, (types.GenericAlias, typing._GenericAlias))
     
     def _get_generic_base_class(cls):
@@ -414,6 +417,9 @@ if sys.version_info >= (3, 9):
             
             if isinstance(cls, typing._AnnotatedAlias):
                 return typing.Annotated
+        
+        if sys.version_info >= (3, 10) and isinstance(cls, types.UnionType):
+            return typing.Union
 
         return cls.__origin__
 
@@ -500,7 +506,6 @@ def is_forwardref(type_: typing.Any, raising: bool = True):
     return False
 
 
-@weakref_cache
 def is_type(type_: typing.Any, allow_forwardref: bool = True) -> bool:
     """
     Returns whether ``type_`` is a type - i.e. something that is a valid type annotation.
@@ -537,7 +542,6 @@ def is_type(type_: typing.Any, allow_forwardref: bool = True) -> bool:
     return is_typing_type(type_, raising=False)
 
 
-@weakref_cache
 def is_typing_type(type_, raising=True) -> bool:
     """
     Returns whether ``type_`` is a type added by :pep:`0484`.
@@ -569,7 +573,6 @@ def is_typing_type(type_, raising=True) -> bool:
     raise TypeError(f"Expected a class or type, not {type_!r}")
 
 
-@weakref_cache
 def is_generic(type_, raising=True):
     """
     Returns whether ``type_`` is any kind of generic type,
@@ -601,7 +604,6 @@ def is_generic(type_, raising=True):
     return bool(params)
 
 
-@weakref_cache
 def is_variadic_generic(type_, raising=True):
     """
     Returns whether ``type_`` is a generic type that accepts an
@@ -619,15 +621,14 @@ def is_variadic_generic(type_, raising=True):
     """
     if not is_type(type_):
         if raising:
-            msg = "Expected a class or type, not {!r}"
-            raise TypeError(msg.format(type_)) from None
+            msg = f"Expected a class or type, not {type_!r}"
+            raise TypeError(msg) from None
         else:
             return False
 
     return _is_variadic_generic(type_)
 
 
-@weakref_cache
 def is_generic_base_class(type_, raising=True):
     """
     Returns whether ``type_`` is a generic base class,
@@ -658,7 +659,6 @@ def is_generic_base_class(type_, raising=True):
     return False
 
 
-@weakref_cache
 def is_parameterized_generic(type_, raising=True):
     """
     Returns whether ``type_`` is a generic type with some
@@ -677,15 +677,14 @@ def is_parameterized_generic(type_, raising=True):
     """
     if not is_type(type_):
         if raising:
-            msg = "Expected a class or type, not {!r}"
-            raise TypeError(msg.format(type_)) from None
+            msg = "Expected a class or type, not {type_!r}"
+            raise TypeError(msg) from None
         else:
             return False
 
     return _is_parameterized_generic(type_)
 
 
-@weakref_cache
 def is_fully_parameterized_generic(type_, raising=True):
     """
     Returns whether ``type_`` is a generic type with all
@@ -723,7 +722,6 @@ def is_fully_parameterized_generic(type_, raising=True):
         return False
 
 
-@weakref_cache
 def get_generic_base_class(type_):
     """
     Given a parameterized generic type as input, returns the corresponding
@@ -733,13 +731,17 @@ def get_generic_base_class(type_):
 
         >>> get_generic_base_class(typing.List[int])
         typing.List
+    
+    .. versionchanged:: 1.5.1
+        Now throws :exc:`ValueError` instead of :exc:`TypeError` if the input is
+        a type, but not generic.
 
     :param type_: A parameterized generic type
     :return: The input type without its type arguments
     """
-    if not is_parameterized_generic(type_, raising=False):
-        msg = '{} is not a parameterized generic and thus has no base'
-        raise TypeError(msg.format(type_))
+    if not is_parameterized_generic(type_, raising=True):
+        msg = f'{type_!r} is not a parameterized generic and thus has no base'
+        raise ValueError(msg)
 
     base = _get_generic_base_class(type_)
 
@@ -755,7 +757,6 @@ def get_generic_base_class(type_):
     return base
 
 
-@weakref_cache
 def get_type_arguments(type_):
     """
     Given a parameterized generic type as input, returns a tuple of its type
@@ -777,11 +778,15 @@ def get_type_arguments(type_):
         >>> typing.Optional[(int,)]
         TypeError: typing.Optional requires a single type. Got (<class 'int'>,).
 
+    .. versionchanged:: 1.5.1
+        Now throws :exc:`ValueError` instead of :exc:`TypeError` if the input is
+        a type, but not generic.
+
     :param type_: A parameterized generic type
     :return: The input type's type arguments
     """
-    if not is_parameterized_generic(type_, raising=False):
-        raise TypeError('{} is not a parameterized generic and thus has no type arguments'.format(type_))
+    if not is_parameterized_generic(type_, raising=True):
+        raise ValueError(f'{type_} is not a parameterized generic and thus has no type arguments')
 
     args = _get_type_args(type_)
 
@@ -800,7 +805,6 @@ def get_type_arguments(type_):
     return args
 
 
-@weakref_cache
 def get_type_parameters(type_):
     """
     Returns the TypeVars of a generic type.
@@ -877,7 +881,6 @@ def get_type_parameters(type_):
     raise ValueError(msg.format(type_))
 
 
-@weakref_cache
 def get_type_name(type_):
     """
     Returns the name of a type.

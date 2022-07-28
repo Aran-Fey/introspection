@@ -4,6 +4,7 @@ import pytest
 import collections.abc
 import re
 import sys
+import types
 import typing
 
 from introspection.typing import *
@@ -434,8 +435,15 @@ def test_get_generic_base_class(type_, expected):
 
 @pytest.mark.parametrize('type_', [
     3,
-    None,
     ...,
+])
+def test_get_generic_base_class_typeerror(type_):
+    with pytest.raises(TypeError):
+        get_generic_base_class(type_)
+
+
+@pytest.mark.parametrize('type_', [
+    None,
     'List',
     list,
     UnhashableClass,
@@ -448,8 +456,8 @@ def test_get_generic_base_class(type_, expected):
     typing.Callable,
     typing.Type,
 ])
-def test_get_generic_base_class_error(type_):
-    with pytest.raises(TypeError):
+def test_get_generic_base_class_valueerror(type_):
+    with pytest.raises(ValueError):
         get_generic_base_class(type_)
 
 
@@ -488,6 +496,14 @@ def test_get_type_arguments(type_, expected):
 
 @pytest.mark.parametrize('type_', [
     3,
+    ...,
+])
+def test_get_type_arguments_typeerror(type_):
+    with pytest.raises(TypeError):
+        get_type_arguments(type_)
+
+
+@pytest.mark.parametrize('type_', [
     None,
     'List',
     typing.List,
@@ -497,8 +513,8 @@ def test_get_type_arguments(type_, expected):
     typing.Callable,
     typing.Type,
 ])
-def test_get_type_arguments_error(type_):
-    with pytest.raises(TypeError):
+def test_get_type_arguments_valueerror(type_):
+    with pytest.raises(ValueError):
         get_type_arguments(type_)
 
 
@@ -816,39 +832,102 @@ if hasattr(typing, 'Annotated'):
 # === new Union syntax ===
 if sys.version_info >= (3, 10):
     @pytest.mark.parametrize('type_, expected', [
+        (types.UnionType, True),
         (str|None, True),
         (str|int, True),
         (str|T, True),
         ((str|T)[int], True),
     ])
-    def test_is_type_py310(type_, expected):
+    def test_uniontype_is_type(type_, expected):
         assert is_type(type_) == expected
 
     @pytest.mark.parametrize('type_, expected', [
+        (types.UnionType, True),
         (str|None, True),
         (str|int, True),
         (str|T, True),
         ((str|T)[int], True),
     ])
-    def test_is_typing_type_py310(type_, expected):
+    def test_uniontype_is_typing_type(type_, expected):
         assert is_typing_type(type_, raising=True) == expected
     
     @pytest.mark.parametrize('type_, expected', [
+        (types.UnionType, False),
         (str|None, False),
         (str|int, False),
         (str|T, True),
         (E|T|str, True),
         ((str|T)[int], False),
     ])
-    def test_is_generic_py310(type_, expected):
+    def test_uniontype_is_generic(type_, expected):
         assert is_generic(type_) == expected
     
     @pytest.mark.parametrize('type_, expected', [
+        (types.UnionType, False),
+        (str|None, False),
+        (str|int, False),
+        (str|T, False),
+        (E|T|str, False),
+        ((str|T)[int], False),
+    ])
+    def test_uniontype_is_variadic_generic(type_, expected):
+        assert is_variadic_generic(type_) == expected
+    
+    @pytest.mark.parametrize('type_, expected', [
+        (types.UnionType, False),
+        (str|None, True),
+        (str|int, True),
+        (str|T, True),
+        (E|T|str, True),
+        ((str|T)[int], True),
+    ])
+    def test_uniontype_is_parameterized_generic(type_, expected):
+        assert is_parameterized_generic(type_) == expected
+    
+    @pytest.mark.parametrize('type_, expected', [
+        (types.UnionType, False),
         (str|None, True),
         (str|int, True),
         (str|T, False),
         (E|T|str, False),
         ((str|T)[float], True),
     ])
-    def test_is_fully_parameterized_generic_py310(type_, expected):
+    def test_uniontype_is_fully_parameterized_generic(type_, expected):
         assert is_fully_parameterized_generic(type_) == expected
+    
+    @pytest.mark.parametrize('type_', [
+        str|int,
+        str|T,
+        E|T|str,
+        (str|T)[int],
+    ])
+    def test_uniontype_get_generic_base_class(type_):
+        assert get_generic_base_class(type_) is typing.Union
+    
+    @pytest.mark.parametrize('type_, expected', [
+        (str|None, (str,)),  # No None in the output since this is seen as an Optional[str]
+        (str|float, (str, float)),
+        (str|T, (str, T)),
+        (E|T|str, (E, T, str)),
+        ((str|T)[int], (str, int)),
+    ])
+    def test_uniontype_get_type_arguments(type_, expected):
+        assert get_type_arguments(type_) == expected
+    
+    def test_uniontype_get_type_arguments_error():
+        with pytest.raises(ValueError):
+            get_type_arguments(types.UnionType)
+    
+    @pytest.mark.parametrize('type_, expected', [
+        (str|None, ()),
+        (str|int, ()),
+        (str|T, (T,)),
+        (E|T|str, (E, T)),
+        ((str|T)[float], ()),
+    ])
+    def test_uniontype_get_type_parameters(type_, expected):
+        assert get_type_parameters(type_) == expected
+    
+    def test_uniontype_get_type_parameters_error():
+        with pytest.raises(ValueError):
+            get_type_parameters(types.UnionType)
