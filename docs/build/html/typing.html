@@ -324,6 +324,10 @@ generic base class.</p>
 <span class="go">typing.List</span>
 </pre></div>
 </div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 1.5.1: </span>Now throws <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.10)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code></a> instead of <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.10)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">TypeError</span></code></a> if the input is
+a type, but not generic.</p>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>type_</strong> – A parameterized generic type</p>
@@ -354,6 +358,10 @@ this function’s return value:</p>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">typing</span><span class="o">.</span><span class="n">Optional</span><span class="p">[(</span><span class="nb">int</span><span class="p">,)]</span>
 <span class="go">TypeError: typing.Optional requires a single type. Got (&lt;class &#39;int&#39;&gt;,).</span>
 </pre></div>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 1.5.1: </span>Now throws <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.10)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code></a> instead of <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.10)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">TypeError</span></code></a> if the input is
+a type, but not generic.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
