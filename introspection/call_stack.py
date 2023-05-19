@@ -1,6 +1,7 @@
 
 import types
-from typing import Iterable, Union
+from typing import *
+from typing_extensions import Self
 
 from .call_frame import CallFrame
 
@@ -33,7 +34,7 @@ class CallStack:
         self.__frames = [CallFrame.from_frame(frame) for frame in frames]
 
     @classmethod
-    def current(cls) -> 'CallStack':
+    def current(cls) -> Self:
         """
         Get the current call stack.
         """
@@ -41,7 +42,7 @@ class CallStack:
             return cls.from_frame(frame.parent)
 
     @classmethod
-    def from_frame(cls, frame) -> 'CallStack':
+    def from_frame(cls, frame: types.FrameType) -> Self:
         """
         Creates a ``CallStack`` containing ``frame`` and all its parents.
 
@@ -60,23 +61,23 @@ class CallStack:
 
         return cls(frames)
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.__frames.clear()
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[CallFrame]:
         return iter(self.__frames)
 
-    def __reversed__(self):
+    def __reversed__(self) -> Iterator[CallFrame]:
         return reversed(self.__frames)
 
-    def __getitem__(self, index):
+    def __getitem__(self, index) -> CallFrame:
         return self.__frames[index]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.__frames)
 
-    def __contains__(self, frame):
+    def __contains__(self, frame: CallFrame) -> bool:
         return frame in self.__frames

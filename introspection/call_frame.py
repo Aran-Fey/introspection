@@ -1,6 +1,10 @@
 
 import inspect
 import types
+from typing import *
+from typing_extensions import Self
+
+from .errors import NameNotAccessibleFromFrame
 
 __all__ = ['CallFrame']
 
@@ -24,7 +28,7 @@ class CallFrame:
     """
     __slots__ = ('__frame',)
 
-    def __init__(self, frame):
+    def __init__(self, frame: types.FrameType):
         """
         Creates a new ``CallFrame`` from a ``CallFrame`` or :data:`types.FrameType` object.
 
@@ -36,14 +40,14 @@ class CallFrame:
         self.__frame = frame
 
     @classmethod
-    def current(cls) -> 'CallFrame':
+    def current(cls) -> Self:
         """
         Retrieves the current call frame.
         """
         return cls(inspect.currentframe().f_back)
 
     @classmethod
-    def from_frame(cls, frame):
+    def from_frame(cls, frame: types.FrameType) -> Self:
         """
         Creates a new ``CallFrame`` from a ``CallFrame`` or :data:`types.FrameType` object.
 
@@ -54,7 +58,7 @@ class CallFrame:
     def __getattr__(self, attr):
         return getattr(self.__frame, attr)
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if isinstance(other, __class__):
             return self.__frame == other.__frame
         elif isinstance(other, types.FrameType):
@@ -62,14 +66,14 @@ class CallFrame:
         else:
             return NotImplemented
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.__frame = None
 
     @property
-    def parent(self):
+    def parent(self) -> Optional[Self]:
         """
         Returns the next frame one level higher on the call stack.
         """
@@ -81,42 +85,42 @@ class CallFrame:
         return cls(parent)
 
     @property
-    def builtins(self):
+    def builtins(self) -> Dict[str, Any]:
         """
         Returns the builtins seen by this frame
         """
         return self.__frame.f_builtins
 
     @property
-    def globals(self):
+    def globals(self) -> Dict[str, Any]:
         """
         Returns the global scope seen by this frame
         """
         return self.__frame.f_globals
 
     @property
-    def locals(self):
+    def locals(self) -> Dict[str, Any]:
         """
         Returns the frame's local variable scope
         """
         return self.__frame.f_locals
 
     @property
-    def code_object(self):
+    def code_object(self) -> types.CodeType:
         """
         Returns the code object being executed in this frame
         """
         return self.__frame.f_code
 
     @property
-    def file_name(self):
+    def file_name(self) -> str:
         """
         Returns the name of the file in which this frame's code was defined
         """
         return self.code_object.co_filename
 
     @property
-    def scope_name(self):
+    def scope_name(self) -> str:
         """
         Returns the name of the scope in which this frame's code was defined.
         In case of a function, the function's name.
@@ -125,7 +129,7 @@ class CallFrame:
         """
         return self.code_object.co_name
 
-    def resolve_name(self, name: str):
+    def resolve_name(self, name: str) -> object:
         """
         Resolves a variable name, returning the variable's value.
 
@@ -136,7 +140,7 @@ class CallFrame:
 
         :param name: The name of the variable you want to look up
         :return: The value mapped to the given name
-        :raises NameError: If no matching variable is found
+        :raises NameNotAccessibleFromFrame: If no matching variable is found
         """
         try:
             return self.locals[name]
@@ -152,10 +156,10 @@ class CallFrame:
             return self.builtins[name]
         except KeyError:
             pass
+        
+        raise NameNotAccessibleFromFrame(name, self)
 
-        raise NameError(f"Name {name!r} not visible from frame {self!r}")
-
-    def get_surrounding_function(self):
+    def get_surrounding_function(self) -> Optional[Callable]:
         """
         Finds and returns the function in which the code of this frame was defined.
 

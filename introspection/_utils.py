@@ -1,9 +1,4 @@
 
-import functools
-import inspect
-import weakref
-
-
 def eval_or_discard(mapping, namespace=None):
     result = {}
 

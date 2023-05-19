@@ -2,12 +2,14 @@
 import collections
 import inspect
 import functools
-import typing
-from typing import Dict, Any, Set, Iterator, Tuple
+from typing import *
+from typing_extensions import Literal, TypeGuard
 
 import sentinel
 
 from .misc import static_vars, is_abstract, static_mro
+from .errors import *
+from .types import Type_, Slot, Function
 
 __all__ = [
     'iter_subclasses', 'get_subclasses', 'get_attributes', 'get_abstract_method_names', 'safe_is_subclass',
@@ -121,7 +123,7 @@ def get_slot_names(cls: type) -> Set[str]:
     return set(get_slot_counts(cls))
 
 
-def get_slots(cls: type) -> Dict[str, Any]:
+def get_slots(cls: type) -> Dict[str, Slot]:
     """
     Collects all of the given class's ``__slots__``, returning a
     dict of the form ``{slot_name: slot_descriptor}``.
@@ -140,7 +142,7 @@ def get_slots(cls: type) -> Dict[str, Any]:
     return slots_dict
 
 
-def get_attributes(obj: Any, include_weakref: bool = False) -> Dict[str, Any]:
+def get_attributes(obj: Any, include_weakref: bool = False) -> Dict[str, object]:
     """
     Returns a dictionary of all of ``obj``'s attributes. This includes
     attributes stored in the object's ``__dict__`` as well as in ``__slots__``.
@@ -152,7 +154,7 @@ def get_attributes(obj: Any, include_weakref: bool = False) -> Dict[str, Any]:
     """
     try:
         attrs = static_vars(obj)
-    except TypeError:
+    except ObjectHasNoDict:
         attrs = {}
     
     cls = type(obj)
@@ -163,7 +165,7 @@ def get_attributes(obj: Any, include_weakref: bool = False) -> Dict[str, Any]:
     if not include_weakref:
         slots.pop('__weakref__', None)
 
-    # FIXME: Is this the correct way to invoke the descriptor's __get__?
+    # TODO: Is this the correct way to invoke the descriptor's __get__?
     for name, slot in slots.items():
         try:
             attrs[name] = slot.__get__(obj, cls)
@@ -198,7 +200,7 @@ def get_abstract_method_names(cls: type) -> Set[str]:
     return result
 
 
-def safe_is_subclass(subclass, superclass) -> bool:
+def safe_is_subclass(subclass: Type_, superclass: Class) -> TypeGuard[Type[Class]]:
     """
     A clone of :func:`issubclass` that returns ``False`` instead of throwing a
     :exc:`TypeError`.
@@ -210,16 +212,12 @@ def safe_is_subclass(subclass, superclass) -> bool:
     :return: Whether ``subclass`` is a subclass of ``superclass``
     """
     try:
-        return issubclass(subclass, superclass)
+        return issubclass(subclass, superclass)  # type: ignore
     except TypeError:
         return False
 
 
-def get_implicit_method_type(method_name: str) -> (
-        typing.Literal[None, classmethod, staticmethod]
-        if hasattr(typing, 'Literal') else
-        Any
-    ):
+def get_implicit_method_type(method_name: str) -> Literal[None, classmethod, staticmethod]:
     """
     Given the name of a method as input, returns what kind of method python automatically
     converts it to. The return value can be :class:`staticmethod`, :class:`classmethod`,
@@ -247,7 +245,7 @@ def get_implicit_method_type(method_name: str) -> (
     return TYPES_BY_NAME.get(method_name)
 
 
-def fit_to_class(thing, cls: type, name: str = None):
+def fit_to_class(thing: Union[type, Function], cls: type, name: Optional[str] = None) -> None:
     r"""
     Updates ``thing``\ 's metadata to match ``cls``\ 's.
 
@@ -288,11 +286,11 @@ def fit_to_class(thing, cls: type, name: str = None):
 
 
 def add_method_to_class(
-        method,
-        cls: type,
-        name: str = None,
-        method_type=auto,
-    ) -> None:
+    method: Callable,
+    cls: type,
+    name: Optional[str] = None,
+    method_type: Union[None, Type[staticmethod], Type[classmethod]] = auto,
+) -> None:
     r"""
     Adds ``method`` to ``cls``\ 's namespace under the given ``name``.
 
@@ -325,7 +323,12 @@ def add_method_to_class(
     setattr(cls, method_name, method)
 
 
-def wrap_method(method, cls, name=None, method_type=auto):
+def wrap_method(
+    method: Callable,
+    cls: type,
+    name: Optional[str] = None,
+    method_type: Union[None, Type[staticmethod], Type[classmethod]] = auto,
+) -> None:
     r"""
     Adds ``method`` to ``cls``\ 's namespace under the given ``name``,
     wrapping the existing method (if one exists).
@@ -437,7 +440,7 @@ def wrap_method(method, cls, name=None, method_type=auto):
     :param method_type: One of :class:`staticmethod`, :class:`classmethod`, or ``None`` (or omitted)
     """
     if not isinstance(cls, type):
-        raise TypeError(f"'cls' argument must be a class, not {cls!r}")
+        raise InvalidArgumentType('cls', cls, type)
 
     if name is None:
         name = method.__name__

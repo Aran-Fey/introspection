@@ -4,28 +4,32 @@ import ordered_set
 import sys
 import types
 import typing
+import typing_extensions
 
-from ._compat import ForwardRef
+from .i_hate_circular_imports import parameterize
 from ..classes import safe_is_subclass
+from ..types import ForwardRef, Type_
+from ..errors import *
 
 __all__ = [
     'is_type', 'is_typing_type', 'is_generic', 'is_variadic_generic', 'is_forwardref',
     'is_generic_base_class', 'is_parameterized_generic', 'is_fully_parameterized_generic',
-    'get_generic_base_class', 'get_type_arguments', 'get_type_parameters', 'get_type_name',
+    'get_generic_base_class', 'get_type_arguments', 'get_type_parameters', 'get_type_argument_for',
+    'get_type_name', 'get_parent_types',
 ]
 
 
 NoneType = type(None)
 
 
-def is_in(needle, haystack):
+def _is_in(needle, haystack):
     try:
         return needle in haystack
     except TypeError:
         return False
 
 
-def resolve_dotted_name(name):
+def _resolve_dotted_name(name):
     """
     ::
         
@@ -41,7 +45,7 @@ def resolve_dotted_name(name):
     return obj
 
 
-def resolve_dotted_names(names):
+def _resolve_dotted_names(names):
     """
     ::
         
@@ -56,7 +60,7 @@ def resolve_dotted_names(names):
         
         for name, value in names.items():
             try:
-                key = resolve_dotted_name(name)
+                key = _resolve_dotted_name(name)
             except AttributeError:
                 continue
             
@@ -66,7 +70,7 @@ def resolve_dotted_names(names):
         
         for name in names:
             try:
-                value = resolve_dotted_name(name)
+                value = _resolve_dotted_name(name)
             except AttributeError:
                 continue
             
@@ -105,7 +109,7 @@ if sys.version_info >= (3, 9):
     VARIADIC_GENERICS.add(tuple)
 
 def _is_variadic_generic(type_):
-    return is_in(type_, VARIADIC_GENERICS)
+    return _is_in(type_, VARIADIC_GENERICS)
 
 
 GENERIC_INHERITANCE = {
@@ -241,7 +245,7 @@ if sys.version_info >= (3, 9):
         're.Match': [('Generic', typing.AnyStr)],
         're.Pattern': [('Generic', typing.AnyStr)],
     })
-GENERIC_INHERITANCE = resolve_dotted_names(GENERIC_INHERITANCE)
+GENERIC_INHERITANCE = _resolve_dotted_names(GENERIC_INHERITANCE)
 
 
 PARAMETERIZED_GENERIC_META = (
@@ -249,7 +253,7 @@ PARAMETERIZED_GENERIC_META = (
     'typing._GenericAlias',  # py3.8+
     'typing.GenericMeta',  # py3.5-3.7
 )
-PARAMETERIZED_GENERIC_META = resolve_dotted_names(PARAMETERIZED_GENERIC_META)
+PARAMETERIZED_GENERIC_META = _resolve_dotted_names(PARAMETERIZED_GENERIC_META)
 
 def _get_type_parameters(type_):
     if sys.version_info >= (3, 10):
@@ -287,12 +291,9 @@ def _get_type_parameters(type_):
     return None
 
 PARAMLESS_SUBSCRIPTABLES = {
-    'Literal',
-}
-PARAMLESS_SUBSCRIPTABLES = {
-    getattr(typing, attr)
-    for attr in PARAMLESS_SUBSCRIPTABLES
-    if hasattr(typing, attr)
+    typing.Generic,
+    typing_extensions.Protocol,
+    typing_extensions.Literal,
 }
 
 def _is_generic_base_class(cls):
@@ -478,7 +479,7 @@ def _is_regular_type(type_):
     return False
 
 
-def is_forwardref(type_: typing.Any, raising: bool = True):
+def is_forwardref(type_: Type_, raising: bool = True) -> bool:
     """
     Returns whether ``type_`` is a forward reference.
     
@@ -494,14 +495,14 @@ def is_forwardref(type_: typing.Any, raising: bool = True):
     .. versionadded:: 1.2
     
     :param type_: The object to examine
-    :param raising: Whether to throw a ``TypeError`` if ``type_`` is not a type
+    :param raising: Whether to throw a :exc:`NotAType` exception if ``type_`` is not a type
     :return: Whether the object is a class or type (or forward reference)
     """
     if isinstance(type_, (str, ForwardRef)):
         return True
     
     if raising and not is_type(type_):
-        raise TypeError(f"Expected a class or type, not {type_!r}")
+        raise NotAType('type_', type_)
     
     return False
 
@@ -542,7 +543,7 @@ def is_type(type_: typing.Any, allow_forwardref: bool = True) -> bool:
     return is_typing_type(type_, raising=False)
 
 
-def is_typing_type(type_, raising=True) -> bool:
+def is_typing_type(type_: Type_, raising: bool = True) -> bool:
     """
     Returns whether ``type_`` is a type added by :pep:`0484`.
     This includes parameterized generics and all types defined in
@@ -550,13 +551,13 @@ def is_typing_type(type_, raising=True) -> bool:
     *except* for :class:`typing.ForwardRef`.
 
     If ``type_`` is not a type as defined by :func:`~introspection.typing.is_type`
-    and ``raising`` is ``True``, a ``TypeError`` is raised.
+    and ``raising`` is ``True``, a :exc:`NotAType` exception is raised.
     (Otherwise, ``False`` is returned.)
 
     :param type_: The object to examine
-    :param raising: Whether to throw a ``TypeError`` if ``type_`` is not a type
+    :param raising: Whether to throw :exc:`NotAType` if ``type_`` is not a type
     :return: Whether the object is a ``typing`` type
-    :raises TypeError: If ``type_`` is not a type and ``raising`` is ``True``
+    :raises NotAType: If ``type_`` is not a type and ``raising`` is ``True``
     """
     if is_forwardref(type_, raising=False):
         return False
@@ -570,32 +571,35 @@ def is_typing_type(type_, raising=True) -> bool:
     if not raising or _is_regular_type(type_):
         return False
 
-    raise TypeError(f"Expected a class or type, not {type_!r}")
+    raise NotAType('type_', type_)
 
 
-def is_generic(type_, raising=True):
+def is_generic(type_: Type_, raising: bool = True) -> bool:
     """
-    Returns whether ``type_`` is any kind of generic type,
-    for example ``List``, ``List[T]`` or even ``List[Tuple[T]]``.
-    This includes "special" types like ``Union``, ``Tuple``
-    and ``Literal`` - anything that's subscriptable is
-    considered generic, except for :class:`typing.Generic` itself.
+    Returns whether ``type_`` is any kind of generic type, for example ``List``,
+    ``List[T]`` or even ``List[Tuple[T]]``. This includes "special" types like
+    ``Union``, ``Tuple`` and ``Literal`` - anything that's subscriptable is
+    considered generic.
 
-    If ``type_`` is not a type as defined by :func:`~introspection.typing.is_type`
-    and ``raising`` is ``True``, a ``TypeError`` is raised.
-    (Otherwise, ``False`` is returned.)
+    If ``type_`` is not a type as defined by
+    :func:`~introspection.typing.is_type` and ``raising`` is ``True``,
+    :exc:`NotAType` is raised. (Otherwise, ``False`` is returned.)
+
+    .. versionchanged:: 1.6
+        This function now returns ``True`` for :class:`typing.Generic` and
+        `typing.Protocol`.
 
     :param type_: The object to examine
-    :param raising: Whether to throw a ``TypeError`` if ``type_`` is not a type
+    :param raising: Whether to throw :exc:`NotAType` if ``type_`` is not a type
     :return: Whether the object is a generic type
-    :raises TypeError: If ``type_`` is not a type and ``raising`` is ``True``
+    :raises NotAType: If ``type_`` is not a type and ``raising`` is ``True``
     """
 
     try:
         params = get_type_parameters(type_)
-    except ValueError:
-        return is_in(type_, PARAMLESS_SUBSCRIPTABLES)
-    except TypeError:
+    except NotAGeneric:
+        return _is_in(type_, PARAMLESS_SUBSCRIPTABLES)
+    except NotAType:
         if raising:
             raise
         
@@ -604,53 +608,52 @@ def is_generic(type_, raising=True):
     return bool(params)
 
 
-def is_variadic_generic(type_, raising=True):
+def is_variadic_generic(type_: Type_, raising: bool = True) -> bool:
     """
     Returns whether ``type_`` is a generic type that accepts an
     arbitrary number of type arguments. (e.g. ``Union``, ``Tuple``,
     ``Literal``, etc.)
 
-    If ``type_`` is not a type as defined by :func:`~introspection.typing.is_type`
-    and ``raising`` is ``True``, a ``TypeError`` is raised.
-    (Otherwise, ``False`` is returned.)
+    If ``type_`` is not a type as defined by
+    :func:`~introspection.typing.is_type` and ``raising`` is ``True``,
+    :exc:`NotAType` is raised. (Otherwise, ``False`` is returned.)
 
     :param type_: The object to examine
-    :param raising: Whether to throw a ``TypeError`` if ``type_`` is not a type
+    :param raising: Whether to throw :exc:`NotAType` if ``type_`` is not a type
     :return: Whether the object is a variadic generic type
-    :raises TypeError: If ``type_`` is not a type and ``raising`` is ``True``
+    :raises NotAType: If ``type_`` is not a type and ``raising`` is ``True``
     """
     if not is_type(type_):
         if raising:
-            msg = f"Expected a class or type, not {type_!r}"
-            raise TypeError(msg) from None
+            raise NotAType('type_', type_) from None
         else:
             return False
 
     return _is_variadic_generic(type_)
 
 
-def is_generic_base_class(type_, raising=True):
+def is_generic_base_class(type_: Type_, raising: bool = True) -> bool:
     """
     Returns whether ``type_`` is a generic base class,
     for example ``List`` (but not ``List[int]`` or
     ``List[T]``).
 
-    If ``type_`` is not a type as defined by :func:`~introspection.typing.is_type`
-    and ``raising`` is ``True``, a ``TypeError`` is raised.
-    (Otherwise, ``False`` is returned.)
+    If ``type_`` is not a type as defined by
+    :func:`~introspection.typing.is_type` and ``raising`` is ``True``,
+    :exc:`NotAType` is raised. (Otherwise, ``False`` is returned.)
 
     :param type_: The object to examine
-    :param raising: Whether to throw a ``TypeError`` on invalid input
+    :param raising: Whether to throw :exc:`NotAType` on invalid input
     :return: Whether the object is a generic class with no type arguments
-    :raises TypeError: If ``type_`` is not a type and ``raising`` is ``True``
+    :raises NotAType: If ``type_`` is not a type and ``raising`` is ``True``
     """
-    if is_in(type_, PARAMLESS_SUBSCRIPTABLES):
+    if _is_in(type_, PARAMLESS_SUBSCRIPTABLES):
         return True
     
     if not is_generic(type_, raising=raising):
         return False
     
-    if is_in(type_, GENERIC_INHERITANCE):
+    if _is_in(type_, GENERIC_INHERITANCE):
         return True
     
     if _is_generic_base_class(type_):
@@ -659,37 +662,36 @@ def is_generic_base_class(type_, raising=True):
     return False
 
 
-def is_parameterized_generic(type_, raising=True):
+def is_parameterized_generic(type_: Type_, raising: bool = True) -> bool:
     """
     Returns whether ``type_`` is a generic type with some
     type arguments supplied, for example ``List[int]``
     or ``List[T]`` (but not ``List``) - in other words, a
     :class:`types.GenericAlias`.
 
-    If ``type_`` is not a type as defined by :func:`~introspection.typing.is_type`
-    and ``raising`` is ``True``, a ``TypeError`` is raised.
-    (Otherwise, ``False`` is returned.)
+    If ``type_`` is not a type as defined by
+    :func:`~introspection.typing.is_type` and ``raising`` is ``True``,
+    :exc:`NotAType` is raised. (Otherwise, ``False`` is returned.)
 
     :param type_: The object to examine
-    :param raising: Whether to throw a ``TypeError`` on invalid input
+    :param raising: Whether to throw :exc:`NotAType` on invalid input
     :return: Whether the object is a generic type with type arguments
-    :raises TypeError: If ``type_`` is not a type and ``raising`` is ``True``
+    :raises NotAType: If ``type_`` is not a type and ``raising`` is ``True``
     """
     if not is_type(type_):
         if raising:
-            msg = "Expected a class or type, not {type_!r}"
-            raise TypeError(msg) from None
-        else:
-            return False
+            raise NotAType('type_', type_)
+        
+        return False
 
     return _is_parameterized_generic(type_)
 
 
-def is_fully_parameterized_generic(type_, raising=True):
+def is_fully_parameterized_generic(type_: Type_, raising: bool = True) -> bool:
     """
-    Returns whether ``type_`` is a generic type with all
-    type arguments supplied, for example ``List[int]``
-    (but not ``List[T]`` or ``List[Tuple[T]]``).
+    Returns whether ``type_`` is a generic type with all type arguments
+    supplied, for example ``List[int]`` (but not ``List[T]`` or
+    ``List[Tuple[T]]``).
     
     Unlike :func:`is_parameterized_generic`, which will only ever return
     ``True`` for :class:`types.GenericAlias` objects, this function returns
@@ -701,28 +703,27 @@ def is_fully_parameterized_generic(type_, raising=True):
         >>> is_fully_parameterized_generic(typing.ByteString)
         True
 
-    If ``type_`` is not a type as defined by :func:`~introspection.typing.is_type`
-    and ``raising`` is ``True``, a ``TypeError`` is raised.
-    (Otherwise, ``False`` is returned.)
+    If ``type_`` is not a type as defined by
+    :func:`~introspection.typing.is_type` and ``raising`` is ``True``,
+    :exc:`NotAType` is raised. (Otherwise, ``False`` is returned.)
 
     :param type_: The object to examine
-    :param raising: Whether to throw a ``TypeError`` on invalid input
+    :param raising: Whether to throw :exc:`NotAType` on invalid input
     :return: Whether the object is a generic type with type arguments
-    :raises TypeError: If ``type_`` is not a type and ``raising`` is ``True``
-    :raises ValueError: If ``type_`` is not a type and ``raising`` is ``True``
+    :raises NotAType: If ``type_`` is not a type and ``raising`` is ``True``
     """
     try:
         return get_type_parameters(type_) == ()
     except ValueError:
         return False
-    except TypeError:
+    except NotAType:
         if raising:
             raise
         
         return False
 
 
-def get_generic_base_class(type_):
+def get_generic_base_class(type_: Type_) -> Type_:
     """
     Given a parameterized generic type as input, returns the corresponding
     generic base class.
@@ -738,10 +739,10 @@ def get_generic_base_class(type_):
 
     :param type_: A parameterized generic type
     :return: The input type without its type arguments
+    :raises NotAParameterizedGeneric: If the input isn't a parameterized generic
     """
     if not is_parameterized_generic(type_, raising=True):
-        msg = f'{type_!r} is not a parameterized generic and thus has no base'
-        raise ValueError(msg)
+        raise NotAParameterizedGeneric('type_', type_)
 
     base = _get_generic_base_class(type_)
 
@@ -757,7 +758,7 @@ def get_generic_base_class(type_):
     return base
 
 
-def get_type_arguments(type_):
+def get_type_arguments(type_: Type_) -> typing.Tuple[object]:
     """
     Given a parameterized generic type as input, returns a tuple of its type
     arguments.
@@ -786,7 +787,7 @@ def get_type_arguments(type_):
     :return: The input type's type arguments
     """
     if not is_parameterized_generic(type_, raising=True):
-        raise ValueError(f'{type_} is not a parameterized generic and thus has no type arguments')
+        raise NotAParameterizedGeneric('type_', type_)
 
     args = _get_type_args(type_)
 
@@ -805,12 +806,14 @@ def get_type_arguments(type_):
     return args
 
 
-def get_type_parameters(type_):
+def get_type_parameters(type_: Type_) -> typing.Tuple[typing.TypeVar]:
     """
     Returns the TypeVars of a generic type.
 
-    If ``type_`` is not a type, ``TypeError`` is raised.
-    If ``type_`` is a type, but not generic, a ``ValueError`` is raised.
+    If ``type_`` is not a type, :exc:`NotAType` is raised.
+
+    If ``type_`` is a type, but not generic, :exc:`NotAGeneric` is raised.
+
     If ``type_`` is a fully parameterized generic class (like
     :class:`typing.ByteString`), an empty tuple is returned.
 
@@ -825,22 +828,20 @@ def get_type_parameters(type_):
         >>> get_type_parameters(ByteString)
         ()
 
-    In most cases, the returned TypeVars correspond directly
-    to the type parameters the type accepts. However, some
-    special cases exist. Firstly, there are generics which
-    accept any number of type arguments, like ``Tuple``.
-    Calling ``get_type_parameters`` on these will only return
-    a single ``TypeVar``::
+    In most cases, the returned TypeVars correspond directly to the type
+    parameters the type accepts. However, some special cases exist. Firstly,
+    there are generics which accept any number of type arguments, like
+    ``Tuple``. Calling ``get_type_parameters`` on these will only return a
+    single ``TypeVar``::
 
         >>> get_type_parameters(Union)
         (+T_co,)
         >>> get_type_parameters(Tuple)
         (+T_co,)
 
-    Secondly, there are special generic types that the
-    ``typing`` module internally doesn't implement with
-    TypeVars. Despite this, ``get_type_parameters`` still
-    supports them::
+    Secondly, there are special generic types that the ``typing`` module
+    internally doesn't implement with TypeVars. Despite this,
+    ``get_type_parameters`` still supports them::
 
         >>> get_type_parameters(Optional)
         (+T_co,)
@@ -850,15 +851,14 @@ def get_type_parameters(type_):
         (-A_contra, +R_co)
     
     .. versionchanged:: 1.2
-       Now throws :exc:`ValueError` instead of :exc:`TypeError` if the
-       input is a type, but not generic.
+        Now throws :exc:`ValueError` instead of :exc:`TypeError` if the
+        input is a type, but not generic.
 
-    :raises TypeError: If ``type_`` is not a type
-    :raises ValueError: If ``type_`` is a type, but not generic
+    :raises NotAType: If ``type_`` is not a type
+    :raises NotAGeneric: If ``type_`` is a type, but not generic
     """
     if not is_type(type_):
-        msg = "Expected a class or type, not {!r}"
-        raise TypeError(msg.format(type_))
+        raise NotAType('type_', type_)
     
     try:
         bases = GENERIC_INHERITANCE[type_]
@@ -877,11 +877,146 @@ def get_type_parameters(type_):
     if params is not None:
         return params
     
-    msg = "{!r} is not a generic type and thus has no type parameters"
-    raise ValueError(msg.format(type_))
+    raise NotAGeneric('type_', type_)
 
 
-def get_type_name(type_):
+def get_type_argument_for(
+    type_: Type_,
+    base_type: Type_,
+    type_var: typing.Optional[typing.TypeVar] = None,
+    *,
+    assume_any: bool = True,
+    allow_typevar: bool = False,
+) -> Type_:
+    """
+    Returns the value of a specific TypeVar, given a parameterized type and a
+    generic type as input.
+
+    Example::
+
+        class GenericIO(typing.Generic[I,O]):
+            ...
+
+        class StrToBytesIO(GenericIO[str,bytes]):
+            ...
+        
+        assert get_type_argument_for(StrToBytesIO, GenericIO, I) == str
+        assert get_type_argument_for(StrToBytesIO, GenericIO, O) == bytes
+
+    If the generic type only has 1 TypeVar, the ``type_var`` argument can be
+    omitted::
+
+        >>> get_type_argument_for(list[int], collections.abc.Iterable)
+        <class 'int'>
+    
+    If the TypeVar doesn't have a value and ``assume_any`` is ``True``,
+    ``typing.Any`` is returned. If ``assume_any`` is ``False``, a
+    :exc:`ValueError` is raised instead. Example::
+
+        from collections.abc import Sequence
+
+        class MySequence(Sequence):
+            ...
+        
+        assert get_type_argument_for(MySequence, Sequence, assume_any=True) is typing.Any
+    
+    If the value of the TypeVar is another TypeVar and ``allow_typevar`` is
+    ``False``, a :exc:`ValueError` is raised. If ``allow_typevar`` is ``True``,
+    the TypeVar is returned instead. Example::
+
+        >>> get_type_argument_for(list[T], list, allow_typevar=True)
+        T
+    
+    .. versionadded:: 1.6
+    """
+    # We'll climb the inheritance tree until we reach base_type, keeping track
+    # of all the type parameters and arguments in our stack. For example, if the
+    # class hierarchy is:
+    #
+    #     class Foo(Generic[A,B]): ...
+    #     class Bar(Foo[int,T]): ...
+    #     class Qux(Bar[str]): ...
+    #
+    # then the stack for type_=Qux and base_type=Foo will be:
+    #
+    #     [
+    #          ([T], [str]),
+    #          ([A,B], [int,T]),
+    #     ]
+    #
+    # Once the stack is complete, we loop over it backwards while keeping track
+    # of the current value of our TypeVar. For example, if type_var=B:
+    #
+    # 1. The argument for type_var=B is T. Since T is a TypeVar, we set
+    #    type_var=T and continue.
+    # 2. The argument for type_var=T is str. Since this isn't a TypeVar, we
+    #    return str.
+    stack = []
+
+    if is_parameterized_generic(type_):
+        cls = get_generic_base_class(type_)
+
+        args = get_type_arguments(type_)
+        params = get_type_parameters(cls)
+
+        stack.append((params, args))
+    else:
+        cls = type_
+    
+    while cls is not base_type:
+        # Find a parent class that inherits from base_type. (If there's more
+        # than one such class, it shouldn't matter which one we pick.)
+        for base in get_parent_types(cls):
+            if is_parameterized_generic(base):
+                cls = get_generic_base_class(base)
+                if not safe_is_subclass(cls, base_type):
+                    continue
+
+                args = get_type_arguments(base)
+                break
+            elif safe_is_subclass(base, base_type):
+                cls = base
+                args = ()
+                break
+        else:
+            raise SubTypeRequired(type_, base_type)
+        
+        params = get_type_parameters(cls)
+        stack.append((params, args))
+    
+    if type_var is None:
+        params, _ = stack[-1]
+
+        if len(params) > 1:
+            raise ArgumentRequired('type_var', reason=f'{base_type!r} has more than 1 TypeVar')
+        
+        type_var = params[0]
+    
+    current_var = type_var
+    
+    for params, args in reversed(stack):
+        i = params.index(current_var)
+
+        try:
+            arg = args[i]
+        except IndexError:
+            if assume_any:
+                return typing.Any
+            
+            raise TypeVarNotSet(type_var, base_type, type_)
+
+        if not isinstance(arg, typing.TypeVar):
+            return arg
+        
+        current_var = arg
+    
+    if not allow_typevar:
+        raise NoConcreteTypeForTypeVar(type_var, base_type, type_, current_var)
+    
+    return current_var
+
+
+def get_type_name(type_: Type_) -> str:
     """
     Returns the name of a type.
 
@@ -894,20 +1029,76 @@ def get_type_name(type_):
 
     :param type_: The type whose name to retrieve
     :return: The type's name
-    :raises TypeError: If ``type_`` isn't a type or is a parameterized generic type
+    :raises NotAType: If ``type_`` isn't a type
+    :raises GenericMustNotBeParameterized: If ``type_`` is a parameterized
+        generic type
+    :raises ForwardRefsDontHaveNames: If ``type_`` is a forward reference
     """
     if not is_type(type_):
-        msg = "Expected a class or type, not {!r}"
-        raise TypeError(msg.format(type_))
+        raise NotAType('type_', type_)
     
     if isinstance(type_, str):
-        raise TypeError("Forward annotations don't have names")
+        raise ForwardRefsDontHaveNames('type_', type_)
 
     if is_parameterized_generic(type_, raising=False):
-        msg = "get_type_name argument must not be a parameterized generic type (argument is {!r})"
-        raise TypeError(msg.format(type_))
+        raise GenericMustNotBeParameterized('type_', type_)
 
     if type_ is None:
         type_ = type(type_)
 
     return _get_name(type_)
+
+
+def get_parent_types(type_: Type_) -> typing.Tuple[Type_]:
+    """
+    Given a type as input, returns a tuple of its parent types - including type
+    arguments, if it's a generic type.
+
+    Examples::
+
+        >>> get_parent_types(int)
+        (<class 'float'>,)
+        >>> get_parent_types(re.Pattern)
+        (typing.Generic[typing.AnyStr],)
+
+    .. versionadded: 1.6
+    """
+    if type_ is int:
+        return (float,)
+    
+    if type_ in GENERIC_INHERITANCE:
+        base, *type_vars = GENERIC_INHERITANCE[type_]
+        return parameterize(base, type_vars)
+    
+    # When inheriting from a parameterized type, like
+    #
+    #   class Child(Parent[int]):
+    #
+    # then `__bases__` only contains `Parent`. To find `Parent[int]`, we have to
+    # look in `__orig_bases__`. *However*, when inheriting from a generic type
+    # without parameterizing it, then `__orig_bases__` will contain `Generic`
+    # for some godforsaken reason.
+    try:
+        orig_bases = type_.__orig_bases__
+    except AttributeError:
+        return type_.__bases__
+    
+    parent_types = []
+
+    for base, orig_base in zip(type_.__bases__, orig_bases):
+        # Non-generic types show up as-is in both tuples
+        if base is orig_base:
+            parent_types.append(base)
+        else:
+            generic_base = get_generic_base_class(orig_base)
+            if base is generic_base:
+                parent_types.append(orig_base)
+            else:
+                # If they're different, that means it's a generic class with no
+                # type arguments provided. Which means the arguments are all
+                # typing.Any.
+                params = get_type_parameters(base)
+                parameterized_base = parameterize(base, [typing.Any]*len(params))
+                parent_types.append(parameterized_base)
+    
+    return tuple(parent_types)

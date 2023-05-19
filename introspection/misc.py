@@ -1,13 +1,15 @@
 
 import builtins
 import copy
-import functools
 import inspect
 import sys
 import types
 
 from collections import defaultdict, deque
-from typing import TypeVar, Any, Optional, Callable, Type, Iterable, Mapping, Union, Tuple, List
+from typing import *
+from typing_extensions import ParamSpec
+
+from .errors import *
 
 __all__ = [
     'common_ancestor', 'create_class', 'resolve_bases',
@@ -15,11 +17,12 @@ __all__ = [
     'resolve_identifier', 'is_sub_qualname',
     'is_abstract',
     'iter_wrapped', 'unwrap', 'extract_functions',
-    'rename', 'wraps',
+    'rename',
     'compile_function',
     'camel_to_snake', 'snake_to_camel',
 ]
 
+P = ParamSpec('P')
 T = TypeVar('T')
 
 
@@ -32,7 +35,7 @@ def create_class(
     bases: Iterable = (),
     attrs: dict = {},
     metaclass: Optional[Callable[..., Type[T]]] = None,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> Type[T]:
     """
     Creates a new class. This is similar to :func:`types.new_class`, except it
@@ -61,7 +64,7 @@ def create_class(
     return meta(name, resolved_bases, ns, **kwds)
 
 
-def resolve_bases(bases: Iterable) -> tuple:
+def resolve_bases(bases: Iterable) -> Tuple[type]:
     """
     Clone/backport of :func:`types.resolve_bases`.
 
@@ -87,7 +90,13 @@ def resolve_bases(bases: Iterable) -> tuple:
     return tuple(result)
 
 
-def static_vars(obj: Any) -> Mapping:
+@overload
+def static_vars(obj: type) -> Mapping[str, Any]: ...
+
+@overload
+def static_vars(obj: object) -> Dict[str, Any]: ...
+
+def static_vars(obj: object) -> Mapping:
     """
     Like :func:`vars`, but bypasses overridden ``__getattribute__`` methods and
     (for the most part) ``__dict__`` descriptors.
@@ -107,7 +116,7 @@ def static_vars(obj: Any) -> Mapping:
 
     :param obj: An object
     :return: The object's ``__dict__``
-    :raises TypeError: If the object has no ``__dict__``
+    :raises ObjectHasNoDict: If the object has no ``__dict__``
     """
     # We'll start by invoking the __dict__ slot from the `type` class. That'll
     # fail with a TypeError if the object is not a class.
@@ -135,7 +144,7 @@ def static_vars(obj: Any) -> Mapping:
         else:
             return descriptor_get(obj, obj_type)
 
-    raise TypeError(f"{obj!r} object has no __dict__")
+    raise ObjectHasNoDict('obj', obj)
 
 
 def static_copy(obj: T) -> T:
@@ -172,7 +181,7 @@ def static_copy(obj: T) -> T:
 
     try:
         old_dict = static_vars(obj)
-    except TypeError:
+    except ObjectHasNoDict:
         pass
     else:
         static_vars(new_obj).update(old_dict)
@@ -204,7 +213,7 @@ def static_hasattr(obj: Any, attr_name: str) -> bool:
     """
     try:
         obj_dict = static_vars(obj)
-    except TypeError:
+    except ObjectHasNoDict:
         pass
     else:
         if attr_name in obj_dict:
@@ -268,9 +277,9 @@ def common_ancestor(classes: Iterable[type]) -> type:
 
 
 def iter_wrapped(
-        function: Union[Callable, staticmethod, classmethod],
-        stop: Optional[Callable[[Callable], bool]] = None,
-    ):
+    function: Union[Callable, staticmethod, classmethod],
+    stop: Optional[Callable[[Callable], bool]] = None,
+) -> Iterator[Callable]:
     """
     Given a function as input, yields the function and all the functions it
     wraps.
@@ -281,6 +290,9 @@ def iter_wrapped(
     If ``stop`` is given, it must be a function that takes a function as input
     and returns a truth value. As soon as ``stop(function)`` returns a truthy
     result, the iteration stops. (``function`` will not be yielded.)
+
+    Note that unlike :func:`unwrap`, this function doesn't raise an exception if
+    the input is a bound method.
 
     .. versionadded:: 1.4
 
@@ -306,12 +318,15 @@ def iter_wrapped(
 
 
 def unwrap(
-        function: Union[Callable, staticmethod, classmethod],
-        stop: Optional[Callable[[Callable], bool]] = None,
-    ):
+    function: Union[Callable, staticmethod, classmethod],
+    stop: Optional[Callable[[Callable], bool]] = None,
+) -> Callable:
     r"""
     Like :func:`inspect.unwrap`, but always unwraps :class:`staticmethod`\ s and
     :class:`classmethod`\ s. (:func:`inspect.unwrap` only does this since 3.10)
+
+    Also unlike :func:`inspect.unwrap`, this function raises
+    :exc:`CannotUnwrapBoundMethod` if the input is a bound method.
 
     If ``stop`` is given, it must be a function that takes a function as input
     and returns a truth value. As soon as ``stop(function.__wrapped__)`` returns
@@ -322,6 +337,9 @@ def unwrap(
     :param function: The function to unwrap
     :param stop: A predicate function indicating when to stop iterating
     """
+    if inspect.ismethod(function):
+        raise CannotUnwrapBoundMethod(function)
+
     for function in iter_wrapped(function, stop):
         pass
     
@@ -351,7 +369,7 @@ def extract_functions(obj: Union[FUNCTION_CONTAINER_TYPES]) -> List[Callable]:
             if func is not None
         ]
     
-    raise TypeError(f'Cannot extract functions from {type(obj)!r} object')
+    raise InvalidArgumentType('obj', obj, Union[FUNCTION_CONTAINER_TYPES])
 
 
 def is_abstract(obj: Any) -> bool:
@@ -435,50 +453,6 @@ def rename(obj: Any, name: str) -> None:
             func.__qualname__ = obj.__qualname__ + func.__qualname__[len(old_qualname):]
 
 
-def wraps(
-    wrapped_func: Callable,
-    name: Optional[str] = None,
-    signature: Optional[inspect.Signature] = None,
-    remove_parameters: Optional[Iterable[Union[str, int]]] = None,
-) -> Callable[[Callable], Callable]:
-    """
-    Similar to :func:`functools.wraps`, but allows you to modify the function's
-    metadata.
-
-    .. versionadded:: 1.4
-
-    :param wrapped_func: The wrapped function
-    :param name: A new name for the wrapper function
-    :param signature: A new signature for the wrapper function
-    :param remove_parameters: Parameter names or indices to remove from the
-        wrapper function's signature
-    """
-    from .signature import Signature
-    
-    def wrapper(wrapper_func):
-        functools.update_wrapper(wrapper_func, wrapped_func)
-
-        if name is not None:
-            rename(wrapper_func, name)
-        
-        if signature is not None or remove_parameters is not None:
-            if signature is None:
-                sig = Signature.from_callable(wrapped_func)
-            elif isinstance(signature, inspect.Signature):
-                sig = Signature.from_signature(signature)
-            else:
-                sig = Signature.from_callable(signature)
-            
-            if remove_parameters:
-                sig = sig.without_parameters(*remove_parameters)
-            
-            wrapper_func.__signature__ = sig
-
-        return wrapper_func
-
-    return wrapper
-
-
 def resolve_identifier(identifier: str) -> object:
     """
     Given a string as input, returns the object referenced by it.
@@ -495,7 +469,7 @@ def resolve_identifier(identifier: str) -> object:
 
     :param identifier: The identifier to resolve
     :returns: The object referenced by the identifier
-    :raises NameError: If the identifier doesn't reference anything
+    :raises InvalidIdentifier: If the identifier doesn't reference anything
     """
     names = identifier.split('.')
 
@@ -514,7 +488,7 @@ def resolve_identifier(identifier: str) -> object:
         else:
             return obj
     
-    raise NameError(f"Failed to resolve identifier {identifier!r}")
+    raise InvalidIdentifier(identifier)
 
 
 def is_sub_qualname(sub_name: str, base_name: str) -> bool:
@@ -533,36 +507,44 @@ def is_sub_qualname(sub_name: str, base_name: str) -> bool:
 
     .. versionadded:: 1.5
     """
-    sub_name = sub_name.split('.')
-    base_name = base_name.split('.')
+    sub_parts = sub_name.split('.')
+    base_parts = base_name.split('.')
 
-    return sub_name[:len(base_name)] == base_name
+    return sub_parts[:len(base_parts)] == base_parts
 
 
 def compile_function(
-    code,
+    code: Union[str, Iterable[str]],
     *,
-    globals_=None,
-    allow_builtins=True,
-    file_name='<string>',
+    globals_: Optional[typing.Dict[str, object]] = None,
+    allow_builtins: bool = True,
+    file_name: str = '<string>',
     **kwargs,
-):
+) -> Callable:
     if globals_ is None:
         globals_ = {}
     
     if allow_builtins:
-        globals_['__builtins__'] = builtins
+        globals_ = {
+            '__builtins__': builtins,
+            **globals_,
+        }
     
     if not isinstance(code, str):
         code = '\n'.join(code)
     
-    code = compile(code, file_name, 'exec', **kwargs)
+    code_obj = compile(code, file_name, 'exec', **kwargs)
 
-    variables = set(globals_)
-    exec(code, globals_)
-    [function_name] = globals_.keys() - variables
+    predefined_globals = set(globals_)
+    exec(code_obj, globals_)
+    
+    for name in globals_.keys() - predefined_globals:
+        obj = globals_[name]
 
-    return globals_[function_name]
+        if isinstance(obj, types.FunctionType):
+            return obj
+
+    raise ValueError('No function found in code')
 
 
 def camel_to_snake(camel: str) -> str:

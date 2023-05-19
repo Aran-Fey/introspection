@@ -7,7 +7,7 @@ import sys
 import typing
 
 import introspection
-from introspection import Signature, Parameter
+from introspection import Signature, Parameter, errors
 
 
 def make_fake_c_function(doc, monkeypatch):
@@ -72,6 +72,10 @@ def test_get_bool_signature():
 def test_get_signature_undoc_c_function(monkeypatch):
     fake_func = make_fake_c_function(None, monkeypatch)
 
+    with pytest.raises(errors.NoSignatureFound):
+        Signature.from_callable(fake_func)
+    
+    # Deprecated exception
     with pytest.raises(ValueError):
         Signature.from_callable(fake_func)
 
@@ -140,6 +144,42 @@ def test_dont_follow_wrapped():
     assert list(sig.parameters) == ['args', 'kwargs']
 
 
+def test_bound_method_signature():
+    class A:
+        def method(self, foo: int) -> str:
+            return 'hi'
+    
+    obj = A()
+    sig = introspection.signature(obj.method)
+
+    assert list(sig.parameters) == ['foo']
+    assert sig.return_annotation is str
+    assert sig.parameters['foo'].annotation is int
+    assert sig.parameters['foo'].kind is Parameter.POSITIONAL_OR_KEYWORD
+
+
+def test_decorated_bound_method_signature():
+    def deco(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+        
+        return wrapper
+    
+    class A:
+        @deco
+        def method(self, foo: int) -> str:
+            return 'hi'
+    
+    obj = A()
+    sig = introspection.signature(obj.method)
+
+    assert list(sig.parameters) == ['foo']
+    assert sig.return_annotation is str
+    assert sig.parameters['foo'].annotation is int
+    assert sig.parameters['foo'].kind is Parameter.POSITIONAL_OR_KEYWORD
+
+
 def test_method_signature():
     class A:
         def method(self, foo: int = 3) -> None:
@@ -158,6 +198,23 @@ def test_method_signature():
     assert sig.parameters['bar'].annotation is bool
     assert sig.parameters['bar'].default is True
     assert sig.parameters['bar'].kind is Parameter.KEYWORD_ONLY
+
+
+def test_method_signature_with_repeated_argument():
+    class A:
+        def method(self, foo: int = 3) -> None:
+            pass
+    
+    class B(A):
+        def method(self, *args, foo: float = 3.5, **kwargs):
+            return super().method(*args, foo=int(foo), **kwargs)
+    
+    sig = Signature.for_method(B, 'method')
+    assert list(sig.parameters) == ['self', 'foo']
+    assert sig.return_annotation is None
+    assert sig.parameters['foo'].annotation is float
+    assert sig.parameters['foo'].default == 3.5
+    assert sig.parameters['foo'].kind is Parameter.KEYWORD_ONLY
 
 
 def test_replace():
@@ -263,15 +320,22 @@ def test_bind_partial(func, args, kwargs, expected_result):
     ),
     (Signature([
         Parameter('a', Parameter.POSITIONAL_ONLY, default=Parameter.missing),
-        Parameter('b', Parameter.POSITIONAL_ONLY, default=Parameter.missing),
-        Parameter('c', Parameter.POSITIONAL_ONLY, default=3)
+        Parameter('b', Parameter.POSITIONAL_ONLY, default=5),
+        Parameter('c', Parameter.POSITIONAL_ONLY, default=Parameter.missing),
      ]),
-     '([a[, b]], c=3, /)'
+     '([a, b=5[, c]], /)'
     ),
     (Signature([
         Parameter('a', Parameter.POSITIONAL_ONLY, default=Parameter.missing),
         Parameter('b', Parameter.POSITIONAL_ONLY, default=Parameter.missing),
-        Parameter('c', Parameter.POSITIONAL_OR_KEYWORD, default=Parameter.missing)
+        Parameter('c', Parameter.POSITIONAL_ONLY, default=3)
+     ]),
+     '([a[, b, c=3]], /)'
+    ),
+    (Signature([
+        Parameter('a', Parameter.POSITIONAL_ONLY, default=Parameter.missing),
+        Parameter('b', Parameter.POSITIONAL_ONLY, default=Parameter.missing),
+        Parameter('c', Parameter.POSITIONAL_OR_KEYWORD, default=Parameter.missing),
      ]),
      '([a[, b]], /[, c])'
     ),
@@ -358,9 +422,10 @@ def test_bind_partial(func, args, kwargs, expected_result):
      '(x: tuple) -> typing.Tuple'
     ),
     (Signature(return_annotation=typing.Tuple[int, typing.List]),
-     '() -> typing.Tuple[int, typing.List]'),
+     '() -> typing.Tuple[int, typing.List]'
+    ),
 ])
-def test_to_string(signature, expected):
+def test_to_string(signature: Signature, expected: str):
     assert signature.to_string() == expected
 
 

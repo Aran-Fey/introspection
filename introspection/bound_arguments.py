@@ -1,8 +1,11 @@
 
 import collections.abc
 import inspect
-import typing
 from typing import *
+from typing_extensions import Self, Literal
+
+from . import signature
+from .errors import InvalidOption
 
 __all__ = ['BoundArguments']
 
@@ -17,8 +20,10 @@ class BoundArguments(inspect.BoundArguments, collections.abc.MutableMapping):
     """
     __slots__ = ()
 
+    signature: 'signature.Signature'
+
     @classmethod
-    def from_bound_arguments(cls, bound_args: inspect.BoundArguments) -> 'BoundArguments':
+    def from_bound_arguments(cls, bound_args: inspect.BoundArguments) -> Self:
         """
         Creates a new ``BoundArguments`` instance from a
         :class:`inspect.BoundArguments` instance.
@@ -35,7 +40,10 @@ class BoundArguments(inspect.BoundArguments, collections.abc.MutableMapping):
 
         return cls(signature, bound_args.arguments)
     
-    def get_missing_parameter_names(self, include_optional_parameters=False):
+    def get_missing_parameter_names(
+        self,
+        include_optional_parameters: bool = False,
+    ) -> Set[str]:
         """
         Returns the set of parameter names that were omitted in the call to
         :meth:`Signature.bind_partial`.
@@ -68,7 +76,7 @@ class BoundArguments(inspect.BoundArguments, collections.abc.MutableMapping):
 
         return missing
     
-    def __getitem__(self, param_name):
+    def __getitem__(self, param_name) -> object:
         return self.arguments[param_name]
     
     def __setitem__(self, param_name, value):
@@ -77,15 +85,15 @@ class BoundArguments(inspect.BoundArguments, collections.abc.MutableMapping):
     def __delitem__(self, param_name):
         del self.arguments[param_name]
     
-    def __iter__(self):
+    def __iter__(self) -> Iterator[str]:
         return iter(self.arguments)
     
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.arguments)
     
     def to_varargs(
         self,
-        prefer: (typing.Literal['args', 'kwargs'] if hasattr(typing, 'Literal') else str) = 'kwargs',
+        prefer: Literal['args', 'kwargs'] = 'kwargs',
     ) -> Tuple[list, Dict[str, Any]]:
         """
         Converts the arguments into an ``(args, kwargs)`` tuple.
@@ -105,7 +113,7 @@ class BoundArguments(inspect.BoundArguments, collections.abc.MutableMapping):
         if prefer == 'args':
             return list(self.args), self.kwargs
         elif prefer != 'kwargs':
-            raise ValueError(f"Invalid value for argument 'prefer': {prefer!r}")
+            raise InvalidOption('prefer', prefer, {'args', 'kwargs'})
 
         params = list(self.signature.parameters.values())
         args, kwargs = [], {}

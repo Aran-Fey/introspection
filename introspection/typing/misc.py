@@ -2,17 +2,28 @@
 import builtins
 import collections
 import importlib
+import types
 import typing
+from typing import *
+
+import typing_extensions
 
 from .introspection import is_parameterized_generic, get_generic_base_class, get_type_arguments, get_type_name, _get_forward_ref_code
-from . import _compat
+from .i_hate_circular_imports import parameterize
 from ..parameter import Parameter
 from ..signature import Signature
+from ..types import Type_, ForwardRef, Annotation
+from ..errors import *
 
 __all__ = ['resolve_forward_refs', 'annotation_to_string', 'annotation_for_callable']
 
 
-def resolve_forward_refs(annotation, module=None, eval_=True, strict=True):
+def resolve_forward_refs(
+    annotation: Annotation,
+    module: Optional[types.ModuleType] = None,
+    eval_: bool = True,
+    strict: bool = True,
+) -> Annotation:
     """
     Resolves forward references in a type annotation.
 
@@ -32,7 +43,7 @@ def resolve_forward_refs(annotation, module=None, eval_=True, strict=True):
     if isinstance(module, str):
         module = importlib.import_module(module)
 
-    if isinstance(annotation, _compat.ForwardRef):
+    if isinstance(annotation, ForwardRef):
         annotation = _get_forward_ref_code(annotation)
 
     if isinstance(annotation, str):
@@ -40,7 +51,7 @@ def resolve_forward_refs(annotation, module=None, eval_=True, strict=True):
             # Eval the code in a ChainMap so that names
             # can be resolved in the given module or in
             # the typing module
-            modules = [typing]
+            modules: List[types.ModuleType] = [typing]
             if module is not None:
                 modules.insert(0, module)
 
@@ -50,7 +61,7 @@ def resolve_forward_refs(annotation, module=None, eval_=True, strict=True):
                 # the globals must be a real dict, so the scope will be
                 # used as the locals
                 annotation = eval(annotation, {}, scope)
-            except:
+            except Exception:
                 pass
             else:
                 return resolve_forward_refs(annotation, module, eval_, strict)
@@ -69,7 +80,7 @@ def resolve_forward_refs(annotation, module=None, eval_=True, strict=True):
                     for attr in attrs:
                         value = getattr(value, attr)
 
-                    return value
+                    return value  # type: ignore
                 except AttributeError:
                     pass
 
@@ -79,14 +90,7 @@ def resolve_forward_refs(annotation, module=None, eval_=True, strict=True):
         if not strict:
             return annotation
 
-        msg = "Cannot resolve name {!r}{}"
-
-        if module is None:
-            mod = ''
-        else:
-            mod = ' in module {!r}'.format(module.__name__)
-
-        raise ValueError(msg.format(annotation, mod))
+        raise CannotResolveName(annotation, module)
 
     if isinstance(annotation, list):
         return [resolve_forward_refs(typ, module, eval_, strict) for typ in annotation]
@@ -96,16 +100,16 @@ def resolve_forward_refs(annotation, module=None, eval_=True, strict=True):
 
     base = get_generic_base_class(annotation)
 
-    if base == getattr(typing, 'Literal', None):
+    if base is typing_extensions.Literal:
         return annotation
 
     type_args = get_type_arguments(annotation)
 
     type_args = tuple(resolve_forward_refs(typ, module, eval_, strict) for typ in type_args)
-    return base[type_args]
+    return parameterize(base, type_args)
 
 
-def annotation_to_string(annotation, implicit_typing=True):
+def annotation_to_string(annotation: Type_, implicit_typing: bool = True) -> str:
     """
     Converts a type annotation to string. The result is
     valid python code.
@@ -130,7 +134,7 @@ def annotation_to_string(annotation, implicit_typing=True):
     if isinstance(annotation, list):
         return process_nested('', annotation)
 
-    if isinstance(annotation, _compat.ForwardRef):
+    if isinstance(annotation, ForwardRef):
         return repr(_get_forward_ref_code(annotation))
 
     if annotation is ...:
@@ -146,13 +150,13 @@ def annotation_to_string(annotation, implicit_typing=True):
         prefix = annotation_to_string(base, implicit_typing)
         return process_nested(prefix, subtypes)
 
-    if isinstance(annotation, typing.TypeVar):
+    if isinstance(annotation, (typing.TypeVar, typing_extensions.ParamSpec)):
         return str(annotation)
 
     if hasattr(annotation, '__module__'):
         if annotation.__module__ == 'builtins':
             return annotation.__qualname__
-        elif annotation.__module__ == 'typing':
+        elif annotation.__module__ in ('typing', 'typing_extensions'):
             annotation = get_type_name(annotation)
 
             if not implicit_typing:
@@ -165,7 +169,7 @@ def annotation_to_string(annotation, implicit_typing=True):
     return repr(annotation)
 
 
-def annotation_for_callable(callable_: typing.Callable):
+def annotation_for_callable(callable_: typing.Callable) -> Type_:
     """
     Given a callable object as input, returns a matching type annotation.
 
@@ -205,10 +209,10 @@ def annotation_for_callable(callable_: typing.Callable):
         options.append(param_types)
 
     if len(options) == 1:
-        return typing.Callable[param_types, return_type]
+        return typing.Callable[param_types, return_type]  # type: ignore
     
     options = tuple(
-        typing.Callable[option, return_type]
+        typing.Callable[option, return_type]  # type: ignore
         for option in options
     )
-    return typing.Union[options]
+    return typing.Union[options]  # type: ignore

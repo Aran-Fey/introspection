@@ -8,7 +8,7 @@ def _create_functions():
     global_vars = globals()
 
     def make_dunder(dunder_name):
-        def func(instance, *args, **kwargs):
+        def func(instance, *args, **kwargs) -> object:
             return call_dundermethod(instance, dunder_name, *args, **kwargs)
         
         func.__name__ = func.__qualname__ = dunder_name

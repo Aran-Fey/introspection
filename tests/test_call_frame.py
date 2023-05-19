@@ -2,7 +2,7 @@
 import pytest
 
 import inspect
-from introspection import CallFrame
+from introspection import CallFrame, errors
 
 
 GLOBAL_FRAME = CallFrame.current()
@@ -115,11 +115,25 @@ def test_resolve_builtin_name():
 def test_resolve_nonexistent_name():
     frame = CallFrame.current()
 
+    with pytest.raises(errors.NameNotAccessibleFromFrame('firetruck', frame)):
+        frame.resolve_name('firetruck')
+    
+    # Deprecated exception
     with pytest.raises(NameError):
         frame.resolve_name('firetruck')
 
 
-def test_get_surrounding_function():
+def _get_current_frame():
+    return CallFrame.current()
+
+
+def test_get_surrounding_function_global():
+    frame = _get_current_frame()
+
+    assert frame.get_surrounding_function() is _get_current_frame
+
+
+def test_get_surrounding_function_local():
     def func():
         return CallFrame.current()
 

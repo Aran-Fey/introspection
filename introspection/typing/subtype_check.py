@@ -1,14 +1,18 @@
 
 import collections.abc
 import typing
+from typing_extensions import TypeGuard
 
 from .introspection import get_type_arguments, is_parameterized_generic, get_generic_base_class
-from .type_compat import to_python
+from ..types import Type_
 
 __all__ = ['is_subtype']
 
 
-def is_subtype(subtype, supertype):
+Type_Variable = typing.TypeVar('Type_Variable', bound=Type_)
+
+
+def is_subtype(subtype: Type_, supertype: Type_Variable) -> TypeGuard[typing.Type[Type_Variable]]:
     """
     Returns whether ``subtype`` is a subtype of ``supertype``. Unlike the
     builtin ``issubclass``, this function supports generics.

@@ -1,12 +1,13 @@
 
 import collections.abc
-import contextlib
-import re
+import contextlib  # NOT an unused import, your IDE is lying
+import re  # NOT an unused import, your IDE is lying
 import typing
 
 from .introspection import *
 from .introspection import _to_python, _get_forward_ref_code
-from . import _compat
+from ..types import Type_, ForwardRef
+from ..errors import *
 
 __all__ = ['to_python', 'to_typing']
 
@@ -64,7 +65,13 @@ for key, value in FORWARDREF_TO_TYPING.items():
     PYTHON_TO_TYPING[key] = value
 
 
-def to_python(type_, strict=False):
+@typing.overload
+def to_python(type_: Type_, strict: typing.Literal[True]) -> type: ...
+
+@typing.overload
+def to_python(type_: Type_, strict: bool = False) -> Type_: ...
+
+def to_python(type_: Type_, strict: bool = False) -> Type_:
     """
     Given a ``typing`` type as input, returns the corresponding "regular" python
     class.
@@ -122,7 +129,7 @@ def to_python(type_, strict=False):
         elif not strict:
             return type_
         
-        raise ValueError('{!r} has no python equivalent'.format(type_))
+        raise NoPythonEquivalent(type_)
     
     # At this point we know it's a parameterized generic type
     base = get_generic_base_class(type_)
@@ -146,7 +153,7 @@ def to_python(type_, strict=False):
     if is_generic(py_base):  # pragma: no branch
         base = py_base
     elif strict:  # pragma: no cover
-        raise ValueError(f'{type_!r} has no (generic) python equivalent')
+        raise NoGenericPythonEquivalent(type_)
 
     if base in (collections.abc.Callable, typing.Callable):
         if args[0] is ...:
@@ -168,7 +175,7 @@ def to_python(type_, strict=False):
     return base[args]
 
 
-def to_typing(type_, strict=False):
+def to_typing(type_: Type_, strict: bool = False) -> Type_:
     """
     Given a python class as input, returns the corresponding
     ``typing`` annotation.
@@ -187,7 +194,7 @@ def to_typing(type_, strict=False):
     :return: The corresponding annotation from the ``typing`` module
     """
     # process forward references
-    if isinstance(type_, _compat.ForwardRef):
+    if isinstance(type_, ForwardRef):
         type_ = _get_forward_ref_code(type_)
 
     if isinstance(type_, str):
@@ -225,6 +232,6 @@ def to_typing(type_, strict=False):
             pass
 
     if strict:
-        raise ValueError('{!r} has no typing equivalent'.format(type_))
+        raise NoTypingEquivalent(type_)
     else:
         return type_

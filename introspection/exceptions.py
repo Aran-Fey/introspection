@@ -9,7 +9,7 @@ __all__ = [
 ]
 
 
-def print_exception(exception: Exception) -> None:
+def print_exception(exception: BaseException) -> None:
     """
     Shorthand for ``traceback.print_exception(type(exc), exc,
     exc.__traceback__)``.
@@ -20,7 +20,7 @@ def print_exception(exception: Exception) -> None:
 
 
 def warn_from_exception(
-    exception: Exception,
+    exception: BaseException,
     warning_type: typing.Type[Warning] = UserWarning,
     message: typing.Optional[str] = None,
 ) -> None:

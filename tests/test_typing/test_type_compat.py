@@ -7,6 +7,7 @@ import sys
 import typing
 
 from introspection.typing.type_compat import *
+from introspection import errors
 
 
 T = typing.TypeVar('T')
@@ -50,6 +51,10 @@ def test_to_python_non_strict(type_, expected):
     typing.List[typing.SupportsFloat],
 ])
 def test_to_python_strict_error(type_):
+    with pytest.raises(errors.NoPythonEquivalent):
+        to_python(type_, strict=True)
+    
+    # Deprecated exception
     with pytest.raises(ValueError):
         to_python(type_, strict=True)
 
@@ -57,7 +62,7 @@ def test_to_python_strict_error(type_):
 if is_py39_plus:
     @pytest.mark.parametrize('type_, expected', [
         (typing.List[int], list[int]),
-        (typing.re.Match[str], re.Match[str]),
+        (typing.Match[str], re.Match[str]),
         (typing.List[typing.Set], list[set]),
         (typing.List[typing.Set[typing.Tuple]], list[set[tuple]]),
         (typing.Callable[[typing.Set], typing.Tuple], collections.abc.Callable[[set], tuple]),
@@ -81,6 +86,10 @@ else:
         typing.List[int],
     ])
     def test_to_python_strict_error_pre39(type_):
+        with pytest.raises(errors.NoPythonEquivalent):
+            to_python(type_, strict=True)
+        
+        # Deprecated exception
         with pytest.raises(ValueError):
             to_python(type_, strict=True)
 
@@ -90,6 +99,10 @@ else:
     ...,
 ])
 def test_to_python_error(type_):
+    with pytest.raises(errors.NotAType):
+        to_python(type_)
+    
+    # Deprecated exception
     with pytest.raises(TypeError):
         to_python(type_)
 
@@ -114,7 +127,7 @@ def test_to_typing(type_, expected):
 if is_py39_plus:
     @pytest.mark.parametrize('type_, expected', [
         (collections.abc.Iterable[int], typing.Iterable[int]),
-        (re.Pattern[bytes], typing.re.Pattern[bytes]),
+        (re.Pattern[bytes], typing.Pattern[bytes]),
     ])
     def test_to_typing_py39(type_, expected):
         assert to_typing(type_) == expected
@@ -125,6 +138,10 @@ if is_py39_plus:
     Exception,
 ])
 def test_to_typing_strict_error(type_):
+    with pytest.raises(errors.NoTypingEquivalent):
+        to_typing(type_, strict=True)
+    
+    # Deprecated exception
     with pytest.raises(ValueError):
         to_typing(type_, strict=True)
 

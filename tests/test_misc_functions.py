@@ -7,6 +7,7 @@ import sys
 import typing
 
 from introspection import *
+from introspection import errors
 import introspection
 
 
@@ -444,6 +445,10 @@ def test_resolve_identifier(identifier, expected):
     'builtins.frank',
 ])
 def test_resolve_identifier_error(identifier):
+    with pytest.raises(errors.InvalidIdentifier):
+        resolve_identifier(identifier)
+
+    # Deprecated exception
     with pytest.raises(NameError):
         resolve_identifier(identifier)
 

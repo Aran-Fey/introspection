@@ -1,13 +1,16 @@
 
 import ast
 import builtins
+import collections.abc
 import inspect
+import itertools
 import os
 import sys
 import types
 import typing
 from numbers import Number
 from typing import *
+from typing_extensions import Self
 
 from renumerate import renumerate
 
@@ -15,6 +18,8 @@ from .bound_arguments import BoundArguments
 from .parameter import Parameter
 from .misc import unwrap, static_mro, static_vars
 from ._utils import SIG_EMPTY
+from .errors import *
+from .types import P
 
 __all__ = ['Signature']
 
@@ -32,7 +37,7 @@ A = TypeVar('A')
 B = TypeVar('B')
 K = TypeVar('K')
 V = TypeVar('V')
-IntOrFloatVar = TypeVar('T', int, float)
+IntOrFloatVar = TypeVar('IntOrFloatVar', int, float)
 FilePath = Union[str, bytes, os.PathLike]
 
 BUILTIN_SIGNATURES = {
@@ -343,7 +348,7 @@ for key in list(BUILTIN_SIGNATURES):
     BUILTIN_SIGNATURES[key] = value
 
 
-class Signature(inspect.Signature):
+class Signature(inspect.Signature, typing.Generic[P]):
     """
     An :class:`inspect.Signature` subclass that represents a function's parameter signature and return annotation.
 
@@ -371,17 +376,25 @@ class Signature(inspect.Signature):
             return_annotation = inspect.Signature.empty
         
         super().__init__(
-            parameters,
+            parameters,  # type: ignore
             return_annotation=return_annotation,
             __validate_parameters__=validate_parameters
         )
+    
+    @overload
+    @classmethod
+    def from_signature(cls, signature: Self) -> Self: ...
+
+    @overload
+    @classmethod
+    def from_signature(cls, signature: inspect.Signature) -> Self: ...
 
     @classmethod
     def from_signature(
         cls,
         signature: inspect.Signature,
-        parameter_type: type = Parameter,
-    ) -> 'Signature':
+        parameter_type: Type[Parameter] = Parameter,
+    ) -> Self:
         """
         Creates a new ``Signature`` instance from an :class:`inspect.Signature`
         instance.
@@ -402,11 +415,11 @@ class Signature(inspect.Signature):
     @classmethod
     def from_callable(
         cls,
-        callable_: Callable,
+        callable_: Callable[P, Any],
         parameter_type: Type[Parameter] = Parameter,
         follow_wrapped: bool = True,
         use_signature_db: bool = True,
-    ) -> 'Signature':
+    ) -> 'Signature[P]':
         """
         Returns a matching :class:`Signature` instance for the given ``callable_``.
         
@@ -438,15 +451,19 @@ class Signature(inspect.Signature):
         :param follow_wrapped: Whether to unwrap decorated callables
         :param use_signature_db: Whether to look up the signature
         :return: A corresponding ``Signature`` instance
-        :raises TypeError: If ``callable_`` isn't a callable object
-        :raises ValueError: If the signature can't be determined (can happen for
-            functions defined in C extensions)
+        :raises InvalidArgumentType: If ``callable_`` isn't a callable object
+        :raises NoSignatureFound: If the signature can't be determined (can
+            happen for functions defined in C extensions)
         """
+        is_bound_method = inspect.ismethod(callable_)
+        if is_bound_method:
+            callable_ = callable_.__func__
+
         if follow_wrapped:
             callable_ = unwrap(callable_, lambda func: hasattr(func, '__signature__'))
 
         if not callable(callable_):
-            raise TypeError(f"Expected a callable, not {callable_!r}")
+            raise InvalidArgumentType('callable_', callable_, typing.Callable)
 
         if use_signature_db and callable_ in BUILTIN_SIGNATURES:
             ret_type, params = BUILTIN_SIGNATURES[callable_]
@@ -465,7 +482,16 @@ class Signature(inspect.Signature):
             if not str(error).startswith('no signature found'):
                 raise
         else:
-            return cls.from_signature(sig, parameter_type=parameter_type)
+            # If we got a bound method as input, discard the first parameter
+            if is_bound_method:
+                parameters = [
+                    parameter_type.from_parameter(param)
+                    for param in sig.parameters.values()
+                ]
+                del parameters[0]
+                return cls(parameters, sig.return_annotation)
+            else:
+                return cls.from_signature(sig, parameter_type=parameter_type)
 
         # Builtin exceptions also need special handling, but we don't want to
         # hard-code all of them in BUILTIN_SIGNATURES
@@ -474,10 +500,16 @@ class Signature(inspect.Signature):
                 parameter_type('args', Parameter.VAR_POSITIONAL),
             ])
 
-        raise ValueError(f"Can't determine signature of {callable_!r}")
+        raise NoSignatureFound(callable_)
     
     @classmethod
-    def for_method(cls, class_or_mro, method_name, *, parameter_type=Parameter):
+    def for_method(
+        cls,
+        class_or_mro: Union[type, Iterable[type]],
+        method_name: str,
+        *,
+        parameter_type: Type[Parameter] = Parameter,
+    ) -> Self:
         """
         Creates a combined signature for the method in the given class and all
         parent classes, assuming that all `*args` and `**kwargs` are passed to
@@ -521,7 +553,7 @@ class Signature(inspect.Signature):
                 return_annotation = signature.return_annotation
         
         if not param_lists:
-            raise ValueError(f'No method named {method_name!r} found in {class_or_mro}')
+            raise MethodNotFound(method_name, class_or_mro)
         
         # Extract the "self" parameter from the first signature, if it has one
         self_param = []
@@ -533,6 +565,7 @@ class Signature(inspect.Signature):
 
         positional_params = []
         keyword_params = []
+        seen = set()  # Keep track of parameter names to avoid duplicates
 
         for param_list in param_lists:
             var_positional = None
@@ -545,6 +578,10 @@ class Signature(inspect.Signature):
                     param.kind <= Parameter.POSITIONAL_OR_KEYWORD
                 ):
                     continue
+
+                if param.name in seen:
+                    continue
+                seen.add(param.name)
                 
                 if param.kind <= Parameter.POSITIONAL_OR_KEYWORD:
                     positional_params.append(param)
@@ -575,7 +612,77 @@ class Signature(inspect.Signature):
         
         return cls(parameters, return_annotation=return_annotation)
 
-    def without_parameters(self, *params_to_remove) -> 'Signature':
+    @property
+    def parameter_list(self) -> List[Parameter]:
+        """
+        Returns a list of the signature's parameters.
+        """
+        return list(self.parameters.values())
+
+    @property
+    def positional_only_parameters(self) -> List[Parameter]:
+        """
+        Returns a list of the signature's ``POSITIONAL_ONLY`` parameters.
+        """
+        return [
+            param for param in self.parameters.values()
+            if param.kind is Parameter.POSITIONAL_ONLY
+        ]
+    
+    @property
+    def positional_and_keyword_parameters(self) -> List[Parameter]:
+        """
+        Returns a list of the signature's ``POSITIONAL_OR_KEYWORD`` parameters.
+        """
+        return [
+            param for param in self.parameters.values()
+            if param.kind is Parameter.POSITIONAL_OR_KEYWORD
+        ]
+
+    @property
+    def keyword_only_parameters(self) -> List[Parameter]:
+        """
+        Returns a list of the signature's ``KEYWORD_ONLY`` parameters.
+        """
+        return [
+            param for param in self.parameters.values()
+            if param.kind is Parameter.KEYWORD_ONLY
+        ]
+
+    @property
+    def has_return_annotation(self) -> bool:
+        """
+        Returns whether the signature's return annotation is not :attr:`Signature.empty`.
+        """
+        return self.return_annotation is not Signature.empty
+
+    @property
+    def num_required_arguments(self) -> int:
+        """
+        Returns the number of required arguments, i.e. arguments with no default value.
+        """
+        return sum(not p.is_optional for p in self.parameters.values())
+    
+    def bind(self, *args, **kwargs) -> BoundArguments:
+        """
+        Similar to :meth:`inspect.Signature.bind`, but returns a
+        :class:`introspection.BoundArguments` object.
+        """
+        bound_args = super().bind(*args, **kwargs)
+        return BoundArguments.from_bound_arguments(bound_args)
+    
+    def bind_partial(self, *args, **kwargs) -> BoundArguments:
+        """
+        Similar to :meth:`inspect.Signature.bind_partial`, but returns a
+        :class:`introspection.BoundArguments` object.
+        """
+        bound_args = super().bind_partial(*args, **kwargs)
+        return BoundArguments.from_bound_arguments(bound_args)
+    
+    def without_parameters(
+        self,
+        *params_to_remove: Union[int, str, inspect._ParameterKind],
+    ) -> Self:
         """
         Returns a copy of this signature with some parameters removed.
 
@@ -616,45 +723,70 @@ class Signature(inspect.Signature):
             parameters.append(param)
 
         return self.replace(parameters=parameters)
-
-    @property
-    def parameter_list(self) -> List[Parameter]:
-        """
-        Returns a list of the signature's parameters.
-        """
-        return list(self.parameters.values())
-
-    @property
-    def has_return_annotation(self) -> bool:
-        """
-        Returns whether the signature's return annotation is not :attr:`Signature.empty`.
-        """
-        return self.return_annotation is not Signature.empty
-
-    @property
-    def num_required_arguments(self) -> int:
-        """
-        Returns the number of required arguments, i.e. arguments with no default value.
-        """
-        return sum(not p.is_optional for p in self.parameters.values())
     
-    def bind(self, *args, **kwargs) -> BoundArguments:
+    def replace_varargs(
+        self,
+        parameters: Union[Callable, inspect.Signature, Iterable[inspect.Parameter], Mapping[str, inspect.Parameter]],
+    ) -> Self:
         """
-        Similar to :meth:`inspect.Signature.bind`, but returns a
-        :class:`introspection.BoundArguments` object.
-        """
-        bound_args = super().bind(*args, **kwargs)
-        return BoundArguments.from_bound_arguments(bound_args)
-    
-    def bind_partial(self, *args, **kwargs) -> BoundArguments:
-        """
-        Similar to :meth:`inspect.Signature.bind_partial`, but returns a
-        :class:`introspection.BoundArguments` object.
-        """
-        bound_args = super().bind_partial(*args, **kwargs)
-        return BoundArguments.from_bound_arguments(bound_args)
+        Replaces the ``*args`` and/or ``**kwargs`` parameters in this signature
+        with the given parameters.
 
-    def to_string(self, implicit_typing: bool = False) -> str:
+        If this signature has no ``*args``, the new parameters will be made
+        ``KEYWORD_ONLY``. If it has no ``**kwargs``, they'll be made
+        ``POSITIONAL_ONLY``.
+        """
+        if isinstance(parameters, inspect.Signature):
+            parameters = parameters.parameters.values()
+        elif isinstance(parameters, collections.abc.Mapping):
+            parameters = parameters.values()
+        elif isinstance(parameters, collections.abc.Iterable):
+            pass
+        else:
+            parameters = type(self).from_callable(parameters).parameters.values()
+        
+        kinds = {p.kind for p in self.parameters.values()}
+        has_varargs = Parameter.VAR_POSITIONAL in kinds
+        has_varkwargs = Parameter.VAR_KEYWORD in kinds
+
+        if not has_varargs and not has_varkwargs:
+            raise ValueError("This signature has no VAR_POSITIONAL or VAR_KEYWORD parameter")
+        
+        # Replace *args with POSITIONAL_ONLY, POSITIONAL_OR_KEYWORD, and
+        # VAR_POSITIONAL. Replace **kwargs with KEYWORD_ONLY and VAR_KEYWORD.
+        replaces_args = []
+        replaces_kwargs = []
+        for parameter in parameters:
+            # If we have *args but no **kwargs, we'll make all parameters
+            # POSITIONAL_ONLY. Similarly, if we have **kwargs but no *args,
+            # we'll make them all KEYWORD_ONLY.
+            if parameter.kind is Parameter.POSITIONAL_OR_KEYWORD:
+                if not has_varargs:
+                    parameter = parameter.replace(kind=Parameter.KEYWORD_ONLY)
+                elif not has_varkwargs:
+                    parameter = parameter.replace(kind=Parameter.POSITIONAL_ONLY)
+
+            if parameter.kind <= Parameter.VAR_POSITIONAL:
+                replaces_args.append(parameter)
+            else:
+                replaces_kwargs.append(parameter)
+
+        merged_parameters = []
+        for parameter in self.parameters.values():
+            if parameter.kind is Parameter.VAR_POSITIONAL:
+                merged_parameters += replaces_args
+            elif parameter.kind is Parameter.VAR_KEYWORD:
+                merged_parameters += replaces_kwargs
+            else:
+                merged_parameters.append(parameter)
+        
+        return type(self)(merged_parameters, return_annotation=self.return_annotation)
+
+    def to_string(
+        self,
+        implicit_typing: bool = False,
+        indent: typing.Optional[int] = None,
+    ) -> str:
         """
         Returns a string representation of this signature.
 
@@ -670,125 +802,84 @@ class Signature(inspect.Signature):
         :return: A string representation of this signature, like you would see
             in python code
         """
-        # Because parameters with a default of Parameter.missing have a special bracket
-        # notation (like "[a[, b]]" for positional-only parameters and "[a][, b]" otherwise),
-        # we'll do this in 2 steps:
-        # 1) Create a list that contains 2 kinds of elements:
-        #     parameters = regular parameters, separated by ", "
-        #     lists of parameters = a sequence of parameters that needs to be enclosed in (nested) brackets
-        # 2) Join the list with the appropriate separator for each element
+        if indent is None:
+            indent_str = ''
+            sep = ', '
+        else:
+            indent_str = ' ' * indent
+            sep = ',\n' + indent_str
 
-        # Step 1
-        param_list = list(self.parameters.values())
-        num_params = len(param_list)
-        param_specs = []
-        i = 0
+        grouped_params = {
+            kind: list(params)
+            for kind, params in itertools.groupby(
+                self.parameters.values(),
+                key=lambda param: param.kind,
+            )
+        }
 
-        while i < num_params:
-            param = param_list[i]
+        text_chunks = []  # When not empty, the last item must always be ``sep``
 
-            # Check if this parameter goes in square brackets
-            if param.default is Parameter.missing:
-                group = [param]
+        # Positional-only parameters with a default value of ``missing`` need
+        # special treatment, because they're displayed like [a[, b]]. Even
+        # parameters with other default values are enclosed in these brackets:
+        # [a, b=5[, c]]
+        if Parameter.POSITIONAL_ONLY in grouped_params:
+            brackets = 0
 
-                # Group sequences of positional-only bracket parameters
-                if param.kind is Parameter.POSITIONAL_ONLY:
-                    while True:
-                        i += 1
-                        if i >= num_params:
-                            break
+            for param in grouped_params.pop(Parameter.POSITIONAL_ONLY):
+                param_str = param._to_string(implicit_typing, brackets_and_commas=False)
 
-                        param = param_list[i]
-
-                        if (param.kind is not Parameter.POSITIONAL_ONLY or
-                            param.default is not Parameter.missing):
-                            break
-
-                        group.append(param)
-
-                    i -= 1
-
-                param_specs.append(group)
-            else:
-                param_specs.append(param)
-
-            i += 1
-
-        # Step 2
-        chunks = []
-        is_first = True
-        for i, param_spec in enumerate(param_specs):
-            # insert "*" if necessary
-            first_param = param_spec[0] if isinstance(param_spec, list) else param_spec
-            if first_param.kind is Parameter.KEYWORD_ONLY:
-                if i == 0:
-                    prev_param = None
-                else:
-                    prev_param = param_specs[i-1]
-                    if isinstance(prev_param, list):
-                        prev_param = prev_param[-1]
-
-                if (prev_param is None or
-                    prev_param.kind not in {
-                            Parameter.KEYWORD_ONLY,
-                            Parameter.VAR_POSITIONAL
-                    }):
-                    if is_first:
-                        chunks.append('*')
-                        is_first = False
+                if param.default is Parameter.missing:
+                    if text_chunks:
+                        del text_chunks[-1]
+                        param_str = f'[{sep}{param_str}'
                     else:
-                        chunks.append(', *')
+                        param_str = f'[{param_str}'
 
-            # If its a regular parameter, the separator is ", "
-            if isinstance(param_spec, inspect.Parameter):
-                if not is_first:
-                    chunks.append(', ')
+                    brackets += 1
+                
+                text_chunks += [param_str, sep]
+            
+            if brackets:
+                text_chunks.insert(-1, ']'*brackets)
 
-                chunk = param_spec._to_string_no_brackets(implicit_typing)
-            # otherwise, it's a group of bracket parameters
-            else:
-                chunk = [
-                    param._to_string_no_brackets(implicit_typing)
-                    for param in param_spec
-                ]
-                chunk = '[, '.join(chunk) + ']'*(len(chunk)-1)
+            text_chunks += ['/', sep]
 
-                if is_first:
-                    template = '[{}]'
-                else:
-                    template = '[, {}]'
-                chunk = template.format(chunk)
+        for kind, params in grouped_params.items():
+            if kind is Parameter.KEYWORD_ONLY:
+                if Parameter.VAR_POSITIONAL not in grouped_params:
+                    text_chunks += ['*', sep]
+            
+            for param in params:
+                param_str = param._to_string(implicit_typing, brackets_and_commas=False)
 
-            chunks.append(chunk)
+                if param.default is Parameter.missing:
+                    if text_chunks:
+                        del text_chunks[-1]
+                        param_str = f'[{sep}{param_str}]'
+                    else:
+                        param_str = f'[{param_str}]'
 
-            # insert "/" if necessary
-            last_param = param_spec[-1] if isinstance(param_spec, list) else param_spec
-            if last_param.kind is Parameter.POSITIONAL_ONLY:
-                if i == len(param_specs)-1:
-                    next_param = None
-                else:
-                    next_param = param_specs[i+1]
-                    if isinstance(next_param, list):
-                        next_param = next_param[0]
+                text_chunks += [param_str, sep]
+            
+        if text_chunks:
+            del text_chunks[-1]
 
-                if (next_param is None or
-                    next_param.kind is not Parameter.POSITIONAL_ONLY):
-                    chunks.append(', /')
+            if indent is not None:
+                text_chunks.insert(0, f'\n{indent_str}')
+                text_chunks.append(',\n')
 
-            is_first = False
-
-        params = ''.join(chunks)
-        # Parameter list complete
-
+        params = ''.join(text_chunks)
+        
         if self.has_return_annotation:
             ann = annotation_to_string(self.return_annotation, implicit_typing)
-            ann = ' -> {}'.format(ann)
+            ann = f' -> {ann}'
         else:
             ann = ''
 
-        return '({}){}'.format(params, ann)
+        return f'({params}){ann}'
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         cls_name = type(self).__name__
         text = self.to_string()
 

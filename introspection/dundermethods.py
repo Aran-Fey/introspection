@@ -4,6 +4,7 @@ from typing import Iterator, Iterable, Tuple, Dict, Any, Callable, Optional, Typ
 
 from .classes import static_mro
 from .misc import static_vars
+from .errors import *
 
 __all__ = [
     'DUNDERMETHOD_NAMES', 'AUGMENTED_ASSIGNMENT_DUNDERMETHOD_NAMES',
@@ -55,17 +56,17 @@ def _is_implemented(name, method):
 
 
 def iter_class_attributes(
-    cls,
+    cls: type,
     *,
     start: Optional[type] = None,
     start_after: Optional[type] = None,
     bound: Optional[type] = None,
-):
+) -> Iterator[Tuple[str, Any]]:
     mro = static_mro(cls)
 
     if start is not None:
         if start_after is not None:
-            raise TypeError(f"You cannot pass 'start' and 'start_after' at the same time")
+            raise ConflictingArguments(iter_class_attributes, 'start', 'start_after')
 
         mro = mro[mro.index(start):]
     elif start_after is not None:
@@ -115,7 +116,7 @@ def iter_class_dundermethods(
     :raises TypeError: If ``cls`` is not a class
     """
     if not isinstance(cls, type):
-        raise TypeError(f"'cls' argument must be a class, not {cls!r}")
+        raise InvalidArgumentType('cls', cls, type)
 
     for name, method in iter_class_attributes(cls, start=start, start_after=start_after, bound=bound):
         if name in DUNDERMETHOD_NAMES:
@@ -312,7 +313,7 @@ def get_class_dundermethod(
         if name == method_name:
             return method
 
-    raise AttributeError(f"class {cls!r} does not implement {method_name}")
+    raise DundermethodNotFound(method_name, cls)
 
 
 def get_bound_dundermethod(
@@ -343,10 +344,10 @@ def get_bound_dundermethod(
     :param start_after: Where to start searching through the class's MRO
     :param bound: Where to stop searching through the class's MRO
     :return: A bound method for the given ``method_name``
-    :raises AttributeError: If ``instance`` does not implement that dundermethod
+    :raises DundermethodNotFound: If ``instance`` does not implement that dundermethod
     """
     cls = type(instance)
-    error = AttributeError(f"class {cls!r} does not implement {method_name}")
+    error = DundermethodNotFound(method_name, cls)
 
     # Optimization: We can let `super` do most of the work for us. However, if
     # the dundermethod is none-able (like __hash__), then we have to avoid
@@ -409,7 +410,7 @@ def call_dundermethod(
     method_name: str,
     *args,
     **kwargs,
-):
+) -> object:
     """
     Given an instance and the name of a dundermethod, calls the object's
     corresponding dundermethod. Excess arguments are passed to the dundermethod.

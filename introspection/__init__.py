@@ -2,7 +2,7 @@
 New and improved introspection functions
 """
 
-__version__ = '1.5.1'
+__version__ = '1.5.2'
 
 from .parameter import *
 from .signature import *
@@ -12,13 +12,14 @@ from .call_stack import *
 from .call_frame import *
 from .exceptions import *
 
-from .convenience import *
 from .classes import *
 from .dundermethods import *
 from .misc import *
+from .misc2 import *
 from .hazmat import *
 
 from . import dunder
+from . import errors
 
 # Make sure a ``from introspection import *`` doesn't import the ``typing``
 # submodule

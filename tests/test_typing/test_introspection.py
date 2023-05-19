@@ -6,9 +6,11 @@ import re
 import sys
 import types
 import typing
+import typing_extensions
 
 from introspection.typing import *
-from introspection.typing._compat import ForwardRef, Protocol
+from introspection.types import ForwardRef
+from introspection import errors
 
 
 is_py39_plus = sys.version_info >= (3, 9)
@@ -47,6 +49,10 @@ def test_is_forwardref(type_, expected):
     ...,
 ])
 def test_is_forwardref_error(obj):
+    with pytest.raises(errors.NotAType):
+        is_forwardref(obj)
+    
+    # Deprecated exception
     with pytest.raises(TypeError):
         is_forwardref(obj)
 
@@ -91,6 +97,7 @@ def test_is_forwardref_non_raising(obj):
     (typing.List[typing.Tuple], True),
     (typing.List[typing.Callable[[E], int]], True),
     (typing.List[typing.Callable], True),
+    (typing_extensions.Protocol, True),
 ])
 def test_is_type(type_, expected):
     assert is_type(type_) == expected
@@ -144,6 +151,10 @@ def test_is_typing_type(type_, expected):
     ...,
 ])
 def test_is_typing_type_error(type_):
+    with pytest.raises(errors.NotAType):
+        is_typing_type(type_, raising=True)
+    
+    # Deprecated exception
     with pytest.raises(TypeError):
         is_typing_type(type_, raising=True)
 
@@ -175,6 +186,7 @@ def test_is_typing_type_non_raising(type_):
     (typing.Callable, True),
     (typing.Optional, True),
     (typing.Type, True),
+    (typing.Generic, True),
     (MyGeneric, True),
     (typing.List[int], False),
     (typing.Union[int, str], False),
@@ -190,6 +202,18 @@ def test_is_typing_type_non_raising(type_):
     (typing.List[typing.Tuple], False),
     (typing.List[typing.Callable[[E], int]], True),
     (typing.List[typing.Callable], False),
+    (typing_extensions.Protocol, True),
+    (typing_extensions.Literal, True),
+    (typing_extensions.Literal[1, 2], False),
+    (typing_extensions.ClassVar, True),
+    (typing_extensions.ClassVar[str], False),
+    (typing_extensions.ClassVar[E], sys.version_info >= (3, 7)),
+    (typing_extensions.Final, True),
+    (typing_extensions.Final[str], False),
+    (typing_extensions.Final[E], True),
+    (typing_extensions.Annotated, True),
+    (typing_extensions.Annotated[str, ''], False),
+    (typing_extensions.Annotated[E, None], True),
 ])
 def test_is_generic(type_, expected):
     assert is_generic(type_) == expected
@@ -200,6 +224,10 @@ def test_is_generic(type_, expected):
     ...,
 ])
 def test_is_generic_error(type_):
+    with pytest.raises(errors.NotAType):
+        is_generic(type_)
+    
+    # Deprecated exception
     with pytest.raises(TypeError):
         is_generic(type_)
 
@@ -242,6 +270,8 @@ def test_is_generic_non_raising(type_):
     (typing.List[typing.Tuple], False),
     (typing.List[typing.Callable[[E], int]], False),
     (typing.List[typing.Callable], False),
+    (typing_extensions.Literal, True),
+    (typing_extensions.Literal[3], False),
 ])
 def test_is_variadic_generic(type_, expected):
     assert is_variadic_generic(type_) == expected
@@ -252,6 +282,10 @@ def test_is_variadic_generic(type_, expected):
     ...,
 ])
 def test_is_variadic_generic_error(type_):
+    with pytest.raises(errors.NotAType):
+        is_variadic_generic(type_)
+    
+    # Deprecated exception
     with pytest.raises(TypeError):
         is_variadic_generic(type_)
 
@@ -290,6 +324,18 @@ def test_is_variadic_generic_non_raising(type_):
     (typing.ByteString, False),
     (typing.List[E], False),
     (MyGeneric[E], False),
+    (typing_extensions.Literal, True),
+    (typing_extensions.Literal[1, 2], False),
+    (typing_extensions.Literal[1, E], False),
+    (typing_extensions.ClassVar, True),
+    (typing_extensions.ClassVar[int], False),
+    (typing_extensions.ClassVar[E], False),
+    (typing_extensions.Final, True),
+    (typing_extensions.Final[int], False),
+    (typing_extensions.Final[E], False),
+    (typing_extensions.Annotated, True),
+    (typing_extensions.Annotated[int, 5], False),
+    (typing_extensions.Annotated[E, 5], False),
 ])
 def test_is_generic_base_class(type_, expected):
     assert is_generic_base_class(type_) == expected
@@ -300,6 +346,10 @@ def test_is_generic_base_class(type_, expected):
     ...,
 ])
 def test_is_generic_base_class_error(type_):
+    with pytest.raises(errors.NotAType):
+        is_generic_base_class(type_)
+    
+    # Deprecated exception
     with pytest.raises(TypeError):
         is_generic_base_class(type_)
 
@@ -326,6 +376,10 @@ def test_is_generic_base_class_error(type_):
     (MyGeneric[E], True),
     (typing.List[E], True),
     (typing.List[typing.Tuple[E]], True),
+    (typing_extensions.Literal, False),
+    (typing_extensions.Literal[3], True),
+    (typing_extensions.Protocol, False),
+    (typing_extensions.Protocol[E], True),
 ])
 def test_is_parameterized_generic(type_, expected):
     assert is_parameterized_generic(type_) == expected
@@ -336,6 +390,10 @@ def test_is_parameterized_generic(type_, expected):
     ...,
 ])
 def test_is_parameterized_generic_error(type_):
+    with pytest.raises(errors.NotAType):
+        is_parameterized_generic(type_)
+    
+    # Deprecated exception
     with pytest.raises(TypeError):
         is_parameterized_generic(type_)
 
@@ -379,6 +437,18 @@ if is_py39_plus:
     (MyGeneric[str], True),
     (typing.List[E], False),
     (typing.List[typing.List[E]], False),
+    (typing_extensions.Literal, False),
+    (typing_extensions.Literal[1, 2], True),
+    (typing_extensions.Protocol, False),
+    (typing_extensions.Final, False),
+    (typing_extensions.Final[str], True),
+    (typing_extensions.Final[E], False),
+    (typing_extensions.ClassVar, False),
+    (typing_extensions.ClassVar[str], True),
+    (typing_extensions.ClassVar[E], sys.version_info < (3, 7)),
+    (typing_extensions.Annotated, False),
+    (typing_extensions.Annotated[str, 'idk lol'], True),
+    (typing_extensions.Annotated[E, 'foobar'], False),
 ])
 def test_is_fully_parameterized_generic(type_, expected):
     assert is_fully_parameterized_generic(type_) == expected
@@ -389,6 +459,10 @@ def test_is_fully_parameterized_generic(type_, expected):
     ...,
 ])
 def test_is_fully_parameterized_generic_error(type_):
+    with pytest.raises(errors.NotAType):
+        is_fully_parameterized_generic(type_)
+    
+    # Deprecated exception
     with pytest.raises(TypeError):
         is_fully_parameterized_generic(type_)
 
@@ -438,6 +512,10 @@ def test_get_generic_base_class(type_, expected):
     ...,
 ])
 def test_get_generic_base_class_typeerror(type_):
+    with pytest.raises(errors.NotAType):
+        get_generic_base_class(type_)
+    
+    # Deprecated exception
     with pytest.raises(TypeError):
         get_generic_base_class(type_)
 
@@ -457,6 +535,10 @@ def test_get_generic_base_class_typeerror(type_):
     typing.Type,
 ])
 def test_get_generic_base_class_valueerror(type_):
+    with pytest.raises(errors.NotAParameterizedGeneric):
+        get_generic_base_class(type_)
+    
+    # Deprecated exception
     with pytest.raises(ValueError):
         get_generic_base_class(type_)
 
@@ -499,6 +581,10 @@ def test_get_type_arguments(type_, expected):
     ...,
 ])
 def test_get_type_arguments_typeerror(type_):
+    with pytest.raises(errors.NotAType):
+        get_type_arguments(type_)
+    
+    # Deprecated exception
     with pytest.raises(TypeError):
         get_type_arguments(type_)
 
@@ -514,6 +600,10 @@ def test_get_type_arguments_typeerror(type_):
     typing.Type,
 ])
 def test_get_type_arguments_valueerror(type_):
+    with pytest.raises(errors.NotAParameterizedGeneric):
+        get_type_arguments(type_)
+    
+    # Deprecated exception
     with pytest.raises(ValueError):
         get_type_arguments(type_)
 
@@ -551,6 +641,12 @@ if is_py39_plus:
     (typing.Callable[[E, int], E][T_co], '(+T_co,)'),
     (typing.Tuple[typing.List[T_co]], '(+T_co,)'),
     (MyGeneric, '(~E,)'),
+    (typing_extensions.Protocol[E], '(~E,)'),
+    (typing_extensions.ClassVar, '(+T_co,)'),
+    (typing_extensions.ClassVar[int], '()'),
+    (typing_extensions.ClassVar[E], '(~E,)' if sys.version_info >= (3, 7) else '()'),
+    (typing_extensions.Final, '(+T_co,)'),
+    (typing_extensions.Annotated, '(+T_co,)'),
 ])
 def test_get_type_parameters(type_, expected):
     params = get_type_parameters(type_)
@@ -562,6 +658,10 @@ def test_get_type_parameters(type_, expected):
     ...,
 ])
 def test_get_type_parameters_typeerror(type_):
+    with pytest.raises(errors.NotAType):
+        get_type_parameters(type_)
+    
+    # Deprecated exception
     with pytest.raises(TypeError):
         get_type_parameters(type_)
 
@@ -569,12 +669,16 @@ def test_get_type_parameters_typeerror(type_):
 @pytest.mark.parametrize('type_', [
     None,
     'List',
-    UnhashableClass,
     typing.Any,
     typing.Generic,
-    Protocol,
+    typing_extensions.Protocol,
+    typing_extensions.Literal,
 ])
 def test_get_type_parameters_valueerror(type_):
+    with pytest.raises(errors.NotAGeneric):
+        get_type_parameters(type_)
+    
+    # Deprecated exception
     with pytest.raises(ValueError):
         get_type_parameters(type_)
 
@@ -613,6 +717,9 @@ if is_py39_plus:
     (typing.Callable, 'Callable'),
     (typing.TypeVar, 'TypeVar'),
     (typing.Generic, 'Generic'),
+    (typing_extensions.Literal, 'Literal'),
+    (typing_extensions.Protocol, 'Protocol'),
+    (typing_extensions.ClassVar, 'ClassVar'),
 ])
 def test_get_type_name(type_, expected):
     assert get_type_name(type_) == expected
@@ -628,205 +735,12 @@ def test_get_type_name(type_, expected):
     typing.Callable[..., None],
 ])
 def test_get_type_name_error(type_):
+    with pytest.raises(errors.Error):
+        get_type_name(type_)
+    
+    # Deprecated exception
     with pytest.raises(TypeError):
         get_type_name(type_)
-
-
-# === Literal ===
-if hasattr(typing, 'Literal'):
-    @pytest.mark.parametrize('type_, expected', [
-        (typing.Literal, True),
-    ])
-    def test_literal_is_variadic_generic(type_, expected):
-        assert is_variadic_generic(type_) == expected
-
-
-    @pytest.mark.parametrize('type_, expected', [
-        (typing.Literal, False),
-        (typing.Literal[1, 2], True),
-    ])
-    def test_literal_is_fully_parameterized_generic(type_, expected):
-        assert is_fully_parameterized_generic(type_) == expected
-
-
-    @pytest.mark.parametrize('type_, expected', [
-        (typing.Literal, True),
-        (typing.Literal[1, 2], False),
-        (typing.Literal[1, E], False),
-    ])
-    def test_literal_is_generic_base_class(type_, expected):
-        assert is_generic_base_class(type_) == expected
-
-
-    @pytest.mark.parametrize('type_, expected', [
-        (typing.Literal, True),
-        (typing.Literal[1, 2], False),
-    ])
-    def test_literal_is_generic(type_, expected):
-        assert is_generic(type_) == expected
-
-
-    @pytest.mark.parametrize('type_', [
-        typing.Literal,
-    ])
-    def test_get_literal_params_error(type_):
-        with pytest.raises(ValueError):
-            get_type_parameters(type_)
-
-
-# === Protocol ===
-if hasattr(typing, 'Protocol'):
-    @pytest.mark.parametrize('type_, expected', [
-        (typing.Protocol, True),
-    ])
-    def test_protocol_is_type(type_, expected):
-        assert is_type(type_) == expected
-
-
-    @pytest.mark.parametrize('type_, expected', [
-        (typing.Protocol, False),
-    ])
-    def test_protocol_is_generic(type_, expected):
-        assert is_generic(type_) == expected
-
-
-    @pytest.mark.parametrize('type_, expected', [
-        (typing.Protocol, False),
-    ])
-    def test_protocol_is_parameterized_generic(type_, expected):
-        assert is_parameterized_generic(type_) == expected
-
-
-    @pytest.mark.parametrize('type_', [
-        typing.Protocol,
-    ])
-    def test_get_protocol_params_error(type_):
-        with pytest.raises(ValueError):
-            get_type_parameters(type_)
-
-
-    def test_get_protocol_name():
-        assert get_type_name(typing.Protocol) == 'Protocol'
-
-
-# === ClassVar ===
-if hasattr(typing, 'ClassVar'):
-    @pytest.mark.parametrize('type_, expected', [
-        (typing.ClassVar, False),
-        (typing.ClassVar[str], True),
-        (typing.ClassVar[E], sys.version_info < (3, 7)),
-    ])
-    def test_classvar_is_fully_parameterized_generic(type_, expected):
-        assert is_fully_parameterized_generic(type_) == expected
-
-
-    @pytest.mark.parametrize('type_, expected', [
-        (typing.ClassVar, True),
-        (typing.ClassVar[int], False),
-        (typing.ClassVar[E], False),
-    ])
-    def test_classvar_is_generic_base_class(type_, expected):
-        assert is_generic_base_class(type_) == expected
-
-
-    @pytest.mark.parametrize('type_, expected', [
-        (typing.ClassVar, True),
-        (typing.ClassVar[str], False),
-        (typing.ClassVar[E], sys.version_info >= (3, 7)),
-    ])
-    def test_classvar_is_generic(type_, expected):
-        assert is_generic(type_) == expected
-
-
-    @pytest.mark.parametrize('type_, expected', [
-        (typing.ClassVar, '(+T_co,)'),
-        (typing.ClassVar[int], '()'),
-        (typing.ClassVar[E], '(~E,)' if sys.version_info >= (3, 7) else '()'),
-    ])
-    def test_get_classvar_params(type_, expected):
-        params = get_type_parameters(type_)
-        assert str(params) == expected
-    
-    
-    @pytest.mark.parametrize('type_, expected', [
-        (typing.ClassVar, 'ClassVar'),
-    ])
-    def test_get_classvar_name(type_, expected):
-        assert get_type_name(type_) == expected
-
-
-# === Final ===
-if hasattr(typing, 'Final'):
-    @pytest.mark.parametrize('type_, expected', [
-        (typing.Final, False),
-        (typing.Final[str], True),
-        (typing.Final[E], False),
-    ])
-    def test_final_is_fully_parameterized_generic(type_, expected):
-        assert is_fully_parameterized_generic(type_) == expected
-
-
-    @pytest.mark.parametrize('type_, expected', [
-        (typing.Final, True),
-        (typing.Final[int], False),
-        (typing.Final[E], False),
-    ])
-    def test_final_is_generic_base_class(type_, expected):
-        assert is_generic_base_class(type_) == expected
-
-
-    @pytest.mark.parametrize('type_, expected', [
-        (typing.Final, True),
-        (typing.Final[str], False),
-        (typing.Final[E], True),
-    ])
-    def test_final_is_generic(type_, expected):
-        assert is_generic(type_) == expected
-
-
-    @pytest.mark.parametrize('type_, expected', [
-        (typing.Final, '(+T_co,)'),
-    ])
-    def test_get_final_params(type_, expected):
-        params = get_type_parameters(type_)
-        assert str(params) == expected
-
-
-# === Annotated ===
-if hasattr(typing, 'Annotated'):
-    @pytest.mark.parametrize('type_, expected', [
-        (typing.Annotated, False),
-        (typing.Annotated[str, 'idk lol'], True),
-        (typing.Annotated[E, 'foobar'], False),
-    ])
-    def test_annotated_is_fully_parameterized_generic(type_, expected):
-        assert is_fully_parameterized_generic(type_) == expected
-
-
-    @pytest.mark.parametrize('type_, expected', [
-        (typing.Annotated, True),
-        (typing.Annotated[int, 5], False),
-        (typing.Annotated[E, 5], False),
-    ])
-    def test_annotated_is_generic_base_class(type_, expected):
-        assert is_generic_base_class(type_) == expected
-
-
-    @pytest.mark.parametrize('type_, expected', [
-        (typing.Annotated, True),
-        (typing.Annotated[str, ''], False),
-        (typing.Annotated[E, None], True),
-    ])
-    def test_annotated_is_generic(type_, expected):
-        assert is_generic(type_) == expected
-
-
-    @pytest.mark.parametrize('type_, expected', [
-        (typing.Annotated, '(+T_co,)'),
-    ])
-    def test_get_annotated_params(type_, expected):
-        params = get_type_parameters(type_)
-        assert str(params) == expected
 
 
 # === new Union syntax ===
@@ -915,6 +829,10 @@ if sys.version_info >= (3, 10):
         assert get_type_arguments(type_) == expected
     
     def test_uniontype_get_type_arguments_error():
+        with pytest.raises(errors.NotAParameterizedGeneric):
+            get_type_arguments(types.UnionType)
+        
+        # Deprecated exception
         with pytest.raises(ValueError):
             get_type_arguments(types.UnionType)
     
@@ -929,5 +847,9 @@ if sys.version_info >= (3, 10):
         assert get_type_parameters(type_) == expected
     
     def test_uniontype_get_type_parameters_error():
+        with pytest.raises(errors.NotAGeneric):
+            get_type_parameters(types.UnionType)
+        
+        # Deprecated exception
         with pytest.raises(ValueError):
             get_type_parameters(types.UnionType)

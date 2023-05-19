@@ -91,6 +91,8 @@ def test_is_optional(param, expected):
     (Parameter('foo', annotation=None), 'foo: None'),
     (Parameter('foo', default=5, annotation=int), 'foo: int = 5'),
     (Parameter('foo', default=Parameter.missing, annotation=int), '[foo: int]'),
+    (Parameter('foo', Parameter.POSITIONAL_ONLY, default=5), 'foo=5, /'),
+    (Parameter('foo', Parameter.POSITIONAL_ONLY, default=Parameter.missing), '[foo], /'),
 ])
 def test_to_string(param, expected):
     assert param.to_string() == expected

@@ -4,7 +4,7 @@ from .dundermethods import get_class_dundermethod
 __all__ = ['super']
 
 
-def _get_descriptor(sup, name):
+def _get_descriptor(sup: super, name: str):
     cls = sup.__self_class__
     instance_or_cls = sup.__self__
 
@@ -15,7 +15,7 @@ def _get_descriptor(sup, name):
     return get_class_dundermethod(type(instance_or_cls), name, start_after=cls)
 
 
-def _call_descriptor_func(sup, attr, func_name, *args):
+def _call_descriptor_func(sup: super, attr: str, func_name: str, *args) -> None:
     descriptor = _get_descriptor(sup, attr)
     
     descriptor_func = get_class_dundermethod(type(descriptor), func_name)

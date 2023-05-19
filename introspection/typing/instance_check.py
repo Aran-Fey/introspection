@@ -2,6 +2,7 @@
 import collections.abc
 import re
 import typing
+import typing_extensions
 
 from .introspection import get_type_arguments, is_parameterized_generic, get_generic_base_class
 from .subtype_check import is_subtype
@@ -9,11 +10,15 @@ from .type_compat import to_python
 from ..parameter import Parameter
 from ..signature import Signature
 from .._utils import eval_or_discard
+from ..types import Type_
 
 __all__ = ['is_instance']
 
 
-def is_instance(obj, type_):
+Type_Variable = typing.TypeVar('Type_Variable', bound=Type_)
+
+
+def is_instance(obj: typing.Any, type_: Type_Variable) -> typing_extensions.TypeGuard[Type_Variable]:
     """
     Returns whether ``obj`` is an instance of ``type_``. Unlike the builtin
     ``isinstance``, this function supports generics.
@@ -202,9 +207,8 @@ SUBTYPE_TESTS = eval_or_discard({
     'typing.Optional': _test_optional_subtypes,
     'typing.Union': _test_union_subtypes,
 
+    'typing_extensions.Annotated': _test_annotated_subtypes,
+
     're.Pattern': _test_regex_pattern_subtypes,
     're.Match': _test_regex_match_subtypes,
 }, globals())
-
-if hasattr(typing, 'Annotated'):
-    SUBTYPE_TESTS[typing.Annotated] = _test_annotated_subtypes

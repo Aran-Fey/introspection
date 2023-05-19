@@ -15,10 +15,11 @@ dependencies = [
     "ordered-set",
     "renumerate",
     "sentinel",
+    "typing-extensions",
 ]
 
 [project.optional-dependencies]
-test = ["pytest", "tox", "coverage"]
+test = ["pytest", "pytest-raisin", "tox", "coverage"]
 doc = ["sphinx"]
 
 [tool.flit.module]
