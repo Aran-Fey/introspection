@@ -21,12 +21,10 @@ T = typing.TypeVar("T")
 P = typing_extensions.ParamSpec("P")
 Class = typing.TypeVar("Class", bound=type)
 
-Type_ = typing.Union[type, *GenericAliases]
-TypeAnnotation = typing.Union[Type_, str, typing.ForwardRef, None]
-
-ParameterizedGeneric = typing.Union[GenericAliases]
-
 Function = types.FunctionType
+ParameterizedGeneric = typing.Union[GenericAliases]
+Type_ = typing.Union[type, ParameterizedGeneric]
+TypeAnnotation = typing.Union[Type_, str, typing.ForwardRef, None]
 
 
 class GenericType(typing.Protocol):
