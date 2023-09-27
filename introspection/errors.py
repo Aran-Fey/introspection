@@ -1,4 +1,3 @@
-
 import types
 import typing
 import dataclasses
@@ -9,17 +8,19 @@ if typing.TYPE_CHECKING:
     from .call_frame import CallFrame
 
 
-T_co = typing.TypeVar('T_co', covariant=True)
-V_co = typing.TypeVar('V_co', covariant=True)
-M_co = typing.TypeVar('M_co', covariant=True, bound=typing.Union[type, typing.Iterable[type]])
+T_co = typing.TypeVar("T_co", covariant=True)
+V_co = typing.TypeVar("V_co", covariant=True)
+M_co = typing.TypeVar(
+    "M_co", covariant=True, bound=typing.Union[type, typing.Iterable[type]]
+)
 
 
 class Error(Exception):
     def __init_subclass__(cls):
         dataclasses.dataclass(eq=False, frozen=True)(cls)
-    
+
     def __str__(self):
-        f_string_template = f'f{self._STR!r}'
+        f_string_template = f"f{self._STR!r}"
         return eval(f_string_template, vars(self))
 
 
@@ -37,7 +38,7 @@ class ArgumentError(typing.Generic[V_co], FunctionCallError):
 
     def __init_subclass__(cls):
         cls._STR = "Invalid value for parameter {parameter!r}: {value!r}. " + cls._STR
-        
+
         super().__init_subclass__()
 
 
@@ -65,15 +66,15 @@ class NotAType(ArgumentError[V_co], TypeError):
 
 
 class NotAGeneric(ArgumentError[V_co], ValueError):
-    _STR = 'A generic type is required.'
+    _STR = "A generic type is required."
 
 
 class NotAParameterizedGeneric(ArgumentError[V_co], ValueError):
-    _STR = 'A parameterized generic is required.'
+    _STR = "A parameterized generic is required."
 
 
 class ForwardRefsDontHaveNames(ArgumentError[V_co], TypeError):
-    _STR = "Forwardrefs don't have names."
+    _STR = "ForwardRefs don't have names."
 
 
 class GenericMustNotBeParameterized(ArgumentError[V_co], ValueError):
@@ -96,8 +97,8 @@ class SubTypeRequired(FunctionCallError, ValueError):
 
 class NameNotAccessibleFromFrame(Error, NameError):
     name: str
-    frame: 'CallFrame'
-    
+    frame: "CallFrame"
+
     _STR = "Name {name!r} is not accessible from frame {frame!r}"
 
 
@@ -115,7 +116,7 @@ class ObjectHasNoDict(ArgumentError[V_co], TypeError):
 class CannotUnwrapBoundMethod(Error, TypeError):
     method: types.MethodType
 
-    _STR = 'Cannot unwrap a bound method'
+    _STR = "Cannot unwrap a bound method"
 
 
 class InvalidIdentifier(Error, NameError):
@@ -134,7 +135,7 @@ class MethodNotFound(Error, AttributeError, typing.Generic[M_co]):
     method_name: str
     class_or_mro: M_co
 
-    _STR = 'No method named {method_name!r} found in {class_or_mro}'
+    _STR = "No method named {method_name!r} found in {class_or_mro}"
 
 
 class TypeVarError(Error):

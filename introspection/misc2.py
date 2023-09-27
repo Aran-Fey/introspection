@@ -149,8 +149,6 @@ def wraps(
     :param remove_parameters: Parameter names or indices to remove from the
         wrapper function's signature
     """
-    from .signature import Signature
-    
     def wrapper(wrapper_func: Callable[P, T]) -> Callable[P, T]:
         functools.update_wrapper(wrapper_func, wrapped_func)
 

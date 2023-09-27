@@ -1,4 +1,3 @@
-
 import inspect
 import types
 from typing import *
@@ -6,7 +5,7 @@ from typing_extensions import Self
 
 from .errors import NameNotAccessibleFromFrame
 
-__all__ = ['CallFrame']
+__all__ = ["CallFrame"]
 
 
 class CallFrame:
@@ -23,46 +22,35 @@ class CallFrame:
     the reference to the underlying frame object is released::
 
         with CallFrame.current() as frame:
-            ...  # do stuff with the frame
-        # at this point, the frame has become unusable
+            ...  # Do stuff with the frame
+        # At this point, the frame has become unusable
     """
-    __slots__ = ('__frame',)
+
+    __slots__ = ("_frame",)
 
     def __init__(self, frame: types.FrameType):
         """
-        Creates a new ``CallFrame`` from a ``CallFrame`` or :data:`types.FrameType` object.
+        Creates a new ``CallFrame`` from a :data:`types.FrameType` object.
 
         :param frame: An existing frame object
         """
-        if isinstance(frame, __class__):
-            frame = frame.__frame
-
-        self.__frame = frame
+        self._frame = frame
 
     @classmethod
     def current(cls) -> Self:
         """
         Retrieves the current call frame.
         """
-        return cls(inspect.currentframe().f_back)
+        return cls(inspect.currentframe().f_back)  # type: ignore
 
-    @classmethod
-    def from_frame(cls, frame: types.FrameType) -> Self:
-        """
-        Creates a new ``CallFrame`` from a ``CallFrame`` or :data:`types.FrameType` object.
-
-        This is equivalent to calling ``CallFrame(frame)``.
-        """
-        return cls(frame)
-
-    def __getattr__(self, attr):
-        return getattr(self.__frame, attr)
+    def __getattr__(self, attr: str):
+        return getattr(self._frame, attr)
 
     def __eq__(self, other) -> bool:
         if isinstance(other, __class__):
-            return self.__frame == other.__frame
+            return self._frame == other._frame
         elif isinstance(other, types.FrameType):
-            return self.__frame == other
+            return self._frame == other
         else:
             return NotImplemented
 
@@ -70,14 +58,14 @@ class CallFrame:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.__frame = None
+        del self._frame
 
     @property
     def parent(self) -> Optional[Self]:
         """
         Returns the next frame one level higher on the call stack.
         """
-        parent = self.__frame.f_back
+        parent = self._frame.f_back
         if parent is None:
             return None
 
@@ -89,28 +77,28 @@ class CallFrame:
         """
         Returns the builtins seen by this frame
         """
-        return self.__frame.f_builtins
+        return self._frame.f_builtins
 
     @property
     def globals(self) -> Dict[str, Any]:
         """
         Returns the global scope seen by this frame
         """
-        return self.__frame.f_globals
+        return self._frame.f_globals
 
     @property
     def locals(self) -> Dict[str, Any]:
         """
         Returns the frame's local variable scope
         """
-        return self.__frame.f_locals
+        return self._frame.f_locals
 
     @property
     def code_object(self) -> types.CodeType:
         """
         Returns the code object being executed in this frame
         """
-        return self.__frame.f_code
+        return self._frame.f_code
 
     @property
     def file_name(self) -> str:
@@ -128,6 +116,14 @@ class CallFrame:
         In any other case, whichever name the interpreter assigned to that scope.
         """
         return self.code_object.co_name
+
+    def belongs_to(self, function: types.FunctionType) -> bool:
+        code_object = getattr(function, "__code__", None)
+
+        if code_object is not self.code_object:
+            return False
+
+        return True
 
     def resolve_name(self, name: str) -> object:
         """
@@ -156,31 +152,40 @@ class CallFrame:
             return self.builtins[name]
         except KeyError:
             pass
-        
+
         raise NameNotAccessibleFromFrame(name, self)
 
-    def get_surrounding_function(self) -> Optional[Callable]:
+    def get_surrounding_function(self) -> Callable:
         """
         Finds and returns the function in which the code of this frame was defined.
 
-        If the function can't be found, ``None`` is returned.
+        If the function can't be found, :exc:``LookupError`` is raised.
 
-        :return: The calling function object or ``None`` if it can't be found
+        :return: The calling function object
         """
-        parent = self.parent
-        if parent is None:
-            return None
 
-        funcname = self.scope_name
-        try:
-            function = parent.resolve_name(funcname)
-        except NameError:
-            return None
-        finally:
-            del parent
+        def iter_candidate_functions() -> Iterator[types.FunctionType]:
+            funcname = self.scope_name
 
-        # Make sure the name referred to the correct function
-        if getattr(function, '__code__', None) is not self.code_object:
-            return None
+            try:
+                yield self.globals[funcname]
+            except KeyError:
+                pass
 
-        return function
+            frame = self
+            while frame.parent is not None:
+                frame = frame.parent
+
+                try:
+                    yield frame.locals[funcname]
+                except KeyError:
+                    pass
+
+        for function in iter_candidate_functions():
+            if not isinstance(function, types.FunctionType):
+                continue
+
+            if self.belongs_to(function):
+                return function
+
+        raise LookupError

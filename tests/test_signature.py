@@ -14,7 +14,7 @@ def make_fake_c_function(doc, monkeypatch):
     # Functions written in C don't have signatures; we'll fake one by creating
     # an object with a __doc__ attribute
     def fake_sig(*a, **kw):
-        raise ValueError
+        raise ValueError('no signature found')
     monkeypatch.setattr(inspect, 'signature', fake_sig)
     monkeypatch.setattr(sys.modules['introspection.signature'], 'callable', lambda _: True, raising=False)
 

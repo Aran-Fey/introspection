@@ -1,57 +1,56 @@
-
 import collections.abc
 import contextlib  # NOT an unused import, your IDE is lying
 import re  # NOT an unused import, your IDE is lying
 import typing
 
 from .introspection import *
-from .introspection import _to_python, _get_forward_ref_code
-from ..types import Type_, ForwardRef
+from . import introspection as typing_introspection
+from ..types import Type_
 from ..errors import *
 
-__all__ = ['to_python', 'to_typing']
+__all__ = ["to_python", "to_typing"]
 
 
 FORWARDREF_TO_TYPING = {
-    'type': 'Type',
-    'list': 'List',
-    'tuple': 'Tuple',
-    'set': 'Set',
-    'frozenset': 'Frozenset',
-    'dict': 'Dict',
-    'str': 'Text',
-    're.Pattern': 'Pattern',
-    're.Match': 'Match',
-    'collections.deque': 'Deque',
-    'collections.defaultdict': 'DefaultDict',
-    'collections.Counter': 'Counter',
-    'collections.OrderedDict': 'OrderedDict',
-    'collections.ChainMap': 'ChainMap',
-    'collections.abc.Iterable': 'Iterable',
-    'collections.abc.Iterator': 'Iterator',
-    'collections.abc.Reversible': 'Reversible',
-    'collections.abc.Container': 'Container',
-    'collections.abc.Hashable': 'Hashable',
-    'collections.abc.Sized': 'Sized',
-    'collections.abc.Collection': 'Collection',
-    'collections.abc.Set': 'AbstractSet',
-    'collections.abc.MutableSet': 'MutableSet',
-    'collections.abc.Mapping': 'Mapping',
-    'collections.abc.MutableMapping': 'MutableMapping',
-    'collections.abc.Sequence': 'Sequence',
-    'collections.abc.MutableSequence': 'MutableSequence',
-    'collections.abc.ByteString': 'ByteString',
-    'collections.abc.MappingView': 'MappingView',
-    'collections.abc.KeysView': 'KeysView',
-    'collections.abc.ValuesView': 'ValuesView',
-    'collections.abc.ItemsView': 'ItemsView',
-    'collections.abc.Awaitable': 'Awaitable',
-    'collections.abc.Coroutine': 'Coroutine',
-    'collections.abc.AsyncIterable': 'AsyncIterable',
-    'collections.abc.AsyncIterator': 'AsyncIterator',
-    'collections.abc.Callable': 'Callable',
-    'contextlib.AbstractContextManager': 'ContextManager',
-    'contextlib.AbstractAsyncContextManager': 'AsyncContextManager',
+    "type": "Type",
+    "list": "List",
+    "tuple": "Tuple",
+    "set": "Set",
+    "frozenset": "Frozenset",
+    "dict": "Dict",
+    "str": "Text",
+    "re.Pattern": "Pattern",
+    "re.Match": "Match",
+    "collections.deque": "Deque",
+    "collections.defaultdict": "DefaultDict",
+    "collections.Counter": "Counter",
+    "collections.OrderedDict": "OrderedDict",
+    "collections.ChainMap": "ChainMap",
+    "collections.abc.Iterable": "Iterable",
+    "collections.abc.Iterator": "Iterator",
+    "collections.abc.Reversible": "Reversible",
+    "collections.abc.Container": "Container",
+    "collections.abc.Hashable": "Hashable",
+    "collections.abc.Sized": "Sized",
+    "collections.abc.Collection": "Collection",
+    "collections.abc.Set": "AbstractSet",
+    "collections.abc.MutableSet": "MutableSet",
+    "collections.abc.Mapping": "Mapping",
+    "collections.abc.MutableMapping": "MutableMapping",
+    "collections.abc.Sequence": "Sequence",
+    "collections.abc.MutableSequence": "MutableSequence",
+    "collections.abc.ByteString": "ByteString",
+    "collections.abc.MappingView": "MappingView",
+    "collections.abc.KeysView": "KeysView",
+    "collections.abc.ValuesView": "ValuesView",
+    "collections.abc.ItemsView": "ItemsView",
+    "collections.abc.Awaitable": "Awaitable",
+    "collections.abc.Coroutine": "Coroutine",
+    "collections.abc.AsyncIterable": "AsyncIterable",
+    "collections.abc.AsyncIterator": "AsyncIterator",
+    "collections.abc.Callable": "Callable",
+    "contextlib.AbstractContextManager": "ContextManager",
+    "contextlib.AbstractAsyncContextManager": "AsyncContextManager",
 }
 
 PYTHON_TO_TYPING = {}
@@ -66,10 +65,14 @@ for key, value in FORWARDREF_TO_TYPING.items():
 
 
 @typing.overload
-def to_python(type_: Type_, strict: typing.Literal[True]) -> type: ...
+def to_python(type_: Type_, strict: typing.Literal[True]) -> type:
+    ...
+
 
 @typing.overload
-def to_python(type_: Type_, strict: bool = False) -> Type_: ...
+def to_python(type_: Type_, strict: bool = False) -> Type_:
+    ...
+
 
 def to_python(type_: Type_, strict: bool = False) -> Type_:
     """
@@ -121,26 +124,28 @@ def to_python(type_: Type_, strict: bool = False) -> Type_:
         if not is_typing_type(type_):
             return type_
 
-        typ = _to_python(type_)
+        typ = typing_introspection._to_python(type_)
 
         # _to_python returns None if there's no equivalent
         if typ is not None:
             return typ
         elif not strict:
             return type_
-        
+
         raise NoPythonEquivalent(type_)
-    
+
     # At this point we know it's a parameterized generic type
     base = get_generic_base_class(type_)
     args = get_type_arguments(type_)
 
-    if (not is_variadic_generic(base)
-            and all(arg is typing.Any for arg in args)):
+    if not is_variadic_generic(base) and all(arg is typing.Any for arg in args):
         return to_python(base, strict)
     elif base in (type, typing.Type) and args[0] is object:
         return type
-    elif base in (collections.abc.Callable, typing.Callable) and args == (..., typing.Any):
+    elif base in (collections.abc.Callable, typing.Callable) and args == (
+        ...,
+        typing.Any,
+    ):
         return collections.abc.Callable
 
     # At this point we know that the type arguments aren't redundant, so if
@@ -161,9 +166,9 @@ def to_python(type_: Type_, strict: bool = False) -> Type_:
         else:
             args = (
                 [to_python(arg, strict) for arg in args[0]],
-                to_python(args[1], strict)
+                to_python(args[1], strict),
             )
-    elif hasattr(typing, 'Literal') and base is typing.Literal:
+    elif hasattr(typing, "Literal") and base is typing.Literal:
         return type_
     else:
         args = tuple(to_python(arg, strict) for arg in args)
@@ -194,8 +199,8 @@ def to_typing(type_: Type_, strict: bool = False) -> Type_:
     :return: The corresponding annotation from the ``typing`` module
     """
     # process forward references
-    if isinstance(type_, ForwardRef):
-        type_ = _get_forward_ref_code(type_)
+    if isinstance(type_, typing.ForwardRef):
+        type_ = typing_introspection._get_forward_ref_code(type_)
 
     if isinstance(type_, str):
         try:
@@ -215,9 +220,9 @@ def to_typing(type_: Type_, strict: bool = False) -> Type_:
             else:
                 args = (
                     [to_typing(arg, strict) for arg in args[0]],
-                    to_typing(args[1], strict)
+                    to_typing(args[1], strict),
                 )
-        elif hasattr(typing, 'Literal') and base is typing.Literal:
+        elif hasattr(typing, "Literal") and base is typing.Literal:
             return type_
         else:
             args = tuple(to_typing(arg, strict) for arg in args)

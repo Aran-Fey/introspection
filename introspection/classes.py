@@ -9,7 +9,7 @@ import sentinel
 
 from .misc import static_vars, is_abstract, static_mro
 from .errors import *
-from .types import Type_, Slot, Function
+from .types import Slot, Function
 
 __all__ = [
     'iter_subclasses', 'get_subclasses', 'get_attributes', 'get_abstract_method_names', 'safe_is_subclass',
@@ -19,10 +19,12 @@ __all__ = [
 ]
 
 
+T = TypeVar('T')
+
 auto = sentinel.create('auto')
 
 
-def iter_subclasses(cls: type, include_abstract: bool = False) -> Iterator[type]:
+def iter_subclasses(cls: Type[T], include_abstract: bool = False) -> Iterator[Type[T]]:
     """
     Yields subclasses of the given class.
     
@@ -48,7 +50,7 @@ def iter_subclasses(cls: type, include_abstract: bool = False) -> Iterator[type]
         queue += cls.__subclasses__()
 
 
-def get_subclasses(*args, **kwargs) -> Set[type]:
+def get_subclasses(cls: Type[T], include_abstract: bool = False) -> Set[Type[T]]:
     """
     Collects all subclasses of the given class.
 
@@ -56,7 +58,7 @@ def get_subclasses(*args, **kwargs) -> Set[type]:
     :param include_abstract: Whether abstract base classes should be included
     :return: A set of all subclasses
     """
-    return set(iter_subclasses(*args, **kwargs))
+    return set(iter_subclasses(cls, include_abstract=include_abstract))
 
 
 def iter_slots(cls: type) -> Iterator[Tuple[str, Any]]:
@@ -200,7 +202,7 @@ def get_abstract_method_names(cls: type) -> Set[str]:
     return result
 
 
-def safe_is_subclass(subclass: Type_, superclass: Class) -> TypeGuard[Type[Class]]:
+def safe_is_subclass(subclass: object, superclass: Class) -> TypeGuard[Type[Class]]:
     """
     A clone of :func:`issubclass` that returns ``False`` instead of throwing a
     :exc:`TypeError`.

@@ -1,19 +1,10 @@
-
 import inspect
 from typing import *
 from typing_extensions import Self
 
 from ._utils import PARAM_EMPTY
 
-__all__ = ['Parameter']
-
-
-# I hate circular imports
-def annotation_to_string(*args, **kwargs):
-    global annotation_to_string
-    from .typing import annotation_to_string
-
-    return annotation_to_string(*args, **kwargs)
+__all__ = ["Parameter"]
 
 
 #: Enum of parameter kinds (POSITIONAL_ONLY, etc.)
@@ -28,12 +19,13 @@ class Parameter(inspect.Parameter):
 
     This class adds a new special value for the ``default`` attribute: :attr:`Parameter.missing`.
     """
+
     __slots__ = ()
 
     #: A special class-level marker that can be used to specify
     #: that the parameter is optional, but doesn't have a (known)
     #: default value.
-    #: 
+    #:
     #: This is commonly used by signatures for builtin functions.
     #: For example, the signature of the :class:`range` function
     #: can be represented as
@@ -46,7 +38,7 @@ class Parameter(inspect.Parameter):
     #:     ...     Parameter('step', Parameter.POSITIONAL_ONLY, default=Parameter.missing),
     #:     ... ])
     #:     <Signature (start[, stop[, step]], /)>
-    missing = type('_missing', (), {})
+    missing = type("_missing", (), {})
 
     def __init__(
         self,
@@ -63,10 +55,10 @@ class Parameter(inspect.Parameter):
         """
         if default is PARAM_EMPTY:
             default = inspect.Parameter.empty
-        
+
         if annotation is PARAM_EMPTY:
             annotation = inspect.Parameter.empty
-        
+
         super().__init__(name, kind, default=default, annotation=annotation)
 
     @classmethod
@@ -108,17 +100,14 @@ class Parameter(inspect.Parameter):
 
         Returns ``True`` if the parameter has a default value or is a vararg.
         """
-        return (
-            self.default is not self.empty or
-            self.is_vararg
-        )
-    
+        return self.default is not self.empty or self.is_vararg
+
     @property
     def has_default(self) -> bool:
         """
         Returns whether the parameter's :attr:`default` is not
         :attr:`Parameter.empty`.
-        
+
         (Unlike ``is_optional``, this returns ``False`` for varargs.)
         """
         return self.default is not Parameter.empty
@@ -131,31 +120,33 @@ class Parameter(inspect.Parameter):
         text = self.name
 
         if self.has_annotation:
-            ann = annotation_to_string(self.annotation, implicit_typing)
-            text += f': {ann}'
+            from .typing import annotation_to_string
+
+            ann = annotation_to_string(self.annotation, implicit_typing=implicit_typing)
+            text += f": {ann}"
 
         if self.kind is __class__.VAR_POSITIONAL:
-            text = '*' + text
+            text = "*" + text
         elif self.kind is __class__.VAR_KEYWORD:
-            text = '**' + text
-        
+            text = "**" + text
+
         if self.default is __class__.missing:
             if brackets_and_commas:
-                text = f'[{text}]'
+                text = f"[{text}]"
         elif self.default is not __class__.empty:
             if self.has_annotation:
-                template = '{} = {}'
+                template = "{} = {}"
             else:
-                template = '{}={}'
+                template = "{}={}"
 
             default = repr(self.default)
             text = template.format(text, default)
-        
+
         if brackets_and_commas:
             if self.kind is __class__.KEYWORD_ONLY:
-                text = '*, ' + text
+                text = "*, " + text
             elif self.kind is __class__.POSITIONAL_ONLY:
-                text = text + ', /'
+                text = text + ", /"
 
         return text
 
@@ -170,7 +161,7 @@ class Parameter(inspect.Parameter):
             '*foo'
             >>> Parameter('foo', annotation=int, default=3).to_string()
             'foo: int = 3'
-        
+
         :param implicit_typing: If ``True``, the "typing." prefix will be
             omitted from types defined in the ``typing`` module
         :return: A string representation of this parameter, like you would see
@@ -182,4 +173,4 @@ class Parameter(inspect.Parameter):
         cls_name = type(self).__qualname__
         text = self.to_string()
 
-        return f'<{cls_name} {text}>'
+        return f"<{cls_name} {text}>"

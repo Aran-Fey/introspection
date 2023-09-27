@@ -1,4 +1,3 @@
-
 import types
 from typing import *
 from typing_extensions import Self
@@ -6,7 +5,7 @@ from typing_extensions import Self
 from .call_frame import CallFrame
 
 
-__all__ = ['CallStack']
+__all__ = ["CallStack"]
 
 
 class CallStack:
@@ -23,15 +22,16 @@ class CallStack:
             ...  # do something with the stack
         # at this point, len(stack) is 0
     """
-    __slots__ = ('__frames',)
 
-    def __init__(self, frames: Iterable[Union[CallFrame, types.FrameType]]):
+    __slots__ = ("_frames",)
+
+    def __init__(self, frames: Iterable[types.FrameType]):
         """
         Creates a new ``CallStack`` from the given frame objects.
 
         :param frames: An iterable of frame objects, starting with the root frame
         """
-        self.__frames = [CallFrame.from_frame(frame) for frame in frames]
+        self._frames = [CallFrame(frame) for frame in frames]
 
     @classmethod
     def current(cls) -> Self:
@@ -65,19 +65,19 @@ class CallStack:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.__frames.clear()
+        del self._frames
 
     def __iter__(self) -> Iterator[CallFrame]:
-        return iter(self.__frames)
+        return iter(self._frames)
 
     def __reversed__(self) -> Iterator[CallFrame]:
-        return reversed(self.__frames)
+        return reversed(self._frames)
 
     def __getitem__(self, index) -> CallFrame:
-        return self.__frames[index]
+        return self._frames[index]
 
     def __len__(self) -> int:
-        return len(self.__frames)
+        return len(self._frames)
 
     def __contains__(self, frame: CallFrame) -> bool:
-        return frame in self.__frames
+        return frame in self._frames

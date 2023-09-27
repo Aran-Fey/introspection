@@ -1,3 +1,4 @@
+import pytest
 
 from introspection import CallStack, CallFrame
 
@@ -54,4 +55,5 @@ def test_context():
     with CallStack.current() as stack:
         assert len(stack) > 0
 
-    assert len(stack) == 0
+    with pytest.raises(Exception):
+        len(stack)

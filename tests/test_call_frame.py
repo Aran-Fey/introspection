@@ -1,21 +1,15 @@
-
+import inspect
+import types
 import pytest
 
-import inspect
 from introspection import CallFrame, errors
 
 
+def current_frame() -> types.FrameType:
+    return inspect.currentframe().f_back  # type: ignore
+
+
 GLOBAL_FRAME = CallFrame.current()
-
-
-@pytest.mark.parametrize('orig_frame', [
-    inspect.currentframe(),
-    CallFrame(inspect.currentframe()),
-])
-def test_equality(orig_frame):
-    frame = CallFrame.from_frame(orig_frame)
-
-    assert frame == orig_frame
 
 
 def test_inequality():
@@ -25,10 +19,9 @@ def test_inequality():
 
 
 def test_get_current_frame():
-    frame1 = inspect.currentframe()
-    frame2 = CallFrame.current()
+    frame = CallFrame.current()
 
-    assert frame1 == frame2
+    assert frame._frame == current_frame()
 
 
 def test_parent_type():
@@ -38,19 +31,19 @@ def test_parent_type():
 
 
 def test_toplevel_frame_has_no_parent():
-    frame = inspect.currentframe()
+    frame = current_frame()
 
     while frame.f_back is not None:
         frame = frame.f_back
 
-    frame = CallFrame.from_frame(frame)
+    frame = CallFrame(frame)
 
     assert frame.parent is None
 
 
 def test_attrs():
-    frame1 = inspect.currentframe()
-    frame2 = CallFrame.from_frame(frame1)
+    frame1 = current_frame()
+    frame2 = CallFrame(frame1)
 
     assert frame2.parent == frame1.f_back
     assert frame2.locals is frame1.f_locals
@@ -62,18 +55,18 @@ def test_attrs():
 def test_scope_name():
     frame = CallFrame.current()
 
-    assert frame.scope_name == 'test_scope_name'
+    assert frame.scope_name == "test_scope_name"
 
 
 def test_global_scope_name():
-    assert GLOBAL_FRAME.scope_name == '<module>'
+    assert GLOBAL_FRAME.scope_name == "<module>"
 
 
 def test_class_scope_name():
     class Class:
         frame = CallFrame.current()
 
-    assert Class.frame.scope_name == 'Class'
+    assert Class.frame.scope_name == "Class"
 
 
 # FIXME: This test randomly fails, apparently because of the file path being
@@ -97,40 +90,40 @@ def test_resolve_local_name():
 
     frame = CallFrame.current()
 
-    assert frame.resolve_name('x') is x
+    assert frame.resolve_name("x") is x
 
 
 def test_resolve_global_name():
     frame = CallFrame.current()
 
-    assert frame.resolve_name('pytest') is pytest
+    assert frame.resolve_name("pytest") is pytest
 
 
 def test_resolve_builtin_name():
     frame = CallFrame.current()
 
-    assert frame.resolve_name('int') is int
+    assert frame.resolve_name("int") is int
 
 
 def test_resolve_nonexistent_name():
     frame = CallFrame.current()
 
-    with pytest.raises(errors.NameNotAccessibleFromFrame('firetruck', frame)):
-        frame.resolve_name('firetruck')
-    
+    with pytest.raises(errors.NameNotAccessibleFromFrame("firetruck", frame)):  # type: ignore
+        frame.resolve_name("firetruck")
+
     # Deprecated exception
     with pytest.raises(NameError):
-        frame.resolve_name('firetruck')
+        frame.resolve_name("firetruck")
 
 
-def _get_current_frame():
+def _get_frame_for_this_function():
     return CallFrame.current()
 
 
 def test_get_surrounding_function_global():
-    frame = _get_current_frame()
+    frame = _get_frame_for_this_function()
 
-    assert frame.get_surrounding_function() is _get_current_frame
+    assert frame.get_surrounding_function() is _get_frame_for_this_function
 
 
 def test_get_surrounding_function_local():
@@ -143,7 +136,7 @@ def test_get_surrounding_function_local():
 
 
 def test_get_surrounding_function_replaced():
-    def func():
+    def func():  # type: ignore
         return CallFrame.current()
 
     frame = func()
@@ -151,7 +144,8 @@ def test_get_surrounding_function_replaced():
     def func():
         pass
 
-    assert frame.get_surrounding_function() is None
+    with pytest.raises(LookupError):
+        frame.get_surrounding_function()
 
 
 def test_get_surrounding_function_deleted():
@@ -162,14 +156,11 @@ def test_get_surrounding_function_deleted():
 
     del func
 
-    assert frame.get_surrounding_function() is None
+    with pytest.raises(LookupError):
+        frame.get_surrounding_function()
 
 
-def test_get_surrounding_function_no_parent():
-    frame = CallFrame.current()
-
-    while frame.parent is not None:
-        frame = frame.parent
-
-    # Make sure this doesn't crash
-    _ = frame.get_surrounding_function()
+def test_get_surrounding_function_no_function():
+    # Since the global frame isn't in a function, this shouldn't return anything
+    with pytest.raises(LookupError):
+        GLOBAL_FRAME.get_surrounding_function()
