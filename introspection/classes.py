@@ -1,9 +1,8 @@
-
 import collections
 import inspect
 import functools
-from typing import *
-from typing_extensions import Literal, TypeGuard
+from typing import *  # type: ignore
+from typing_extensions import *  # type: ignore
 
 import sentinel
 
@@ -12,29 +11,38 @@ from .errors import *
 from .types import Slot, Function
 
 __all__ = [
-    'iter_subclasses', 'get_subclasses', 'get_attributes', 'get_abstract_method_names', 'safe_is_subclass',
-    'iter_slots', 'get_slot_names', 'get_slot_counts', 'get_slots',
-    'get_implicit_method_type',
-    'fit_to_class', 'add_method_to_class', 'wrap_method',
+    "iter_subclasses",
+    "get_subclasses",
+    "get_attributes",
+    "get_abstract_method_names",
+    "safe_is_subclass",
+    "iter_slots",
+    "get_slot_names",
+    "get_slot_counts",
+    "get_slots",
+    "get_implicit_method_type",
+    "fit_to_class",
+    "add_method_to_class",
+    "wrap_method",
 ]
 
 
-T = TypeVar('T')
+T = TypeVar("T")
 
-auto = sentinel.create('auto')
+auto = sentinel.create("auto")
 
 
 def iter_subclasses(cls: Type[T], include_abstract: bool = False) -> Iterator[Type[T]]:
     """
     Yields subclasses of the given class.
-    
+
     .. versionadded:: 1.5
 
     :param cls: A base class
     :param include_abstract: Whether abstract base classes should be included
     :return: An iterator yielding subclasses
     """
-    seen = set()
+    seen: Set[type] = set()
     queue = cls.__subclasses__()
 
     while queue:
@@ -79,23 +87,20 @@ def iter_slots(cls: type) -> Iterator[Tuple[str, Any]]:
         cls_vars = static_vars(cls)
 
         try:
-            slots = cls_vars['__slots__']
+            slots = cast(Iterable[str], cls_vars["__slots__"])
         except KeyError:
-            if cls.__module__ == 'builtins':
+            if cls.__module__ == "builtins":
                 break
 
-            slots = (
-                slot for slot in ('__weakref__', '__dict__')
-                if slot in cls_vars
-            )
+            slots = (slot for slot in ("__weakref__", "__dict__") if slot in cls_vars)
         else:
             if isinstance(slots, str):
                 slots = (slots,)
 
         for slot_name in slots:
             # apply name mangling if necessary
-            if slot_name.startswith('__') and not slot_name.endswith('__'):
-                slot_name = '_{}{}'.format(cls.__name__, slot_name)
+            if slot_name.startswith("__") and not slot_name.endswith("__"):
+                slot_name = "_{}{}".format(cls.__name__, slot_name)
 
             slot = cls_vars[slot_name]
 
@@ -125,7 +130,7 @@ def get_slot_names(cls: type) -> Set[str]:
     return set(get_slot_counts(cls))
 
 
-def get_slots(cls: type) -> Dict[str, Slot]:
+def get_slots(cls: type) -> Dict[str, Slot[object]]:
     """
     Collects all of the given class's ``__slots__``, returning a
     dict of the form ``{slot_name: slot_descriptor}``.
@@ -136,7 +141,7 @@ def get_slots(cls: type) -> Dict[str, Slot]:
     :param cls: The class whose slots to collect
     :return: A dict mapping slot names to descriptors
     """
-    slots_dict = {}
+    slots_dict: Dict[str, Slot[object]] = {}
 
     for slot_name, slot in iter_slots(cls):
         slots_dict.setdefault(slot_name, slot)
@@ -155,17 +160,17 @@ def get_attributes(obj: Any, include_weakref: bool = False) -> Dict[str, object]
     :return: A dict of ``{attr_name: attr_value}``
     """
     try:
-        attrs = static_vars(obj)
+        attrs = dict(static_vars(obj))
     except ObjectHasNoDict:
-        attrs = {}
-    
+        attrs: Dict[str, object] = {}
+
     cls = type(obj)
     slots = get_slots(cls)
 
-    slots.pop('__dict__', None)
+    slots.pop("__dict__", None)
 
     if not include_weakref:
-        slots.pop('__weakref__', None)
+        slots.pop("__weakref__", None)
 
     # TODO: Is this the correct way to invoke the descriptor's __get__?
     for name, slot in slots.items():
@@ -187,8 +192,8 @@ def get_abstract_method_names(cls: type) -> Set[str]:
     :param cls: A class
     :return: The names of all abstract methods in that class
     """
-    result = set()
-    seen = set()
+    result: Set[str] = set()
+    seen: Set[str] = set()
 
     for cls_ in static_mro(cls):
         for name, value in static_vars(cls_).items():
@@ -198,7 +203,7 @@ def get_abstract_method_names(cls: type) -> Set[str]:
 
             if is_abstract(value) and not isinstance(value, type):
                 result.add(name)
-    
+
     return result
 
 
@@ -206,7 +211,7 @@ def safe_is_subclass(subclass: object, superclass: Class) -> TypeGuard[Type[Clas
     """
     A clone of :func:`issubclass` that returns ``False`` instead of throwing a
     :exc:`TypeError`.
-    
+
     .. versionadded:: 1.2
 
     :param subclass: The subclass
@@ -219,7 +224,9 @@ def safe_is_subclass(subclass: object, superclass: Class) -> TypeGuard[Type[Clas
         return False
 
 
-def get_implicit_method_type(method_name: str) -> Literal[None, classmethod, staticmethod]:
+def get_implicit_method_type(
+    method_name: str,
+) -> Literal[None, classmethod, staticmethod]:
     """
     Given the name of a method as input, returns what kind of method python automatically
     converts it to. The return value can be :class:`staticmethod`, :class:`classmethod`,
@@ -232,27 +239,29 @@ def get_implicit_method_type(method_name: str) -> Literal[None, classmethod, sta
         <class 'staticmethod'>
         >>> get_implicit_method_type('__init_subclass__')
         <class 'classmethod'>
-    
+
     .. versionadded:: 1.3
 
     :param method_name: The name of a dundermethod
     :return: The type of that method
     """
     TYPES_BY_NAME = {
-        '__new__': staticmethod,
-        '__init_subclass__': classmethod,
-        '__class_getitem__': classmethod,
+        "__new__": staticmethod,
+        "__init_subclass__": classmethod,
+        "__class_getitem__": classmethod,
     }
 
     return TYPES_BY_NAME.get(method_name)
 
 
-def fit_to_class(thing: Union[type, Function], cls: type, name: Optional[str] = None) -> None:
+def fit_to_class(
+    thing: Union[type, Function], cls: type, name: Optional[str] = None
+) -> None:
     r"""
     Updates ``thing``\ 's metadata to match ``cls``\ 's.
 
     ``thing`` can be one of the following:
-    
+
     - A function
     - A :any:`staticmethod`
     - A :any:`classmethod`
@@ -266,11 +275,14 @@ def fit_to_class(thing: Union[type, Function], cls: type, name: Optional[str] = 
     :param cls: The class to copy the metadata from
     :param name: The name to rename ``thing`` to
     """
+    methods: List[Union[type, Function]]
+
     if isinstance(thing, (classmethod, staticmethod)):
         methods = [thing.__func__]
     elif isinstance(thing, property):
         methods = [
-            method for method in (thing.fget, thing.fset, thing.fdel)
+            method
+            for method in (thing.fget, thing.fset, thing.fdel)
             if method is not None
         ]
     else:
@@ -281,14 +293,14 @@ def fit_to_class(thing: Union[type, Function], cls: type, name: Optional[str] = 
             method_name = method.__name__
         else:
             method_name = name
-        
+
         method.__name__ = method_name
-        method.__qualname__ = cls.__qualname__ + '.' + method_name
+        method.__qualname__ = cls.__qualname__ + "." + method_name
         method.__module__ = cls.__module__
 
 
 def add_method_to_class(
-    method: Callable,
+    method: Callable[..., Any],
     cls: type,
     name: Optional[str] = None,
     method_type: Union[None, Type[staticmethod], Type[classmethod]] = auto,
@@ -318,7 +330,7 @@ def add_method_to_class(
 
     if method_type is auto:
         method_type = get_implicit_method_type(method_name)
-    
+
     if method_type is not None:
         method = method_type(method)
 
@@ -326,7 +338,7 @@ def add_method_to_class(
 
 
 def wrap_method(
-    method: Callable,
+    method: Callable[..., Any],
     cls: type,
     name: Optional[str] = None,
     method_type: Union[None, Type[staticmethod], Type[classmethod]] = auto,
@@ -347,23 +359,23 @@ def wrap_method(
         class Foo:
             def __init__(self, foo):
                 self.foo = foo
-            
+
             def __repr__(self):
                 return f'<Foo object with foo={self.foo}>'
 
         def custom_init(original_init, self, *args, **kwargs):
             original_init(self, *args, **kwargs)
             print('Initialized instance:', self)
-        
+
         wrap_method(custom_init, Foo, '__init__')
 
         Foo(5)  # prints "Initialized instance: <Foo object with foo=5>"
-    
+
     .. note::
         Adding a ``__new__`` method to a class can lead to unexpected
         problems because of the way ``object.__new__`` works.
 
-        If a class doesn't implement a ``__new__`` method at all, 
+        If a class doesn't implement a ``__new__`` method at all,
         ``object.__new__`` silently discards any arguments it receives.
         But if a class does implement a custom ``__new__`` method,
         passing arguments into ``object.__new__`` will throw an exception::
@@ -371,17 +383,17 @@ def wrap_method(
             class ThisWorks:
                 def __init__(self, some_arg):
                     pass
-            
+
             class ThisDoesntWork:
                 def __new__(cls, *args, **kwargs):
                     return super().__new__(cls, *args, **kwargs)
-                
+
                 def __init__(self, some_arg):
                     pass
-            
+
             ThisWorks(5)  # works
             ThisDoesntWork(5)  # throws TypeError: object.__new__() takes exactly one argument
-        
+
         This is why, when this function is used to add a ``__new__``
         method to a class that previously didn't have one, it
         automatically generates a dummy ``__new__`` that *attempts*
@@ -392,14 +404,14 @@ def wrap_method(
             class ThisWorks:
                 def __init__(self, some_arg):
                     pass
-            
+
             def __new__(original_new, cls, *args, **kwargs):
                 return original_new(cls, *args, **kwargs)
-            
+
             wrap_method(__new__, ThisWorks)
 
             ThisWorks(5)  # works!
-        
+
         However, it is impossible to always correctly figure out
         if the arguments should be passed on or not. If there is
         another ``__new__`` method that passes on its arguments,
@@ -420,7 +432,7 @@ def wrap_method(
 
             Parent(5)  # works!
             Child(5)  # throws TypeError
-        
+
         In such a scenario, the method sees that ``Child.__new__``
         exists, and therefore it is ``Child.__new__``\ 's responsibility
         to handle the arguments correctly. It should consume all the
@@ -429,11 +441,11 @@ def wrap_method(
         As a workaround, you can mark ``Child.__new__`` as a
         method that forwards its arguments. This is done by
         setting its ``_forwards_args`` attribute to ``True``::
-        
+
             Child.__new__._forwards_args = True
 
             Child(5)  # works!
-    
+
     .. versionadded:: 1.3
 
     :param method: The method to add to the class
@@ -442,11 +454,11 @@ def wrap_method(
     :param method_type: One of :class:`staticmethod`, :class:`classmethod`, or ``None`` (or omitted)
     """
     if not isinstance(cls, type):
-        raise InvalidArgumentType('cls', cls, type)
+        raise InvalidArgumentType("cls", cls, type)
 
     if name is None:
         name = method.__name__
-    
+
     if method_type is auto:
         method_type = get_implicit_method_type(name)
 
@@ -455,7 +467,7 @@ def wrap_method(
     @wrap_original
     def replacement_method(*args, **kwargs):
         return method(original_method, *args, **kwargs)
-    
+
     add_method_to_class(replacement_method, cls, name, method_type=method_type)
 
 
@@ -466,19 +478,21 @@ def _get_original_method(cls, method_name, method_type):
         original_method = cls_vars[method_name]
     except KeyError:
         # === SPECIAL METHOD: __new__ ===
-        if method_name == '__new__':
+        if method_name == "__new__":
             original_method, wrap_original = _make_original_new_method(cls)
-        
+
         # === STATICMETHODS ===
         elif method_type is staticmethod:
+
             def original_method(*args, **kwargs):
                 super_method = getattr(super(cls, cls), method_name)
                 return super_method(*args, **kwargs)
-            
+
             wrap_original = lambda func: func
-        
+
         # === INSTANCE- AND CLASSMETHODS ===
         else:
+
             def original_method(self_or_cls, *args, **kwargs):
                 super_method = getattr(super(cls, self_or_cls), method_name)
                 return super_method(*args, **kwargs)
@@ -489,7 +503,7 @@ def _get_original_method(cls, method_name, method_type):
             original_method = original_method.__func__
 
         wrap_original = functools.wraps(original_method)
-    
+
     return original_method, wrap_original
 
 
@@ -526,27 +540,27 @@ def _make_original_new_method(cls):
 
                 try:
                     # __new__ is always wrapped in a staticmethod
-                    new = static_vars(c)['__new__'].__func__
+                    new = static_vars(c)["__new__"].__func__
                 except KeyError:
                     continue
 
-                if getattr(new, '_forwards_args', False):
+                if getattr(new, "_forwards_args", False):
                     continue
-                
+
                 forward_args = True
                 break
-            
+
             if not forward_args:
                 args = ()
                 kwargs = {}
-        
+
         return super_new(class_, *args, **kwargs)
-    
+
     # We're just gonna assume that the user is going to properly
     # call our original_method, because if not, they should've
     # just used add_method_to_class instead.
     def wrap_original(func):
         func._forwards_args = True
         return func
-    
+
     return original_method, wrap_original

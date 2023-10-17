@@ -178,10 +178,11 @@ def annotation_to_string(
     implicit_typing: bool = True,
     new_style_unions: bool = True,
     optional_as_union: bool = True,
+    variance_prefixes: bool = False,
 ) -> str:
     """
-    Converts a type annotation to string. The result is
-    valid python code.
+    Converts a type annotation to string. The result is valid python code
+    (unless ``variance_prefixes`` is set to ``True``).
 
     Examples::
 
@@ -197,18 +198,21 @@ def annotation_to_string(
         types' names
     :param new_style_unions: Whether to use the new-style ``typing.Union`` syntax
         ``int | str`` instead of ``Union[int, str]``
+    :param variance_prefixes: Whether `TypeVars` and `ParamSpecs` should be
+        prefixed with ``+``, ``-``, or ``~`` to indicate variance
     :return: A string that, when evaluated, returns ``annotation``
     """
 
-    def recurse(annotation):
+    def recurse(annotation: TypeAnnotation) -> str:
         return annotation_to_string(
             annotation,
             implicit_typing=implicit_typing,
             new_style_unions=new_style_unions,
             optional_as_union=optional_as_union,
+            variance_prefixes=variance_prefixes,
         )
 
-    def process_nested(prefix, elems):
+    def process_nested(prefix: str, elems: Iterable[TypeAnnotation]):
         elems = ", ".join(recurse(ann) for ann in elems)
         return "{}[{}]".format(prefix, elems)
 
@@ -239,7 +243,26 @@ def annotation_to_string(
         return process_nested(prefix, subtypes)
 
     if isinstance(annotation, (typing.TypeVar, typing_extensions.ParamSpec)):
-        return str(annotation)
+        result = annotation.__name__
+
+        if variance_prefixes:
+            if annotation.__covariant__:
+                result = "+" + result
+            elif annotation.__contravariant__:
+                result = "-" + result
+            else:
+                result = "~" + result
+
+        return result
+
+    if isinstance(annotation, typing_extensions.TypeVarTuple):
+        return annotation.__name__
+
+    if isinstance(annotation, typing_extensions.ParamSpecArgs):
+        return recurse(annotation.__origin__) + ".args"
+
+    if isinstance(annotation, typing_extensions.ParamSpecKwargs):
+        return recurse(annotation.__origin__) + ".kwargs"
 
     if hasattr(annotation, "__module__"):
         if annotation.__module__ == "builtins":

@@ -838,6 +838,8 @@ if is_py39_plus:
         (typing_extensions.Literal, "Literal"),
         (typing_extensions.Protocol, "Protocol"),
         (typing_extensions.ClassVar, "ClassVar"),
+        (typing_extensions.ParamSpec, "ParamSpec"),
+        (typing_extensions.Final, "Final"),
     ],
 )
 def test_get_type_name(type_, expected):

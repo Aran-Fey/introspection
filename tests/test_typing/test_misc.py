@@ -54,10 +54,32 @@ def test_annotation_to_string_old_style_unions(expected):
     [
         (None, "None"),
         (type(None), "None"),
+        (TypeVar("T"), "T"),
+        (TypeVar("T", covariant=True), "T"),
+        (TypeVar("T", contravariant=True), "T"),
+        (TypeVarTuple("T"), "T"),
+        (ParamSpec("P"), "P"),
+        (ParamSpec("P").args, "P.args"),
+        (ParamSpec("P").kwargs, "P.kwargs"),
     ],
 )
 def test_annotation_to_string(annotation, expected):
     assert annotation_to_string(annotation) == expected
+
+
+@pytest.mark.parametrize(
+    "annotation, expected",
+    [
+        (TypeVar("T"), "~T"),
+        (TypeVar("T", covariant=True), "+T"),
+        (TypeVar("T", contravariant=True), "-T"),
+        (ParamSpec("P"), "~P"),
+        (ParamSpec("P").args, "~P.args"),
+        (ParamSpec("P").kwargs, "~P.kwargs"),
+    ],
+)
+def test_annotation_to_string_with_variance_prefixes(annotation, expected):
+    assert annotation_to_string(annotation, variance_prefixes=True) == expected
 
 
 if hasattr(typing, "Literal"):
@@ -72,18 +94,6 @@ if hasattr(typing, "Literal"):
         annotation = eval(expected)
 
         assert annotation_to_string(annotation) == expected
-
-
-@pytest.mark.parametrize(
-    "var, expected",
-    [
-        (TypeVar("T"), "~T"),
-        (TypeVar("T_co", covariant=True), "+T_co"),
-        (TypeVar("T_contra", contravariant=True), "-T_contra"),
-    ],
-)
-def test_annotation_to_string_typevars(var, expected):
-    assert annotation_to_string(var) == expected
 
 
 @pytest.mark.parametrize(
