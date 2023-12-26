@@ -4,7 +4,7 @@ import builtins
 import io
 import sys
 import typing
-from typing import *
+from typing import *  # type: ignore
 
 from introspection.typing.misc import *
 
@@ -167,7 +167,7 @@ memoryview = bytearray
     ],
 )
 def test_resolve_forward_refs_in_module(annotation, module, expected):
-    ann = resolve_forward_refs(annotation, module=module)
+    ann = resolve_forward_refs(annotation, module)
     assert ann == expected
 
 
@@ -178,15 +178,15 @@ def test_resolve_forward_refs_in_module(annotation, module, expected):
     ],
 )
 def test_resolve_forward_refs_no_eval(annotation, module, expected):
-    ann = resolve_forward_refs(annotation, module=module, eval_=False)
+    ann = resolve_forward_refs(annotation, module, mode="getattr")
     assert ann == expected
 
 
 @pytest.mark.parametrize(
     "annotation, kwargs",
     [
-        ("ThisClassDoesntExist", {"eval_": False}),
-        ("ThisClassDoesntExist", {"module": "sys"}),
+        ("ThisClassDoesntExist", {"mode": "getattr"}),
+        ("ThisClassDoesntExist", {"context": "sys"}),
         ("this is a syntax error", {}),
     ],
 )
@@ -198,7 +198,7 @@ def test_resolve_forward_refs_error(annotation, kwargs):
 @pytest.mark.parametrize(
     "annotation, kwargs, expected",
     [
-        ("ThisClassDoesntExist", {"eval_": False}, "ThisClassDoesntExist"),
+        ("ThisClassDoesntExist", {"mode": "getattr"}, "ThisClassDoesntExist"),
         ("this is a syntax error", {}, "this is a syntax error"),
         ('List["Foo"]', {}, List["Foo"]),
     ],

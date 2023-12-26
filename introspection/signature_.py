@@ -18,7 +18,7 @@ from .parameter import Parameter
 from .misc import unwrap, static_mro, static_vars
 from ._utils import SIG_EMPTY
 from .errors import *
-from .types import P
+from .types import P, TypeAnnotation
 
 __all__ = ["Signature"]
 
@@ -29,15 +29,17 @@ B = TypeVar("B")
 K = TypeVar("K")
 V = TypeVar("V")
 IntOrFloatVar = TypeVar("IntOrFloatVar", int, float)
-FilePath = Union[str, bytes, os.PathLike]
+FilePath = Union[str, bytes, os.PathLike[AnyStr]]
 
-BUILTIN_SIGNATURES: Dict[str, Tuple[TypeAnnotation, List[Parameter]]] = {
+_BUILTIN_SIGNATURES: Dict[str, Tuple[TypeAnnotation, List[Parameter]]] = {
     "abs": (Any, [Parameter("x", Parameter.POSITIONAL_ONLY, annotation=SupportsAbs)]),
     "aiter": (
-        AsyncIterator[T],
+        AsyncIterator[T],  # type: ignore
         [
             Parameter(
-                "async_iterable", Parameter.POSITIONAL_ONLY, annotation=AsyncIterable[T]
+                "async_iterable",
+                Parameter.POSITIONAL_ONLY,
+                annotation=AsyncIterable[T],  # type: ignore
             )
         ],
     ),
@@ -46,10 +48,12 @@ BUILTIN_SIGNATURES: Dict[str, Tuple[TypeAnnotation, List[Parameter]]] = {
         [Parameter("iterable", Parameter.POSITIONAL_ONLY, annotation=Iterable)],
     ),
     "anext": (
-        Awaitable[Union[A, B]],
+        Awaitable[Union[A, B]],  # type: ignore
         [
             Parameter(
-                "async_iterator", Parameter.POSITIONAL_ONLY, annotation=AsyncIterator[A]
+                "async_iterator",
+                Parameter.POSITIONAL_ONLY,
+                annotation=AsyncIterator[A],  # type: ignore
             ),
             Parameter(
                 "default",
@@ -82,12 +86,8 @@ BUILTIN_SIGNATURES: Dict[str, Tuple[TypeAnnotation, List[Parameter]]] = {
                 Parameter.missing,
                 Union[str, ByteString],
             ),
-            Parameter(
-                "encoding", Parameter.POSITIONAL_OR_KEYWORD, Parameter.missing, str
-            ),
-            Parameter(
-                "errors", Parameter.POSITIONAL_OR_KEYWORD, Parameter.missing, str
-            ),
+            Parameter("encoding", Parameter.POSITIONAL_OR_KEYWORD, Parameter.missing, str),
+            Parameter("errors", Parameter.POSITIONAL_OR_KEYWORD, Parameter.missing, str),
         ],
     ),
     "bytes": (
@@ -99,12 +99,8 @@ BUILTIN_SIGNATURES: Dict[str, Tuple[TypeAnnotation, List[Parameter]]] = {
                 Parameter.missing,
                 Union[str, ByteString, SupportsBytes],
             ),
-            Parameter(
-                "encoding", Parameter.POSITIONAL_OR_KEYWORD, Parameter.missing, str
-            ),
-            Parameter(
-                "errors", Parameter.POSITIONAL_OR_KEYWORD, Parameter.missing, str
-            ),
+            Parameter("encoding", Parameter.POSITIONAL_OR_KEYWORD, Parameter.missing, str),
+            Parameter("errors", Parameter.POSITIONAL_OR_KEYWORD, Parameter.missing, str),
         ],
     ),
     "callable": (
@@ -128,9 +124,7 @@ BUILTIN_SIGNATURES: Dict[str, Tuple[TypeAnnotation, List[Parameter]]] = {
             Parameter(
                 "mode",
                 Parameter.POSITIONAL_OR_KEYWORD,
-                annotation=Literal["eval", "exec"]
-                if hasattr(typing, "Literal")
-                else str,
+                annotation=Literal["eval", "exec"] if hasattr(typing, "Literal") else str,
             ),
             Parameter("flags", Parameter.POSITIONAL_OR_KEYWORD, 0, int),
             Parameter("dont_inherit", Parameter.POSITIONAL_OR_KEYWORD, False, bool),
@@ -162,13 +156,13 @@ BUILTIN_SIGNATURES: Dict[str, Tuple[TypeAnnotation, List[Parameter]]] = {
         ],
     ),
     "dict": (
-        Dict[K, V],
+        Dict[K, V],  # type: ignore
         [
             Parameter(
                 "mapping_or_iterable",
                 Parameter.POSITIONAL_ONLY,
                 Parameter.missing,
-                Union[Mapping[K, V], Iterable[Tuple[K, V]]],
+                Union[Mapping[K, V], Iterable[Tuple[K, V]]],  # type: ignore
             ),
             Parameter("kwargs", Parameter.VAR_KEYWORD, annotation=V),
         ],
@@ -178,17 +172,19 @@ BUILTIN_SIGNATURES: Dict[str, Tuple[TypeAnnotation, List[Parameter]]] = {
         [Parameter("object", Parameter.POSITIONAL_ONLY, Parameter.missing, Any)],
     ),
     "divmod": (
-        Tuple[IntOrFloatVar, IntOrFloatVar],
+        Tuple[IntOrFloatVar, IntOrFloatVar],  # type: ignore
         [
             Parameter("a", Parameter.POSITIONAL_ONLY, annotation=IntOrFloatVar),
             Parameter("b", Parameter.POSITIONAL_ONLY, annotation=IntOrFloatVar),
         ],
     ),
     "enumerate": (
-        Iterator[Tuple[int, T]],
+        Iterator[Tuple[int, T]],  # type: ignore
         [
             Parameter(
-                "iterable", Parameter.POSITIONAL_OR_KEYWORD, annotation=Iterable[T]
+                "iterable",
+                Parameter.POSITIONAL_OR_KEYWORD,
+                annotation=Iterable[T],  # type: ignore
             ),
             Parameter("start", Parameter.POSITIONAL_OR_KEYWORD, 0, int),
         ],
@@ -201,12 +197,8 @@ BUILTIN_SIGNATURES: Dict[str, Tuple[TypeAnnotation, List[Parameter]]] = {
                 Parameter.POSITIONAL_ONLY,
                 annotation=Union[str, types.CodeType],
             ),
-            Parameter(
-                "globals", Parameter.POSITIONAL_ONLY, None, annotation=Optional[dict]
-            ),
-            Parameter(
-                "locals", Parameter.POSITIONAL_ONLY, None, annotation=Optional[dict]
-            ),
+            Parameter("globals", Parameter.POSITIONAL_ONLY, None, annotation=Optional[dict]),
+            Parameter("locals", Parameter.POSITIONAL_ONLY, None, annotation=Optional[dict]),
         ],
     ),
     "exec": (
@@ -217,21 +209,23 @@ BUILTIN_SIGNATURES: Dict[str, Tuple[TypeAnnotation, List[Parameter]]] = {
                 Parameter.POSITIONAL_ONLY,
                 annotation=Union[str, types.CodeType],
             ),
-            Parameter(
-                "globals", Parameter.POSITIONAL_ONLY, None, annotation=Optional[dict]
-            ),
-            Parameter(
-                "locals", Parameter.POSITIONAL_ONLY, None, annotation=Optional[dict]
-            ),
+            Parameter("globals", Parameter.POSITIONAL_ONLY, None, annotation=Optional[dict]),
+            Parameter("locals", Parameter.POSITIONAL_ONLY, None, annotation=Optional[dict]),
         ],
     ),
     "filter": (
-        Iterator[T],
+        Iterator[T],  # type: ignore
         [
             Parameter(
-                "function", Parameter.POSITIONAL_ONLY, annotation=Callable[[T], Any]
+                "function",
+                Parameter.POSITIONAL_ONLY,
+                annotation=Callable[[T], Any],  # type: ignore
             ),
-            Parameter("iterable", Parameter.POSITIONAL_ONLY, annotation=Iterable[T]),
+            Parameter(
+                "iterable",
+                Parameter.POSITIONAL_ONLY,
+                annotation=Iterable[T],  # type: ignore
+            ),
         ],
     ),
     "float": (
@@ -246,10 +240,13 @@ BUILTIN_SIGNATURES: Dict[str, Tuple[TypeAnnotation, List[Parameter]]] = {
         ],
     ),
     "frozenset": (
-        FrozenSet[T],
+        FrozenSet[T],  # type: ignore
         [
             Parameter(
-                "iterable", Parameter.POSITIONAL_ONLY, Parameter.missing, Iterable[T]
+                "iterable",
+                Parameter.POSITIONAL_ONLY,
+                Parameter.missing,
+                Iterable[T],  # type: ignore
             )
         ],
     ),
@@ -322,46 +319,53 @@ BUILTIN_SIGNATURES: Dict[str, Tuple[TypeAnnotation, List[Parameter]]] = {
         ],
     ),
     "iter": (
-        Iterator[T],
+        Iterator[T],  # type: ignore
         [
             Parameter(
                 "object",
                 Parameter.POSITIONAL_ONLY,
-                annotation=Union[Iterable[T], Callable[[], T]],
+                annotation=Union[Iterable[T], Callable[[], T]],  # type: ignore
             ),
             Parameter("sentinel", Parameter.POSITIONAL_ONLY, Parameter.missing, Any),
         ],
     ),
     "len": (int, [Parameter("s", Parameter.POSITIONAL_ONLY, annotation=Sized)]),
     "list": (
-        List[T],
+        List[T],  # type: ignore
         [
             Parameter(
-                "iterable", Parameter.POSITIONAL_ONLY, Parameter.missing, Iterable[T]
+                "iterable",
+                Parameter.POSITIONAL_ONLY,
+                Parameter.missing,
+                Iterable[T],  # type: ignore
             )
         ],
     ),
     "locals": (dict, []),
     "map": (
-        Iterator[T],
+        Iterator[T],  # type: ignore
         [
             Parameter(
-                "function", Parameter.POSITIONAL_ONLY, annotation=Callable[..., T]
+                "function",
+                Parameter.POSITIONAL_ONLY,
+                annotation=Callable[..., T],  # type: ignore
             ),
             Parameter("iterables", Parameter.VAR_POSITIONAL, annotation=Iterable),
         ],
     ),
     "max": (
-        Union[A, B],
+        Union[A, B],  # type: ignore
         [
             Parameter(
-                "args", Parameter.VAR_POSITIONAL, annotation=Union[A, Iterable[A]]
+                "args",
+                Parameter.VAR_POSITIONAL,
+                annotation=Union[A, Iterable[A]],  # type: ignore
             ),
             Parameter(
                 "key",
                 Parameter.KEYWORD_ONLY,
                 Parameter.missing,
-                Optional[Callable[[A], Any]],
+                Optional[Callable[[A], Any]],  # type: ignore
             ),
             Parameter("default", Parameter.KEYWORD_ONLY, Parameter.missing, B),
         ],
@@ -371,24 +375,30 @@ BUILTIN_SIGNATURES: Dict[str, Tuple[TypeAnnotation, List[Parameter]]] = {
         [Parameter("obj", Parameter.POSITIONAL_ONLY, annotation=ByteString)],
     ),
     "min": (
-        Union[A, B],
+        Union[A, B],  # type: ignore
         [
             Parameter(
-                "args", Parameter.VAR_POSITIONAL, annotation=Union[A, Iterable[A]]
+                "args",
+                Parameter.VAR_POSITIONAL,
+                annotation=Union[A, Iterable[A]],  # type: ignore
             ),
             Parameter(
                 "key",
                 Parameter.KEYWORD_ONLY,
                 Parameter.missing,
-                Optional[Callable[[A], Any]],
+                Optional[Callable[[A], Any]],  # type: ignore
             ),
             Parameter("default", Parameter.KEYWORD_ONLY, Parameter.missing, B),
         ],
     ),
     "next": (
-        Union[A, B],
+        Union[A, B],  # type: ignore
         [
-            Parameter("iterator", Parameter.POSITIONAL_ONLY, annotation=Iterator[A]),
+            Parameter(
+                "iterator",
+                Parameter.POSITIONAL_ONLY,
+                annotation=Iterator[A],  # type: ignore
+            ),
             Parameter("default", Parameter.POSITIONAL_ONLY, Parameter.missing, B),
         ],
     ),
@@ -400,12 +410,8 @@ BUILTIN_SIGNATURES: Dict[str, Tuple[TypeAnnotation, List[Parameter]]] = {
             Parameter("file", Parameter.POSITIONAL_ONLY, annotation=FilePath),
             Parameter("mode", Parameter.POSITIONAL_OR_KEYWORD, "r", str),
             Parameter("buffering", Parameter.POSITIONAL_OR_KEYWORD, -1, int),
-            Parameter(
-                "encoding", Parameter.POSITIONAL_OR_KEYWORD, Parameter.missing, str
-            ),
-            Parameter(
-                "errors", Parameter.POSITIONAL_OR_KEYWORD, Parameter.missing, str
-            ),
+            Parameter("encoding", Parameter.POSITIONAL_OR_KEYWORD, Parameter.missing, str),
+            Parameter("errors", Parameter.POSITIONAL_OR_KEYWORD, Parameter.missing, str),
             Parameter("newline", Parameter.POSITIONAL_OR_KEYWORD, None, Optional[str]),
             Parameter("closefd", Parameter.POSITIONAL_OR_KEYWORD, True, bool),
             Parameter(
@@ -431,9 +437,7 @@ BUILTIN_SIGNATURES: Dict[str, Tuple[TypeAnnotation, List[Parameter]]] = {
         [
             Parameter("base", Parameter.POSITIONAL_OR_KEYWORD, annotation=Number),
             Parameter("exp", Parameter.POSITIONAL_OR_KEYWORD, annotation=Number),
-            Parameter(
-                "mod", Parameter.POSITIONAL_OR_KEYWORD, Parameter.missing, Number
-            ),
+            Parameter("mod", Parameter.POSITIONAL_OR_KEYWORD, Parameter.missing, Number),
         ],
     ),
     "print": (
@@ -453,19 +457,19 @@ BUILTIN_SIGNATURES: Dict[str, Tuple[TypeAnnotation, List[Parameter]]] = {
                 "fget",
                 Parameter.POSITIONAL_OR_KEYWORD,
                 None,
-                Optional[Callable[[A], B]],
+                Optional[Callable[[A], B]],  # type: ignore
             ),
             Parameter(
                 "fset",
                 Parameter.POSITIONAL_OR_KEYWORD,
                 None,
-                Optional[Callable[[A, B], Any]],
+                Optional[Callable[[A, B], Any]],  # type: ignore
             ),
             Parameter(
                 "fdel",
                 Parameter.POSITIONAL_OR_KEYWORD,
                 None,
-                Optional[Callable[[A], Any]],
+                Optional[Callable[[A], Any]],  # type: ignore
             ),
             Parameter("doc", Parameter.POSITIONAL_OR_KEYWORD, None, str),
         ],
@@ -480,8 +484,10 @@ BUILTIN_SIGNATURES: Dict[str, Tuple[TypeAnnotation, List[Parameter]]] = {
     ),
     "repr": (str, [Parameter("object", Parameter.POSITIONAL_ONLY, annotation=Any)]),
     "reversed": (
-        Iterator[T],
-        [Parameter("seq", Parameter.POSITIONAL_ONLY, annotation=Reversible[T])],
+        Iterator[T],  # type: ignore
+        [
+            Parameter("seq", Parameter.POSITIONAL_ONLY, annotation=Reversible[T]),  # type: ignore
+        ],
     ),
     "round": (
         Number,
@@ -491,10 +497,13 @@ BUILTIN_SIGNATURES: Dict[str, Tuple[TypeAnnotation, List[Parameter]]] = {
         ],
     ),
     "set": (
-        Set[T],
+        Set[T],  # type: ignore
         [
             Parameter(
-                "iterable", Parameter.POSITIONAL_ONLY, Parameter.missing, Iterable[T]
+                "iterable",
+                Parameter.POSITIONAL_ONLY,
+                Parameter.missing,
+                Iterable[T],  # type: ignore
             )
         ],
     ),
@@ -515,11 +524,18 @@ BUILTIN_SIGNATURES: Dict[str, Tuple[TypeAnnotation, List[Parameter]]] = {
         ],
     ),
     "sorted": (
-        List[T],
+        List[T],  # type: ignore
         [
-            Parameter("iterable", Parameter.POSITIONAL_ONLY, annotation=Iterable[T]),
             Parameter(
-                "key", Parameter.KEYWORD_ONLY, None, Optional[Callable[[T], Any]]
+                "iterable",
+                Parameter.POSITIONAL_ONLY,
+                annotation=Iterable[T],  # type: ignore
+            ),
+            Parameter(
+                "key",
+                Parameter.KEYWORD_ONLY,
+                None,
+                Optional[Callable[[T], Any]],  # type: ignore
             ),
             Parameter("reverse", Parameter.KEYWORD_ONLY, False, bool),
         ],
@@ -555,9 +571,7 @@ BUILTIN_SIGNATURES: Dict[str, Tuple[TypeAnnotation, List[Parameter]]] = {
         super,
         [
             Parameter("type", Parameter.POSITIONAL_ONLY, Parameter.missing, type),
-            Parameter(
-                "object_or_type", Parameter.POSITIONAL_ONLY, Parameter.missing, Any
-            ),
+            Parameter("object_or_type", Parameter.POSITIONAL_ONLY, Parameter.missing, Any),
         ],
     ),
     "tuple": (
@@ -568,9 +582,7 @@ BUILTIN_SIGNATURES: Dict[str, Tuple[TypeAnnotation, List[Parameter]]] = {
         type,
         [
             Parameter("object_or_name", Parameter.POSITIONAL_ONLY, annotation=Any),
-            Parameter(
-                "bases", Parameter.POSITIONAL_ONLY, Parameter.missing, Tuple[type]
-            ),
+            Parameter("bases", Parameter.POSITIONAL_ONLY, Parameter.missing, Tuple[type]),
             Parameter("dict", Parameter.POSITIONAL_ONLY, Parameter.missing, dict),
         ],
     ),
@@ -582,11 +594,7 @@ BUILTIN_SIGNATURES: Dict[str, Tuple[TypeAnnotation, List[Parameter]]] = {
         Iterator[tuple],
         [Parameter("iterables", Parameter.VAR_POSITIONAL, annotation=Iterable)]
         + (
-            [
-                Parameter(
-                    "strict", Parameter.KEYWORD_ONLY, default=False, annotation=bool
-                )
-            ]
+            [Parameter("strict", Parameter.KEYWORD_ONLY, default=False, annotation=bool)]
             if sys.version_info >= (3, 10)
             else []
         ),
@@ -617,18 +625,18 @@ BUILTIN_SIGNATURES: Dict[str, Tuple[TypeAnnotation, List[Parameter]]] = {
         ],
     ),
 }
-for key in list(BUILTIN_SIGNATURES):
-    value = BUILTIN_SIGNATURES.pop(key)
-
+BUILTIN_SIGNATURES: Dict[Callable[..., object], Tuple[TypeAnnotation, List[Parameter]]] = {}
+for key, value in _BUILTIN_SIGNATURES.items():
     try:
         key = getattr(builtins, key)
     except AttributeError:
         continue
 
     BUILTIN_SIGNATURES[key] = value
+del _BUILTIN_SIGNATURES
 
 
-class Signature(inspect.Signature, typing.Generic[P]):
+class Signature(inspect.Signature):
     """
     An :class:`inspect.Signature` subclass that represents a function's parameter signature and return annotation.
 
@@ -640,7 +648,7 @@ class Signature(inspect.Signature, typing.Generic[P]):
 
     __slots__ = ()
 
-    parameters: Mapping[str, Parameter]
+    parameters: types.MappingProxyType[str, Parameter]  # type: ignore[reportIncompatibleMethodOverride]
 
     def __init__(
         self,
@@ -672,33 +680,29 @@ class Signature(inspect.Signature, typing.Generic[P]):
     def from_signature(
         cls,
         signature: inspect.Signature,
-        parameter_type: Type[Parameter] = Parameter,
     ) -> Self:
         """
         Creates a new ``Signature`` instance from an :class:`inspect.Signature`
         instance.
 
         .. versionchanged:: 1.4
-            ``param_type`` parameter renamed to ``parameter_type``.
+            ``param_type`` parameter renamed to ``Parameter``.
 
         :param signature: An :class:`inspect.Signature` instance
-        :param parameter_type: The class to use for the signature's parameters
+        :param Parameter: The class to use for the signature's parameters
         :return: A new ``Signature`` instance
         """
-        params = [
-            parameter_type.from_parameter(param)
-            for param in signature.parameters.values()
-        ]
+        params = [Parameter.from_parameter(param) for param in signature.parameters.values()]
         return cls(params, return_annotation=signature.return_annotation)
 
     @classmethod
     def from_callable(
         cls,
         callable_: Callable[P, Any],
-        parameter_type: Type[Parameter] = Parameter,
+        *,
         follow_wrapped: bool = True,
         use_signature_db: bool = True,
-    ) -> "Signature[P]":
+    ) -> Self:
         """
         Returns a matching :class:`Signature` instance for the given ``callable_``.
 
@@ -723,10 +727,10 @@ class Signature(inspect.Signature, typing.Generic[P]):
 
         .. versionchanged:: 1.4
             Signature database updated for python 3.10.
-            ``param_type`` parameter renamed to ``parameter_type``.
+            ``param_type`` parameter renamed to ``Parameter``.
 
         :param callable_: A function or any other callable object
-        :param parameter_type: The class to use for the signature's parameters
+        :param Parameter: The class to use for the signature's parameters
         :param follow_wrapped: Whether to unwrap decorated callables
         :param use_signature_db: Whether to look up the signature
         :return: A corresponding ``Signature`` instance
@@ -746,7 +750,7 @@ class Signature(inspect.Signature, typing.Generic[P]):
 
         if use_signature_db and callable_ in BUILTIN_SIGNATURES:
             ret_type, params = BUILTIN_SIGNATURES[callable_]
-            params = [parameter_type.from_parameter(param) for param in params]
+            params = [Parameter.from_parameter(param) for param in params]
             return cls(params, ret_type)
 
         try:
@@ -763,21 +767,18 @@ class Signature(inspect.Signature, typing.Generic[P]):
         else:
             # If we got a bound method as input, discard the first parameter
             if is_bound_method:
-                parameters = [
-                    parameter_type.from_parameter(param)
-                    for param in sig.parameters.values()
-                ]
+                parameters = [Parameter.from_parameter(param) for param in sig.parameters.values()]
                 del parameters[0]
                 return cls(parameters, sig.return_annotation)
             else:
-                return cls.from_signature(sig, parameter_type=parameter_type)
+                return cls.from_signature(sig)
 
         # Builtin exceptions also need special handling, but we don't want to
         # hard-code all of them in BUILTIN_SIGNATURES
         if isinstance(callable_, type) and issubclass(callable_, BaseException):
             return cls(
                 [
-                    parameter_type("args", Parameter.VAR_POSITIONAL),
+                    Parameter("args", Parameter.VAR_POSITIONAL),
                 ]
             )
 
@@ -788,8 +789,6 @@ class Signature(inspect.Signature, typing.Generic[P]):
         cls,
         class_or_mro: Union[type, Iterable[type]],
         method_name: str,
-        *,
-        parameter_type: Type[Parameter] = Parameter,
     ) -> Self:
         """
         Creates a combined signature for the method in the given class and all
@@ -825,8 +824,8 @@ class Signature(inspect.Signature, typing.Generic[P]):
             if method_name not in class_vars:
                 continue
 
-            method = cast(Callable, class_vars[method_name])
-            signature = cls.from_callable(method, parameter_type=parameter_type)
+            method = cast(Callable[..., object], class_vars[method_name])
+            signature = cls.from_callable(method)
 
             param_lists.append(signature.parameter_list)
 
@@ -856,10 +855,7 @@ class Signature(inspect.Signature, typing.Generic[P]):
 
             for param in param_list:
                 # Skip the "self" parameter
-                if (
-                    param is param_list[0]
-                    and param.kind <= Parameter.POSITIONAL_OR_KEYWORD
-                ):
+                if param is param_list[0] and param.kind <= Parameter.POSITIONAL_OR_KEYWORD:
                     continue
 
                 if param.name in seen:
@@ -908,9 +904,7 @@ class Signature(inspect.Signature, typing.Generic[P]):
         Returns a list of the signature's ``POSITIONAL_ONLY`` parameters.
         """
         return [
-            param
-            for param in self.parameters.values()
-            if param.kind is Parameter.POSITIONAL_ONLY
+            param for param in self.parameters.values() if param.kind is Parameter.POSITIONAL_ONLY
         ]
 
     @property
@@ -929,11 +923,7 @@ class Signature(inspect.Signature, typing.Generic[P]):
         """
         Returns a list of the signature's ``KEYWORD_ONLY`` parameters.
         """
-        return [
-            param
-            for param in self.parameters.values()
-            if param.kind is Parameter.KEYWORD_ONLY
-        ]
+        return [param for param in self.parameters.values() if param.kind is Parameter.KEYWORD_ONLY]
 
     @property
     def has_return_annotation(self) -> bool:
@@ -949,7 +939,7 @@ class Signature(inspect.Signature, typing.Generic[P]):
         """
         return sum(not p.is_optional for p in self.parameters.values())
 
-    def bind(self, *args, **kwargs) -> BoundArguments:
+    def bind(self, *args: object, **kwargs: object) -> BoundArguments:
         """
         Similar to :meth:`inspect.Signature.bind`, but returns a
         :class:`introspection.BoundArguments` object.
@@ -957,13 +947,25 @@ class Signature(inspect.Signature, typing.Generic[P]):
         bound_args = super().bind(*args, **kwargs)
         return BoundArguments.from_bound_arguments(bound_args)
 
-    def bind_partial(self, *args, **kwargs) -> BoundArguments:
+    def bind_partial(self, *args: object, **kwargs: object) -> BoundArguments:
         """
         Similar to :meth:`inspect.Signature.bind_partial`, but returns a
         :class:`introspection.BoundArguments` object.
         """
         bound_args = super().bind_partial(*args, **kwargs)
         return BoundArguments.from_bound_arguments(bound_args)
+
+    def with_new_parameter(self, index: int, parameter: Parameter) -> Self:
+        """
+        Returns a copy of this signature with a new parameter inserted.
+
+        :param index: The index where the new parameter should be inserted
+        :param parameter: The new parameter
+        :return: A copy of this signature with the given parameter replaced
+        """
+        parameters = list(self.parameters.values())
+        parameters.insert(index, parameter)
+        return self.replace(parameters=parameters)
 
     def without_parameters(
         self,
@@ -996,7 +998,7 @@ class Signature(inspect.Signature, typing.Generic[P]):
         """
         to_remove = set(params_to_remove)
 
-        parameters = []
+        parameters: List[Parameter] = []
 
         for i, param in enumerate(self.parameters.values()):
             if i in to_remove or param.name in to_remove or param.kind in to_remove:
@@ -1009,7 +1011,7 @@ class Signature(inspect.Signature, typing.Generic[P]):
     def replace_varargs(
         self,
         parameters: Union[
-            Callable,
+            Callable[..., object],
             inspect.Signature,
             Iterable[inspect.Parameter],
             Mapping[str, inspect.Parameter],
@@ -1037,14 +1039,12 @@ class Signature(inspect.Signature, typing.Generic[P]):
         has_varkwargs = Parameter.VAR_KEYWORD in kinds
 
         if not has_varargs and not has_varkwargs:
-            raise ValueError(
-                "This signature has no VAR_POSITIONAL or VAR_KEYWORD parameter"
-            )
+            raise ValueError("This signature has no VAR_POSITIONAL or VAR_KEYWORD parameter")
 
         # Replace *args with POSITIONAL_ONLY, POSITIONAL_OR_KEYWORD, and
         # VAR_POSITIONAL. Replace **kwargs with KEYWORD_ONLY and VAR_KEYWORD.
-        replaces_args = []
-        replaces_kwargs = []
+        replaces_args: List[inspect.Parameter] = []
+        replaces_kwargs: List[inspect.Parameter] = []
         for parameter in parameters:
             # If we have *args but no **kwargs, we'll make all parameters
             # POSITIONAL_ONLY. Similarly, if we have **kwargs but no *args,
@@ -1060,12 +1060,12 @@ class Signature(inspect.Signature, typing.Generic[P]):
             else:
                 replaces_kwargs.append(parameter)
 
-        merged_parameters = []
+        merged_parameters: List[Parameter] = []
         for parameter in self.parameters.values():
             if parameter.kind is Parameter.VAR_POSITIONAL:
-                merged_parameters += replaces_args
+                merged_parameters += map(Parameter.from_parameter, replaces_args)
             elif parameter.kind is Parameter.VAR_KEYWORD:
-                merged_parameters += replaces_kwargs
+                merged_parameters += map(Parameter.from_parameter, replaces_kwargs)
             else:
                 merged_parameters.append(parameter)
 
@@ -1106,7 +1106,7 @@ class Signature(inspect.Signature, typing.Generic[P]):
             )
         }
 
-        text_chunks = []  # When not empty, the last item must always be ``sep``
+        text_chunks: List[str] = []  # When not empty, the last item must always be ``sep``
 
         # Positional-only parameters with a default value of ``missing`` need
         # special treatment, because they're displayed like [a[, b]]. Even
@@ -1163,9 +1163,7 @@ class Signature(inspect.Signature, typing.Generic[P]):
         if self.has_return_annotation:
             from .typing import annotation_to_string
 
-            ann = annotation_to_string(
-                self.return_annotation, implicit_typing=implicit_typing
-            )
+            ann = annotation_to_string(self.return_annotation, implicit_typing=implicit_typing)
             ann = f" -> {ann}"
         else:
             ann = ""

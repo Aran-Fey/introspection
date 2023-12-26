@@ -5,10 +5,11 @@ import sys
 import types
 
 from collections import defaultdict, deque
-from typing import *
-from typing_extensions import ParamSpec
+from typing import *  # type: ignore
+from typing_extensions import ParamSpec, TypeAlias
 
 from .errors import *
+from .types import ObjectWithQualname
 
 __all__ = [
     "common_ancestor",
@@ -28,20 +29,23 @@ __all__ = [
     "compile_function",
     "camel_to_snake",
     "snake_to_camel",
+    "detect_case",
+    "convert_case",
 ]
 
 P = ParamSpec("P")
 T = TypeVar("T")
+Case = Literal["snake", "upper snake", "camel", "pascal", "kebab", "upper kebab"]
 
 
-TYPE_GET_DICT = type.__dict__["__dict__"].__get__
-TYPE_GET_MRO = type.__dict__["__mro__"].__get__
+TYPE_GET_DICT = cast(Callable[[type], Mapping[str, Any]], type.__dict__["__dict__"].__get__)  # type: ignore
+TYPE_GET_MRO = cast(Callable[[type], Tuple[type, ...]], type.__dict__["__mro__"].__get__)  # type: ignore
 
 
 def create_class(
     name: str,
-    bases: Iterable = (),
-    attrs: dict = {},
+    bases: Iterable[type] = (),
+    attrs: Dict[str, Any] = {},
     metaclass: Optional[Callable[..., Type[T]]] = None,
     **kwargs: Any,
 ) -> Type[T]:
@@ -72,14 +76,14 @@ def create_class(
     return meta(name, resolved_bases, ns, **kwds)
 
 
-def resolve_bases(bases: Iterable) -> Tuple[type]:
+def resolve_bases(bases: Iterable[type]) -> Tuple[type, ...]:
     """
     Clone/backport of :func:`types.resolve_bases`.
 
     :param bases: An iterable of bases, which may or may not be classes
     :return: A tuple of base classes
     """
-    result = []
+    result: List[type] = []
 
     for base in bases:
         if isinstance(base, type):
@@ -96,16 +100,6 @@ def resolve_bases(bases: Iterable) -> Tuple[type]:
         result.extend(new_bases)
 
     return tuple(result)
-
-
-@overload
-def static_vars(obj: type) -> Mapping[str, object]:
-    ...
-
-
-@overload
-def static_vars(obj: object) -> Dict[str, object]:
-    ...
 
 
 def static_vars(obj: object) -> Mapping[str, object]:
@@ -133,7 +127,7 @@ def static_vars(obj: object) -> Mapping[str, object]:
     # We'll start by invoking the __dict__ slot from the `type` class. That'll
     # fail with a TypeError if the object is not a class.
     try:
-        return TYPE_GET_DICT(obj)
+        return TYPE_GET_DICT(obj)  # type: ignore
     except TypeError:
         pass
 
@@ -147,7 +141,7 @@ def static_vars(obj: object) -> Mapping[str, object]:
         if "__dict__" not in cls_dict:
             continue
 
-        dict_slot = cls_dict["__dict__"]
+        dict_slot = cast(Any, cls_dict["__dict__"])
 
         try:
             descriptor_get = dict_slot.__get__
@@ -196,7 +190,8 @@ def static_copy(obj: T) -> T:
     except ObjectHasNoDict:
         pass
     else:
-        static_vars(new_obj).update(old_dict)
+        new_dict = cast(Dict[str, object], static_vars(new_obj))
+        new_dict.update(old_dict)
 
     for slot_name, slot in iter_slots(cls):
         if slot_name in {"__dict__", "__weakref__"}:
@@ -212,7 +207,7 @@ def static_copy(obj: T) -> T:
     return new_obj
 
 
-def static_hasattr(obj: Any, attr_name: str) -> bool:
+def static_hasattr(obj: object, attr_name: str) -> bool:
     """
     Like the builtin :func:`hasattr`, except it doesn't execute any
     ``__getattr__`` or ``__getattribute__`` functions and also tries to avoid
@@ -267,9 +262,9 @@ def common_ancestor(classes: Iterable[type]) -> type:
     # each. We keep track of how many MROs that class appeared in. If it
     # appeared in all MROs, we return it.
 
-    mros = [deque(static_mro(cls)) for cls in classes]
+    mros: List[Deque[type]] = [deque(static_mro(cls)) for cls in classes]
     num_classes = len(mros)
-    share_count = defaultdict(int)
+    share_count: DefaultDict[type, int] = defaultdict(int)
 
     while mros:
         # loop through the MROs
@@ -289,9 +284,9 @@ def common_ancestor(classes: Iterable[type]) -> type:
 
 
 def iter_wrapped(
-    function: Union[Callable, staticmethod, classmethod],
-    stop: Optional[Callable[[Callable], bool]] = None,
-) -> Iterator[Callable]:
+    function: Union[Callable[..., object], Type[staticmethod], Type[classmethod]],
+    stop: Optional[Callable[[Callable[..., object]], bool]] = None,
+) -> Iterator[Callable[..., object]]:
     """
     Given a function as input, yields the function and all the functions it
     wraps.
@@ -324,15 +319,15 @@ def iter_wrapped(
             break
 
         try:
-            function = function.__wrapped__
+            function = function.__wrapped__  # type: ignore
         except AttributeError:
             break
 
 
 def unwrap(
-    function: Union[Callable, staticmethod, classmethod],
-    stop: Optional[Callable[[Callable], bool]] = None,
-) -> Callable:
+    function: Union[Callable[..., object], Type[staticmethod], Type[classmethod]],
+    stop: Optional[Callable[[Callable[..., object]], bool]] = None,
+) -> Callable[..., object]:
     r"""
     Like :func:`inspect.unwrap`, but always unwraps :class:`staticmethod`\ s and
     :class:`classmethod`\ s. (:func:`inspect.unwrap` only does this since 3.10)
@@ -355,13 +350,16 @@ def unwrap(
     for function in iter_wrapped(function, stop):
         pass
 
-    return function
+    return function  # type: ignore
 
 
-FUNCTION_CONTAINER_TYPES = (staticmethod, classmethod, property)
+FunctionContainer: TypeAlias = Union[staticmethod, classmethod, property]
+FUNCTION_CONTAINER_TYPES = get_args(FunctionContainer)
 
 
-def extract_functions(obj: Union[FUNCTION_CONTAINER_TYPES]) -> List[Callable]:
+def extract_functions(
+    obj: FunctionContainer,
+) -> List[Callable[..., object]]:
     """
     Given a :class:`staticmethod`, :class:`classmethod` or :class:`property` as
     input, returns a list of the contained functions::
@@ -377,10 +375,10 @@ def extract_functions(obj: Union[FUNCTION_CONTAINER_TYPES]) -> List[Callable]:
     if isinstance(obj, property):
         return [func for func in (obj.fget, obj.fset, obj.fdel) if func is not None]
 
-    raise InvalidArgumentType("obj", obj, Union[FUNCTION_CONTAINER_TYPES])
+    raise InvalidArgumentType("obj", obj, FunctionContainer)
 
 
-def is_abstract(obj: Any) -> bool:
+def is_abstract(obj: object) -> bool:
     r"""
     Given an object as input, returns whether it is abstract. The following
     types are supported:
@@ -397,10 +395,11 @@ def is_abstract(obj: Any) -> bool:
     :param obj: The object to inspect
     """
     if isinstance(obj, FUNCTION_CONTAINER_TYPES):
+        obj = cast(FunctionContainer, obj)
         return any(is_abstract(func) for func in extract_functions(obj))
 
     if isinstance(obj, type):
-        seen = set()
+        seen: Set[str] = set()
 
         for cls in static_mro(obj):
             for name, value in static_vars(cls).items():
@@ -416,7 +415,7 @@ def is_abstract(obj: Any) -> bool:
     return bool(getattr(obj, "__isabstractmethod__", False))
 
 
-def rename(obj: Any, name: str) -> None:
+def rename(obj: ObjectWithQualname, name: str) -> None:
     """
     Updates the ``__name__`` and ``__qualname__`` of an object.
 
@@ -436,6 +435,7 @@ def rename(obj: Any, name: str) -> None:
 
     prefix = old_qualname + "."
 
+    functions: List[Any]
     for attr in static_vars(obj).values():
         # staticmethods and classmethods have their own  __qualname__ that we
         # must update
@@ -445,7 +445,7 @@ def rename(obj: Any, name: str) -> None:
             if sys.version_info >= (3, 10):
                 functions.append(attr)
         elif isinstance(attr, FUNCTION_CONTAINER_TYPES):
-            functions = extract_functions(attr)
+            functions = extract_functions(cast(FunctionContainer, attr))
         elif hasattr(attr, "__qualname__"):
             functions = [attr]
         else:
@@ -455,9 +455,7 @@ def rename(obj: Any, name: str) -> None:
             if not func.__qualname__.startswith(prefix):
                 continue
 
-            func.__qualname__ = (
-                obj.__qualname__ + func.__qualname__[len(old_qualname) :]
-            )
+            func.__qualname__ = obj.__qualname__ + func.__qualname__[len(old_qualname) :]
 
 
 def resolve_identifier(identifier: str) -> object:
@@ -523,11 +521,13 @@ def is_sub_qualname(sub_name: str, base_name: str) -> bool:
 def compile_function(
     code: Union[str, Iterable[str]],
     *,
-    globals_: Optional[typing.Dict[str, object]] = None,
+    globals_: Optional[Dict[str, object]] = None,
     allow_builtins: bool = True,
     file_name: str = "<string>",
-    **kwargs,
-) -> Callable:
+    flags: int = 0,
+    dont_inherit: bool = False,
+    optimize: int = -1,
+) -> Callable[..., object]:
     if globals_ is None:
         globals_ = {}
 
@@ -540,7 +540,14 @@ def compile_function(
     if not isinstance(code, str):
         code = "\n".join(code)
 
-    code_obj = compile(code, file_name, "exec", **kwargs)
+    code_obj = compile(
+        code,
+        file_name,
+        "exec",
+        flags=flags,
+        dont_inherit=dont_inherit,
+        optimize=optimize,
+    )
 
     predefined_globals = set(globals_)
     exec(code_obj, globals_)
@@ -567,7 +574,7 @@ def camel_to_snake(camel: str) -> str:
 
     .. versionadded:: 1.5
     """
-    chars = []
+    chars: List[str] = []
     last_char_was_upper = True
 
     for i, char in enumerate(camel):
@@ -601,7 +608,7 @@ def snake_to_camel(snake: str) -> str:
 
     .. versionadded:: 1.5
     """
-    chars = []
+    chars: List[str] = []
     last_char_was_underscore = True
 
     for char in snake:
@@ -616,3 +623,129 @@ def snake_to_camel(snake: str) -> str:
         chars.append(char)
 
     return "".join(chars)
+
+
+def detect_case(name: str) -> Case:
+    """
+    Detects the case of a name, for example::
+
+        >>> detect_case('foo_bar')
+        'snake'
+        >>> detect_case('FooBar')
+        'pascal'
+    """
+    if name[0].islower():
+        if "-" in name:
+            return "kebab"
+        elif name.islower():
+            return "snake"
+        else:
+            return "camel"
+
+    if "-" in name:
+        return "upper kebab"
+    elif "_" in name:
+        return "upper snake"
+    else:
+        return "pascal"
+
+
+def _split_snake(name: str) -> List[str]:
+    return name.split("_")
+
+
+def _split_kebab(name: str) -> List[str]:
+    return name.split("-")
+
+
+def _split_camel_and_pascal(name: str) -> List[str]:
+    words: List[str] = []
+    word: List[str] = []
+    last_char_was_upper = True
+
+    for i, char in enumerate(name):
+        is_upper = char.isupper()
+
+        if (
+            word
+            and is_upper
+            and (
+                not last_char_was_upper
+                or (i > 0 and i + 1 < len(name) and not name[i + 1].isupper())
+            )
+        ):
+            words.append("".join(word))
+            word.clear()
+
+        word.append(char)
+        last_char_was_upper = is_upper
+
+    if word:
+        words.append("".join(word))
+
+    return words
+
+
+def _merge_snake(words: Iterable[str]) -> str:
+    return "_".join(word.lower() for word in words)
+
+
+def _merge_upper_snake(words: Iterable[str]) -> str:
+    return "_".join(word.upper() for word in words)
+
+
+def _merge_kebab(words: Iterable[str]) -> str:
+    return "-".join(word.lower() for word in words)
+
+
+def _merge_upper_kebab(words: Iterable[str]) -> str:
+    return "-".join(word.upper() for word in words)
+
+
+def _merge_camel(words: Iterable[str]) -> str:
+    words = [word.title() for word in words]
+    words[0] = words[0].lower()
+    return "".join(words)
+
+
+def _merge_pascal(words: Iterable[str]) -> str:
+    return "".join(word.title() for word in words)
+
+
+def convert_case(name: str, to: Case) -> str:
+    """
+    Converts a name to a different case, for example::
+
+        >>> convert_case('FooBar', 'snake')
+        'foo_bar'
+    """
+    case_ = detect_case(name)
+
+    split_func = {
+        "snake": _split_snake,
+        "upper snake": _split_snake,
+        "kebab": _split_kebab,
+        "upper kebab": _split_kebab,
+        "camel": _split_camel_and_pascal,
+        "pascal": _split_camel_and_pascal,
+    }[case_]
+    words = split_func(name)
+
+    # Special case conversions between pascal and camel so that capitalization is preserved. For
+    # example, `FancyHTML` should become `fancyHTML`, not `fancyHtml`.
+    if case_ == "pascal" and to == "camel":
+        words[0] = words[0].lower()
+        return "".join(words)
+    elif case_ == "camel" and to == "pascal":
+        words[0] = words[0].title()
+        return "".join(words)
+
+    merge_func = {
+        "snake": _merge_snake,
+        "upper snake": _merge_upper_snake,
+        "kebab": _merge_kebab,
+        "upper kebab": _merge_upper_kebab,
+        "camel": _merge_camel,
+        "pascal": _merge_pascal,
+    }[to]
+    return merge_func(words)

@@ -1,9 +1,9 @@
 import inspect
 import types
-from typing import *
+from typing import *  # type: ignore
 from typing_extensions import Self
 
-from .errors import NameNotAccessibleFromFrame
+from . import errors
 
 __all__ = ["CallFrame"]
 
@@ -46,7 +46,7 @@ class CallFrame:
     def __getattr__(self, attr: str):
         return getattr(self._frame, attr)
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: object) -> bool:
         if isinstance(other, __class__):
             return self._frame == other._frame
         elif isinstance(other, types.FrameType):
@@ -57,7 +57,7 @@ class CallFrame:
     def __enter__(self) -> Self:
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
         del self._frame
 
     @property
@@ -153,9 +153,9 @@ class CallFrame:
         except KeyError:
             pass
 
-        raise NameNotAccessibleFromFrame(name, self)
+        raise errors.NameNotAccessibleFromFrame(name, self)
 
-    def get_surrounding_function(self) -> Callable:
+    def get_surrounding_function(self) -> types.FunctionType:
         """
         Finds and returns the function in which the code of this frame was defined.
 

@@ -1,5 +1,6 @@
+import ast
 import builtins
-import collections
+import collections.abc
 import importlib
 import types
 import typing
@@ -17,16 +18,13 @@ from .introspection import (
 )
 from .i_hate_circular_imports import parameterize
 from ..parameter import Parameter
-from ..signature import Signature
-from ..types import Type_, TypeAnnotation
+from ..signature_ import Signature
+from ..types import Type_, TypeAnnotation, ForwardRefContext
 from ..errors import *
 
 __all__ = ["resolve_forward_refs", "annotation_to_string", "annotation_for_callable"]
 
 
-ForwardRefContext = typing.Union[None, type, types.FunctionType, types.ModuleType, str]
-
-
 @overload
 def resolve_forward_refs(
     annotation: TypeAnnotation,
@@ -42,20 +40,22 @@ def resolve_forward_refs(
     annotation: TypeAnnotation,
     context: ForwardRefContext = None,
     *,
-    mode: Literal["eval", "getattr", "mixed"] = "mixed",
+    mode: Literal["eval", "getattr", "ast"] = "eval",
     strict: bool = True,
+    extra_globals: typing.Mapping[str, object] = {},
 ) -> TypeAnnotation:
     ...
 
 
 def resolve_forward_refs(
     annotation: TypeAnnotation,
-    module: typing.Optional[types.ModuleType] = None,
-    eval_: bool = True,
+    context: ForwardRefContext = None,
+    eval_: Optional[bool] = None,
     strict: bool = True,
     *,
-    context: ForwardRefContext = None,
-    mode: Literal["eval", "getattr", "mixed"] = "mixed",
+    module: typing.Optional[types.ModuleType] = None,
+    mode: Literal["eval", "getattr", "ast"] = "eval",
+    extra_globals: typing.Mapping[str, object] = {},
 ) -> TypeAnnotation:
     """
     Resolves forward references in a type annotation.
@@ -69,17 +69,16 @@ def resolve_forward_refs(
 
     .. versionchanged:: 1.6
         The ``module`` and ``eval_`` parameters are deprecated in favor of
-        ``context`` and ``mode``. Once the ``eval_`` parameter is removed,
-        the default ``mode`` will be changed to ``'mixed'``.
+        ``context`` and ``mode``.
 
     :param annotation: The annotation in which forward references should be resolved
     :param context: The context in which forward references will be evaluated.
         Can be a class, a function, a module, or a string representing a module
         name. If ``None``, a namespace containing some common modules like
         ``typing`` and ``collections`` will be used.
-    :param mode: If ``True``, references may contain arbitrary code that will
-        be evaluated with ``eval``. Otherwise, they must be identifiers and will
-        be resolved with ``getattr``.
+    :param mode: If ``'eval'``, references may contain arbitrary code that will
+        be evaluated with ``eval``. If ``'getattr'``, they must be identifiers
+        and will be resolved with ``getattr``.
     :param strict: Whether to raise an exception if a forward reference can't be resolved
     :return: A new annotation with no forward references
     """
@@ -91,7 +90,7 @@ def resolve_forward_refs(
         )
 
     if eval_ is not None:
-        mode = "eval" if eval_ else "getattr"
+        mode = "eval" if eval_ else "ast"
         warnings.warn(
             'The "eval_" parameter is deprecated in favor of "mode"',
             DeprecationWarning,
@@ -101,37 +100,47 @@ def resolve_forward_refs(
         context = importlib.import_module(context)
 
     if isinstance(annotation, ForwardRef):
+        if context is None:
+            context = annotation.__forward_module__
+
         annotation = _get_forward_ref_code(annotation)
 
     if isinstance(annotation, str):
+        scope = collections.ChainMap()
+        scope.maps.append(extra_globals)  # type: ignore
+
+        if context is None:
+            scope.maps.extend(vars(module) for module in (builtins, typing, collections.abc, collections))  # type: ignore
+        elif isinstance(context, types.ModuleType):
+            scope.maps.append(vars(context))
+        elif isinstance(context, str):
+            module = importlib.import_module(context)
+            scope.maps.append(vars(module))
+        elif isinstance(context, collections.abc.Mapping):
+            scope.maps.append(context)  # type: ignore
+        else:
+            module = importlib.import_module(context.__module__)
+            scope.maps.append(vars(module))
+
         if mode == "eval":
-            # Eval the code in a ChainMap so that names
-            # can be resolved in the given module or in
-            # the typing module
-            modules: List[types.ModuleType] = [typing]
-            if isinstance(context, types.ModuleType):
-                modules.insert(0, context)
-
-            scope = collections.ChainMap(*[vars(mod) for mod in modules])
-
             try:
-                # the globals must be a real dict, so the scope will be
-                # used as the locals
+                # The globals must be a real dict, so the scope will be used as
+                # the locals
                 annotation = eval(annotation, {}, scope)
             except Exception:
                 pass
             else:
-                return resolve_forward_refs(annotation, context, eval_, strict)
+                return resolve_forward_refs(
+                    annotation, context, mode=mode, strict=strict
+                )
         elif mode == "getattr":
-            # try to resolve the annotation in various modules
-            modules = [typing, builtins]
-            if isinstance(context, types.ModuleType):
-                modules.insert(0, context)
+            first_name, *attrs = annotation.split(".")
 
-            attrs = annotation.split(".")
-
-            for mod in modules:
-                value = mod
+            try:
+                value = scope[first_name]
+            except KeyError:
+                pass
+            else:
                 try:
                     for attr in attrs:
                         value = getattr(value, attr)
@@ -139,8 +148,15 @@ def resolve_forward_refs(
                     return value  # type: ignore
                 except AttributeError:
                     pass
+        elif mode == "ast":
+            try:
+                expr = ast.parse(annotation, mode="eval")
+                _, result = _eval_ast(expr.body, scope, strict=strict)
+                return result  # type: ignore
+            except SyntaxError:
+                pass
         else:
-            raise NotImplementedError  # FIXME
+            assert False, "Invalid mode: {!r}".format(mode)
 
         if annotation == "ellipsis":
             return type(...)
@@ -148,13 +164,26 @@ def resolve_forward_refs(
         if not strict:
             return annotation
 
-        raise CannotResolveName(annotation, context)
+        raise CannotResolveForwardref(annotation, context)
 
+    # In some versions, `ParamSpec` is a subclass of `list`, so make sure this
+    # check happens before the `isinstance(annotation, list)` check below
+    if type(annotation) in (
+        typing.TypeVar,
+        typing_extensions.TypeVarTuple,
+        typing_extensions.ParamSpec,
+        typing_extensions.ParamSpecKwargs,
+        typing_extensions.ParamSpecArgs,
+    ):
+        return annotation
+
+    # As a special case, lists are also supported because they're used by
+    # `Callable`
     if isinstance(annotation, list):
         return [
             resolve_forward_refs(typ, context, mode=mode, strict=strict)
             for typ in annotation
-        ]
+        ]  # type: ignore
 
     if not is_parameterized_generic(annotation, raising=False):
         return annotation
@@ -170,6 +199,72 @@ def resolve_forward_refs(
         for typ in type_args
     )
     return parameterize(base, type_args)
+
+
+def _eval_ast(
+    node: ast.AST, scope: typing.Mapping[str, object], strict: bool
+) -> Tuple[bool, object]:
+    # Compared to "eval" and "getattr", this method of evaluating forward refs
+    # has the advantage of being able to perform partial evaluation. For
+    # example, the forward ref `"ClassVar[NameThatCannotBeResolved]"` can be
+    # turned into `ClassVar["NameThatCannotBeResolved"]`.
+    #
+    # Sometimes we need to know whether the forward ref was resolved or not.
+    # That's why this function returns a tuple of `(bool, object)`.
+    def recurse(node: ast.AST) -> Tuple[bool, object]:
+        return _eval_ast(node, scope, strict)
+
+    if type(node) is ast.Name:
+        name = node.id
+        try:
+            return True, scope[name]
+        except KeyError:
+            if strict:
+                raise NameError(name) from None
+            else:
+                return False, name
+    elif type(node) is ast.Attribute:
+        success, obj = recurse(node.value)
+        if not success:
+            raise SyntaxError(f"Failed to resolve {ast.dump(node.value)}")
+
+        try:
+            return True, getattr(obj, node.attr)
+        except AttributeError as error:
+            if (
+                not strict
+                and isinstance(obj, types.ModuleType)
+                and str(error).startswith("partially initialized module")
+            ):
+                return False, ast.dump(node)
+            raise
+    elif type(node) is ast.Subscript:
+        success, generic_type = recurse(node.value)
+        if not success:
+            if strict:
+                raise SyntaxError(f"Failed to resolve {ast.dump(node.value)}")
+            else:
+                return False, ast.dump(node)
+
+        _, subtype = recurse(node.slice)
+        return True, generic_type[subtype]  # type: ignore
+    elif type(node) is ast.Constant:
+        return True, node.value
+    elif type(node) is ast.Tuple:
+        return True, tuple(recurse(elt)[1] for elt in node.elts)
+    elif type(node) is ast.List:
+        return True, [recurse(elt)[1] for elt in node.elts]
+    elif type(node) is ast.BinOp:
+        if type(node.op) is ast.BitOr:
+            _, left = recurse(node.left)
+            _, right = recurse(node.right)
+            # Use `Union` instead of `|` because:
+            # 1. It works in older python versions
+            # 2. It works even if `left` and `right` are strings because they
+            #    couldn't be resolved
+            return True, Union[left, right]  # type: ignore
+
+    raise SyntaxError(f"Unsupported AST node: {node!r}")
 
 
 def annotation_to_string(
@@ -280,7 +375,7 @@ def annotation_to_string(
     return repr(annotation)
 
 
-def annotation_for_callable(callable_: typing.Callable) -> Type_:
+def annotation_for_callable(callable_: typing.Callable[..., object]) -> Type_:
     """
     Given a callable object as input, returns a matching type annotation.
 

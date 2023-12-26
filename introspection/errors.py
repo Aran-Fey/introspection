@@ -1,21 +1,49 @@
 import types
-import typing
 import dataclasses
+from typing import *  # type: ignore
 
 from .types import *
-
-if typing.TYPE_CHECKING:
-    from .call_frame import CallFrame
+from . import call_frame
 
 
-T_co = typing.TypeVar("T_co", covariant=True)
-V_co = typing.TypeVar("V_co", covariant=True)
-M_co = typing.TypeVar(
-    "M_co", covariant=True, bound=typing.Union[type, typing.Iterable[type]]
-)
+__all__ = [
+    "Error",
+    "FunctionCallError",
+    "ArgumentError",
+    "ArgumentRequired",
+    "InvalidArgumentType",
+    "InvalidOption",
+    "NotAType",
+    "NotAGeneric",
+    "NotAParameterizedGeneric",
+    "ForwardRefsDontHaveNames",
+    "GenericMustNotBeParameterized",
+    "ConflictingArguments",
+    "SubTypeRequired",
+    "NameNotAccessibleFromFrame",
+    "DundermethodNotFound",
+    "ObjectHasNoDict",
+    "CannotUnwrapBoundMethod",
+    "InvalidIdentifier",
+    "NoSignatureFound",
+    "MethodNotFound",
+    "TypeVarNotSet",
+    "NoConcreteTypeForTypeVar",
+    "CannotResolveForwardref",
+    "NoTypingEquivalent",
+    "NoPythonEquivalent",
+    "NoGenericPythonEquivalent",
+]
+
+
+T_co = TypeVar("T_co", covariant=True)
+V_co = TypeVar("V_co", covariant=True)
+M_co = TypeVar("M_co", covariant=True, bound=Union[type, Iterable[type]])
 
 
 class Error(Exception):
+    _STR: ClassVar[str]
+
     def __init_subclass__(cls):
         dataclasses.dataclass(eq=False, frozen=True)(cls)
 
@@ -26,13 +54,13 @@ class Error(Exception):
 
 class FunctionCallError(Error):
     pass
-    # function: typing.Callable = dataclasses.field(init=False)
+    # function: Callable = dataclasses.field(init=False)
 
     # def __post_init__(self):
     #     self.function = 'TODO'
 
 
-class ArgumentError(typing.Generic[V_co], FunctionCallError):
+class ArgumentError(Generic[V_co], FunctionCallError):
     parameter: str
     value: V_co
 
@@ -49,14 +77,14 @@ class ArgumentRequired(ArgumentError[V_co]):
     _STR = "Because {reason}, the {parameter!r} argument is required"
 
 
-class InvalidArgumentType(ArgumentError[V_co], typing.Generic[V_co, T_co], TypeError):
-    expected_type: typing.Type[T_co]
+class InvalidArgumentType(ArgumentError[V_co], Generic[V_co, T_co], TypeError):
+    expected_type: Type[T_co]
 
     _STR = "A value of type {expected_type!r} is required."
 
 
-class InvalidOption(ArgumentError[V_co], typing.Generic[V_co, T_co], ValueError):
-    options: typing.Set[T_co]
+class InvalidOption(ArgumentError[V_co], Generic[V_co, T_co], ValueError):
+    options: Set[T_co]
 
     _STR = "Valid options are: {options}"
 
@@ -97,7 +125,7 @@ class SubTypeRequired(FunctionCallError, ValueError):
 
 class NameNotAccessibleFromFrame(Error, NameError):
     name: str
-    frame: "CallFrame"
+    frame: "call_frame.CallFrame"
 
     _STR = "Name {name!r} is not accessible from frame {frame!r}"
 
@@ -126,22 +154,16 @@ class InvalidIdentifier(Error, NameError):
 
 
 class NoSignatureFound(Error, ValueError):
-    callable: typing.Callable
+    callable: Callable[..., object]
 
     _STR = "Can't determine signature of {callable!r}"
 
 
-class MethodNotFound(Error, AttributeError, typing.Generic[M_co]):
+class MethodNotFound(Error, AttributeError, Generic[M_co]):
     method_name: str
     class_or_mro: M_co
 
     _STR = "No method named {method_name!r} found in {class_or_mro}"
-
-
-class TypeVarError(Error):
-    type_var: typing.TypeVar
-    base_type: GenericType
-    type: GenericType
 
 
 class TypeVarNotSet(Error):
@@ -149,16 +171,16 @@ class TypeVarNotSet(Error):
 
 
 class NoConcreteTypeForTypeVar(Error):
-    final_var: typing.TypeVar
+    final_var: TypeVar
 
     _STR = "TypeVar {type_var} of {base_type!r} doesn't have a concrete value in {type!r}; it is set to {final_var!r}"
 
 
-class CannotResolveName(Error, ValueError):
+class CannotResolveForwardref(Error, ValueError):
     name: str
-    module: typing.Optional[types.ModuleType]
+    context: ForwardRefContext
 
-    _STR = "Cannot resolve name {name!r}{' in module {!r}'.format(module.__name__) if module else ''}"
+    _STR = "Cannot resolve name {name!r} with context {context!r}"
 
 
 class NoTypingEquivalent(Error, ValueError):

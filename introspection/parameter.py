@@ -1,5 +1,5 @@
 import inspect
-from typing import *
+from typing import *  # type: ignore
 from typing_extensions import Self
 
 from ._utils import PARAM_EMPTY

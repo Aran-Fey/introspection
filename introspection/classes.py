@@ -8,7 +8,7 @@ import sentinel
 
 from .misc import static_vars, is_abstract, static_mro
 from .errors import *
-from .types import Slot, Function
+from .types import Slot, Function, Class
 
 __all__ = [
     "iter_subclasses",
@@ -46,7 +46,7 @@ def iter_subclasses(cls: Type[T], include_abstract: bool = False) -> Iterator[Ty
     queue = cls.__subclasses__()
 
     while queue:
-        cls = queue.pop()
+        cls = queue.pop()  # type: ignore
 
         if cls in seen:
             continue
@@ -226,7 +226,7 @@ def safe_is_subclass(subclass: object, superclass: Class) -> TypeGuard[Type[Clas
 
 def get_implicit_method_type(
     method_name: str,
-) -> Literal[None, classmethod, staticmethod]:
+) -> Union[None, Type[staticmethod], Type[classmethod]]:
     """
     Given the name of a method as input, returns what kind of method python automatically
     converts it to. The return value can be :class:`staticmethod`, :class:`classmethod`,
@@ -245,7 +245,7 @@ def get_implicit_method_type(
     :param method_name: The name of a dundermethod
     :return: The type of that method
     """
-    TYPES_BY_NAME = {
+    TYPES_BY_NAME: Dict[str, Any] = {
         "__new__": staticmethod,
         "__init_subclass__": classmethod,
         "__class_getitem__": classmethod,
@@ -255,7 +255,9 @@ def get_implicit_method_type(
 
 
 def fit_to_class(
-    thing: Union[type, Function], cls: type, name: Optional[str] = None
+    thing: Union[type, Function],
+    cls: type,
+    name: Optional[str] = None,
 ) -> None:
     r"""
     Updates ``thing``\ 's metadata to match ``cls``\ 's.
@@ -280,11 +282,7 @@ def fit_to_class(
     if isinstance(thing, (classmethod, staticmethod)):
         methods = [thing.__func__]
     elif isinstance(thing, property):
-        methods = [
-            method
-            for method in (thing.fget, thing.fset, thing.fdel)
-            if method is not None
-        ]
+        methods = [method for method in (thing.fget, thing.fset, thing.fdel) if method is not None]
     else:
         methods = [thing]
 
@@ -300,10 +298,10 @@ def fit_to_class(
 
 
 def add_method_to_class(
-    method: Callable[..., Any],
+    method: Callable[..., object],
     cls: type,
     name: Optional[str] = None,
-    method_type: Union[None, Type[staticmethod], Type[classmethod]] = auto,
+    method_type: Union[None, Type[staticmethod], Type[classmethod]] = auto,  # type: ignore
 ) -> None:
     r"""
     Adds ``method`` to ``cls``\ 's namespace under the given ``name``.
@@ -325,14 +323,14 @@ def add_method_to_class(
     :param name: The name under which the method is registered in the class namespace
     :param method_type: One of :class:`staticmethod`, :class:`classmethod`, or ``None`` (or omitted)
     """
-    fit_to_class(method, cls, name)
+    fit_to_class(method, cls, name)  # type: ignore
     method_name = method.__name__
 
     if method_type is auto:
         method_type = get_implicit_method_type(method_name)
 
     if method_type is not None:
-        method = method_type(method)
+        method = method_type(method)  # type: ignore
 
     setattr(cls, method_name, method)
 
@@ -341,7 +339,7 @@ def wrap_method(
     method: Callable[..., Any],
     cls: type,
     name: Optional[str] = None,
-    method_type: Union[None, Type[staticmethod], Type[classmethod]] = auto,
+    method_type: Union[None, Type[staticmethod], Type[classmethod]] = auto,  # type: ignore
 ) -> None:
     r"""
     Adds ``method`` to ``cls``\ 's namespace under the given ``name``,
@@ -471,21 +469,21 @@ def wrap_method(
     add_method_to_class(replacement_method, cls, name, method_type=method_type)
 
 
-def _get_original_method(cls, method_name, method_type):
+def _get_original_method(cls: type, method_name: str, method_type):
     cls_vars = static_vars(cls)
 
     try:
-        original_method = cls_vars[method_name]
+        original_method = cls_vars[method_name]  # type: ignore
     except KeyError:
         # === SPECIAL METHOD: __new__ ===
         if method_name == "__new__":
-            original_method, wrap_original = _make_original_new_method(cls)
+            original_method, wrap_original = _make_original_new_method(cls)  # type: ignore
 
         # === STATICMETHODS ===
         elif method_type is staticmethod:
 
-            def original_method(*args, **kwargs):
-                super_method = getattr(super(cls, cls), method_name)
+            def original_method(*args, **kwargs):  # type: ignore
+                super_method = getattr(super(cls, cls), method_name)  # type: ignore
                 return super_method(*args, **kwargs)
 
             wrap_original = lambda func: func
@@ -494,7 +492,7 @@ def _get_original_method(cls, method_name, method_type):
         else:
 
             def original_method(self_or_cls, *args, **kwargs):
-                super_method = getattr(super(cls, self_or_cls), method_name)
+                super_method = getattr(super(cls, self_or_cls), method_name)  # type: ignore
                 return super_method(*args, **kwargs)
 
             wrap_original = lambda func: func
@@ -507,9 +505,9 @@ def _get_original_method(cls, method_name, method_type):
     return original_method, wrap_original
 
 
-def _make_original_new_method(cls):
-    def original_method(class_, *args, **kwargs):
-        super_new = super(cls, class_).__new__
+def _make_original_new_method(cls: type):
+    def original_method(class_: type, *args, **kwargs):
+        super_new = super(cls, class_).__new__  # type: ignore
 
         # object.__new__ accepts no arguments if the class
         # implements its own __new__ method, so we must
@@ -540,7 +538,7 @@ def _make_original_new_method(cls):
 
                 try:
                     # __new__ is always wrapped in a staticmethod
-                    new = static_vars(c)["__new__"].__func__
+                    new = static_vars(c)["__new__"].__func__  # type: ignore
                 except KeyError:
                     continue
 
@@ -554,7 +552,7 @@ def _make_original_new_method(cls):
                 args = ()
                 kwargs = {}
 
-        return super_new(class_, *args, **kwargs)
+        return super_new(class_, *args, **kwargs)  # type: ignore
 
     # We're just gonna assume that the user is going to properly
     # call our original_method, because if not, they should've

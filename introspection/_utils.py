@@ -29,14 +29,14 @@ class cached_property(Generic[S, T]):
         self._getter = getter
 
     @overload
-    def __get__(self, instance: S, owner: None = None) -> T:
+    def __get__(self, instance: S, owner: Optional[type] = None) -> T:
         ...
 
     @overload
-    def __get__(self, instance: None, owner: None = None) -> Self:
+    def __get__(self, instance: None, owner: Optional[type] = None) -> Self:
         ...
 
-    def __get__(self, instance: Optional[S], owner: object = None) -> Union[T, Self]:
+    def __get__(self, instance: Optional[S], owner: Optional[type] = None) -> Union[T, Self]:
         if instance is None:
             return self
 

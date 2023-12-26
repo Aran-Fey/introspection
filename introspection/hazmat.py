@@ -1,12 +1,11 @@
-
 from .dundermethods import get_class_dundermethod
 
-__all__ = ['super']
+__all__ = ["super"]
 
 
 def _get_descriptor(sup: super, name: str):
-    cls = sup.__self_class__
-    instance_or_cls = sup.__self__
+    cls = sup.__self_class__  # type: ignore
+    instance_or_cls = sup.__self__  # type: ignore
 
     # If it's not a super(cls, instance) situation, abort
     if not isinstance(instance_or_cls, cls):
@@ -15,11 +14,11 @@ def _get_descriptor(sup: super, name: str):
     return get_class_dundermethod(type(instance_or_cls), name, start_after=cls)
 
 
-def _call_descriptor_func(sup: super, attr: str, func_name: str, *args) -> None:
+def _call_descriptor_func(sup: super, attr: str, func_name: str, *args: object) -> None:
     descriptor = _get_descriptor(sup, attr)
-    
+
     descriptor_func = get_class_dundermethod(type(descriptor), func_name)
-    descriptor_func(descriptor, sup.__self__, *args)
+    descriptor_func(descriptor, sup.__self__, *args)  # type: ignore
 
 
 class super(super):
@@ -44,20 +43,21 @@ class super(super):
             @property
             def attr(self):
                 return self._attr
-            
+
             @attr.setter
             def attr(self, value):
                 self._attr = value
-        
+
         class Child(Parent):
             @Parent.attr.setter
             def attr(self, value):
                 super().attr = value + 1
-    
+
     .. versionadded:: 1.4
     """
-    def __setattr__(self, attr, value):
-        _call_descriptor_func(self, attr, '__set__', value)
-    
-    def __delattr__(self, attr):
-        _call_descriptor_func(self, attr, '__delete__')
+
+    def __setattr__(self, attr: str, value: object) -> None:
+        _call_descriptor_func(self, attr, "__set__", value)
+
+    def __delattr__(self, attr: str) -> None:
+        _call_descriptor_func(self, attr, "__delete__")

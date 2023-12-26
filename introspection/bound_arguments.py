@@ -1,16 +1,15 @@
-
 import collections.abc
 import inspect
-from typing import *
+from typing import *  # type: ignore
 from typing_extensions import Self, Literal
 
-from . import signature
+from . import signature_
 from .errors import InvalidOption
 
-__all__ = ['BoundArguments']
+__all__ = ["BoundArguments"]
 
 
-class BoundArguments(inspect.BoundArguments, collections.abc.MutableMapping):
+class BoundArguments(inspect.BoundArguments, collections.abc.MutableMapping[str, Any]):
     """
     Subclass of :class:`inspect.BoundArguments` with additional features.
 
@@ -18,9 +17,10 @@ class BoundArguments(inspect.BoundArguments, collections.abc.MutableMapping):
     .. versionchanged: 1.5
         Now implements the :class:`~collections.abc.MutableMapping` interface.
     """
+
     __slots__ = ()
 
-    signature: 'signature.Signature'
+    signature: "signature_.Signature"  # type: ignore[reportIncompatibleMethodOverride]
 
     @classmethod
     def from_bound_arguments(cls, bound_args: inspect.BoundArguments) -> Self:
@@ -31,7 +31,7 @@ class BoundArguments(inspect.BoundArguments, collections.abc.MutableMapping):
         :param bound_args: An :class:`inspect.BoundArguments` instance
         :return: A new ``BoundArguments`` instance
         """
-        from .signature import Signature
+        from .signature_ import Signature
 
         signature = bound_args.signature
 
@@ -39,7 +39,7 @@ class BoundArguments(inspect.BoundArguments, collections.abc.MutableMapping):
             signature = Signature.from_signature(signature)
 
         return cls(signature, bound_args.arguments)
-    
+
     def get_missing_parameter_names(
         self,
         include_optional_parameters: bool = False,
@@ -71,30 +71,32 @@ class BoundArguments(inspect.BoundArguments, collections.abc.MutableMapping):
             if name not in missing:
                 continue
 
-            if param.is_vararg or (not include_optional_parameters and param.is_optional):
+            if param.is_vararg or (
+                not include_optional_parameters and param.is_optional
+            ):
                 missing.remove(name)
 
         return missing
-    
-    def __getitem__(self, param_name) -> object:
+
+    def __getitem__(self, param_name: str) -> Any:
         return self.arguments[param_name]
-    
-    def __setitem__(self, param_name, value):
+
+    def __setitem__(self, param_name: str, value: object) -> None:
         self.arguments[param_name] = value
-    
-    def __delitem__(self, param_name):
+
+    def __delitem__(self, param_name: str) -> None:
         del self.arguments[param_name]
-    
+
     def __iter__(self) -> Iterator[str]:
         return iter(self.arguments)
-    
+
     def __len__(self) -> int:
         return len(self.arguments)
-    
+
     def to_varargs(
         self,
-        prefer: Literal['args', 'kwargs'] = 'kwargs',
-    ) -> Tuple[list, Dict[str, Any]]:
+        prefer: Literal["args", "kwargs"] = "kwargs",
+    ) -> Tuple[List[Any], Dict[str, Any]]:
         """
         Converts the arguments into an ``(args, kwargs)`` tuple.
 
@@ -110,13 +112,14 @@ class BoundArguments(inspect.BoundArguments, collections.abc.MutableMapping):
         :param prefer: Whether to prefer positional or keyword arguments
         :return: An ``(args, kwargs)`` tuple
         """
-        if prefer == 'args':
+        if prefer == "args":
             return list(self.args), self.kwargs
-        elif prefer != 'kwargs':
-            raise InvalidOption('prefer', prefer, {'args', 'kwargs'})
+        elif prefer != "kwargs":
+            raise InvalidOption("prefer", prefer, {"args", "kwargs"})
 
         params = list(self.signature.parameters.values())
-        args, kwargs = [], {}
+        args: List[object] = []
+        kwargs: Dict[str, object] = {}
 
         for param in params:
             try:
@@ -140,7 +143,7 @@ class BoundArguments(inspect.BoundArguments, collections.abc.MutableMapping):
                 # So we'll convert all the keyword arguments we've generated so
                 # far into positional arguments.
                 if kwargs:
-                    for p in params[:len(kwargs)]:
+                    for p in params[: len(kwargs)]:
                         args.append(kwargs.pop(p.name))
 
                 args.extend(value)

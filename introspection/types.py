@@ -2,19 +2,19 @@ import types
 import typing
 import typing_extensions
 
-import sentinel
+import sentinel  # type: ignore[reportMissingTypeStubs]
 
 
 NONE = sentinel.create("NONE")
 
 
-GenericAliases = []
-for alias in ("types.GenericAlias", "typing._GenericAlias"):
-    try:
-        GenericAliases.append(eval(alias))
-    except AttributeError:
-        pass
-GenericAliases = tuple(GenericAliases)
+_GenericAliases = [
+    (types, "GenericAlias"),
+    (typing, "_GenericAlias"),
+]
+GenericAliases = tuple(
+    getattr(module, name) for module, name in _GenericAliases if hasattr(module, name)
+)
 
 
 T = typing.TypeVar("T")
@@ -22,17 +22,12 @@ P = typing_extensions.ParamSpec("P")
 Class = typing.TypeVar("Class", bound=type)
 
 Function = types.FunctionType
-ParameterizedGeneric = typing.Union[GenericAliases]
+ParameterizedGeneric: typing_extensions.TypeAlias = "types.GenericAlias"
 Type_ = typing.Union[type, ParameterizedGeneric]
 TypeAnnotation = typing.Union[Type_, str, typing.ForwardRef, None]
 
 
-class GenericType(typing.Protocol):
-    def __class_getitem__(cls, item) -> ParameterizedGeneric:
-        ...
-
-
-class Slot(typing.Protocol[T]):
+class Slot(typing.Protocol[T]):  # type: ignore[reportInvalidTypeVarUse]
     def __get__(self, instance: T, owner: typing.Optional[typing.Type[T]]) -> object:
         ...
 
@@ -41,3 +36,13 @@ class Slot(typing.Protocol[T]):
 
     def __delete__(self, instance: T) -> None:
         ...
+
+
+ForwardRefContext = typing.Union[
+    None, type, types.FunctionType, types.ModuleType, str, typing.Mapping[str, object]
+]
+
+
+class ObjectWithQualname(typing.Protocol):
+    __name__: str
+    __qualname__: str

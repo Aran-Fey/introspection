@@ -39,23 +39,30 @@ class CallStack:
         Get the current call stack.
         """
         with CallFrame.current() as frame:
-            return cls.from_frame(frame.parent)
+            return cls.from_frame(cast(CallFrame, frame.parent))
 
     @classmethod
-    def from_frame(cls, frame: types.FrameType) -> Self:
+    def from_frame(cls, frame: Union[types.FrameType, CallFrame]) -> Self:
         """
         Creates a ``CallStack`` containing ``frame`` and all its parents.
 
         :param frame: The last frame in the call stack
         :return: A new ``CallStack`` instance
         """
-        frames = [frame]
+        frame_: Optional[types.FrameType]
+        if isinstance(frame, CallFrame):
+            frame_ = frame._frame
+        else:
+            frame_ = frame
+        del frame
+
+        frames = [frame_]
         while True:
-            frame = frame.f_back
-            if frame is None:
+            frame_ = frame_.f_back
+            if frame_ is None:
                 break
 
-            frames.append(frame)
+            frames.append(frame_)
 
         frames.reverse()
 

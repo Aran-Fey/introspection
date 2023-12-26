@@ -1,4 +1,3 @@
-
 import collections.abc
 import typing
 from typing_extensions import TypeGuard
@@ -6,10 +5,10 @@ from typing_extensions import TypeGuard
 from .introspection import get_type_arguments, is_parameterized_generic, get_generic_base_class
 from ..types import Type_
 
-__all__ = ['is_subtype']
+__all__ = ["is_subtype"]
 
 
-Type_Variable = typing.TypeVar('Type_Variable', bound=Type_)
+Type_Variable = typing.TypeVar("Type_Variable", bound=Type_)
 
 
 def is_subtype(subtype: Type_, supertype: Type_Variable) -> TypeGuard[typing.Type[Type_Variable]]:
@@ -26,38 +25,38 @@ def is_subtype(subtype: Type_, supertype: Type_Variable) -> TypeGuard[typing.Typ
     """
     if supertype is typing.Any:
         return True
-    
+
     # Find out if the type has type parameters
     if not is_parameterized_generic(subtype):
         if subtype is typing.Any:
             return True
-        
+
         # If the subtype has no type arguments, we can just ignore the
         # supertype's arguments - the subtype is effectively parameterized with
         # a bunch of `typing.Any`.
         if is_parameterized_generic(supertype):
-            supertype = get_generic_base_class(supertype)
-        
+            supertype = get_generic_base_class(supertype)  # type: ignore
+
         return _is_subclass(subtype, supertype)
-    
+
     sub_base = get_generic_base_class(subtype)
 
     if not is_parameterized_generic(supertype):
         return _is_subclass(sub_base, supertype)
-    
+
     super_base = get_generic_base_class(supertype)
-    
+
     try:
         if not _is_subclass(sub_base, super_base):
             return False
     except TypeError:
         return False
-    
+
     sub_args = get_type_arguments(subtype)
     super_args = get_type_arguments(supertype)
 
     if super_base in TYPE_ARGS_TESTS:
-        test = TYPE_ARGS_TESTS[super_base]
+        test = TYPE_ARGS_TESTS[super_base]  # type: ignore
         return test(sub_args, super_args)
 
     raise NotImplementedError
@@ -66,7 +65,7 @@ def is_subtype(subtype: Type_, supertype: Type_Variable) -> TypeGuard[typing.Typ
 def _is_subclass(sub_cls, super_cls):
     if super_cls not in SUBCLASS_TESTS:
         return issubclass(sub_cls, super_cls)
-    
+
     test = SUBCLASS_TESTS[super_cls]
     return test(sub_cls)
 

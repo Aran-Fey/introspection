@@ -2,10 +2,10 @@
 New and improved introspection functions
 """
 
-__version__ = "1.6.2"
+__version__ = "1.7.0"
 
 from .parameter import *
-from .signature import *
+from .signature_ import *
 from .argument_bundle import *
 from .bound_arguments import *
 from .call_stack import *
