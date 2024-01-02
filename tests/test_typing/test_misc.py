@@ -57,7 +57,6 @@ def test_annotation_to_string_old_style_unions(expected):
         (TypeVar("T"), "T"),
         (TypeVar("T", covariant=True), "T"),
         (TypeVar("T", contravariant=True), "T"),
-        (TypeVarTuple("T"), "T"),
         (ParamSpec("P"), "P"),
         (ParamSpec("P").args, "P.args"),
         (ParamSpec("P").kwargs, "P.kwargs"),
@@ -93,6 +92,18 @@ if hasattr(typing, "Literal"):
     def test_literal_to_string(expected):
         annotation = eval(expected)
 
+        assert annotation_to_string(annotation) == expected
+
+
+if hasattr(typing, "TypeVarTuple"):
+
+    @pytest.mark.parametrize(
+        "annotation, expected",
+        [
+            (TypeVarTuple("T"), "T"),
+        ],
+    )
+    def test_typevartuple_to_string(annotation, expected):
         assert annotation_to_string(annotation) == expected
 
 
