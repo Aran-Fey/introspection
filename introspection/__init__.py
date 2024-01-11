@@ -2,7 +2,7 @@
 New and improved introspection functions
 """
 
-__version__ = "1.7.1"
+__version__ = "1.7.2"
 
 from .parameter import *
 from .signature_ import *
@@ -20,14 +20,15 @@ from .hazmat import *
 
 from . import dunder
 from . import errors
+from . import types
 
 # Make sure a ``from introspection import *`` doesn't import the ``typing``
 # submodule
-import types
+import types as types_
 
 __all__ = [
     name
     for name, obj in globals().items()
-    if not isinstance(obj, types.ModuleType) and not name.startswith("_")
+    if not isinstance(obj, types_.ModuleType) and not name.startswith("_")
 ]
-del types
+del types_

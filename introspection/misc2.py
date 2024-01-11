@@ -85,6 +85,8 @@ def set_signature(
     *,
     remove_parameters: Iterable[Union[str, int, inspect._ParameterKind]],
     add_self: Literal[True],
+    # The return type should ideally be Callable[Concatenate[Self, ...], T], but
+    # that crashes in 3.10
 ) -> Callable[[Callable[..., object]], Callable[..., T]]:  # type: ignore
     ...
 
@@ -109,6 +111,8 @@ def set_signature(
     remove_parameters: Iterable[Union[str, int, inspect._ParameterKind]],
     add_self: Literal[True],
     return_annotation: Type[T],
+    # The return type should ideally be Callable[Concatenate[Self, ...], T], but
+    # that crashes in 3.10
 ) -> Callable[[Callable[..., object]], Callable[..., T]]:  # type: ignore
     ...
 

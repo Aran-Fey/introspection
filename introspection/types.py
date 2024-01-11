@@ -23,7 +23,7 @@ Class = typing.TypeVar("Class", bound=type)
 
 Function = types.FunctionType
 ParameterizedGeneric: typing_extensions.TypeAlias = "types.GenericAlias"
-Type_ = typing.Union[type, ParameterizedGeneric]
+Type_ = typing.Union[type, typing.TypeVar, ParameterizedGeneric]
 TypeAnnotation = typing.Union[Type_, str, typing.ForwardRef, None]
 
 

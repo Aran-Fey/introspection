@@ -3,6 +3,7 @@ import typing
 from typing_extensions import TypeGuard
 
 from .introspection import get_type_arguments, is_parameterized_generic, get_generic_base_class
+from .type_compat import to_python
 from ..types import Type_
 
 __all__ = ["is_subtype"]
@@ -59,24 +60,30 @@ def is_subtype(subtype: Type_, supertype: Type_Variable) -> TypeGuard[typing.Typ
         test = TYPE_ARGS_TESTS[super_base]  # type: ignore
         return test(sub_args, super_args)
 
-    raise NotImplementedError
+    raise NotImplementedError(f"is_subtype doesn't support parameterized {super_base!r} yet")
 
 
-def _is_subclass(sub_cls, super_cls):
+def _is_subclass(sub_cls: Type_, super_cls: Type_) -> bool:
+    sub_cls = to_python(sub_cls, strict=False)
+    super_cls = to_python(super_cls, strict=False)
+
     if super_cls not in SUBCLASS_TESTS:
-        return issubclass(sub_cls, super_cls)
+        try:
+            return issubclass(sub_cls, super_cls)  # type: ignore
+        except TypeError:
+            raise NotImplementedError(f"is_subtype({sub_cls!r}, {super_cls!r}) isn't supported yet")
 
     test = SUBCLASS_TESTS[super_cls]
     return test(sub_cls)
 
 
-SUBCLASS_TESTS = {
+SUBCLASS_TESTS: typing.Dict[Type_, typing.Callable[[object], bool]] = {
     collections.abc.Callable: callable,
     typing.Callable: callable,
 }
 
 
-def _test_callable_subtypes(sub_args, super_args):
+def _test_callable_subtypes(sub_args, super_args) -> bool:
     raise NotImplementedError
 
 

@@ -1,5 +1,6 @@
 import collections.abc
 import re
+from types import EllipsisType
 from typing import *  # type: ignore
 import typing_extensions
 
@@ -13,7 +14,7 @@ from .type_compat import to_python
 from ..parameter import Parameter
 from ..signature_ import Signature
 from .._utils import eval_or_discard
-from ..types import ParameterizedGeneric
+from ..types import Type_
 
 __all__ = ["is_instance"]
 
@@ -23,7 +24,7 @@ T = TypeVar("T")
 
 def is_instance(
     obj: object,
-    type_: Union[Type[T], ParameterizedGeneric],
+    type_: Union[Type[T], Type_],
 ) -> typing_extensions.TypeGuard[T]:
     """
     Returns whether ``obj`` is an instance of ``type_``. Unlike the builtin
@@ -44,12 +45,11 @@ def is_instance(
 
         cls = type(type_)
         if cls is TypeVar:
-            return _test_typevar(obj, type_)
+            return _test_typevar(obj, type_)  # type: ignore
 
-        return isinstance(obj, type_)
+        return _safe_instancecheck(obj, type_)
 
-    # Extract the generic base type and verify if the object is an instance of
-    # that
+    # Extract the generic base type and verify if the object is an instance of that
     base_type = get_generic_base_class(type_)
     base_type = to_python(base_type, strict=False)
 
@@ -57,7 +57,7 @@ def is_instance(
         test = GENERIC_BASE_TESTS[base_type]
         result = test(obj)
     else:
-        result = isinstance(obj, base_type)
+        result = _safe_instancecheck(obj, base_type)
 
     if not result:
         return False
@@ -72,8 +72,15 @@ def is_instance(
     return test(obj, *subtypes)
 
 
-def _test_typevar(obj, var):
-    if var.__bound__ is not None and not isinstance(obj, var.__bound__):
+def _safe_instancecheck(obj: object, type_: Any) -> bool:
+    try:
+        return isinstance(obj, type_)
+    except TypeError:
+        raise NotImplementedError(f"`is_instance` currently doesn't support the type {type_!r}")
+
+
+def _test_typevar(obj: object, var: TypeVar) -> bool:
+    if var.__bound__ is not None and not _safe_instancecheck(obj, var.__bound__):
         return False
 
     if var.__constraints__:
@@ -83,7 +90,7 @@ def _test_typevar(obj, var):
     return True
 
 
-def _test_dict_subtypes(obj, key_type, value_type):
+def _test_dict_subtypes(obj: dict, key_type: Type_, value_type: Type_) -> bool:
     for key, value in obj.items():
         if not is_instance(key, key_type):
             return False
@@ -94,26 +101,33 @@ def _test_dict_subtypes(obj, key_type, value_type):
     return True
 
 
-def _test_tuple_subtypes(obj, *subtypes):
+def _test_tuple_subtypes(obj: tuple, *subtypes: Type_) -> bool:
     if len(obj) != len(subtypes):
         return False
 
     return all(is_instance(element, typ) for element, typ in zip(obj, subtypes))
 
 
-def _test_type_subtypes(obj, typ):
-    return issubclass(obj, typ)
+def _test_type_subtypes(obj: type, type_: Type_) -> bool:
+    try:
+        return issubclass(obj, type_)  # type: ignore
+    except TypeError:
+        raise NotImplementedError(f"`is_instance` currently doesn't support the type {type_!r}")
 
 
-def _test_iterable_subtypes(obj, item_type):
+def _test_iterable_subtypes(obj: Iterable, item_type: Type_) -> bool:
     return all(is_instance(item, item_type) for item in obj)
 
 
-def _test_annotated_subtypes(obj, typ, *_):
+def _test_annotated_subtypes(obj: Annotated, typ: Type_, *_) -> bool:
     return is_instance(obj, typ)
 
 
-def _test_callable_subtypes(obj, param_types, return_type):
+def _test_callable_subtypes(
+    obj: Callable,
+    param_types: Union[List[Type_], EllipsisType],
+    return_type: Type_,
+) -> bool:
     signature = Signature.from_callable(obj)
 
     if signature.return_annotation is not Signature.empty:
@@ -121,10 +135,7 @@ def _test_callable_subtypes(obj, param_types, return_type):
             return False
 
     if param_types is ...:
-        return all(
-            param.kind != Parameter.KEYWORD_ONLY
-            for param in signature.parameters.values()
-        )
+        return all(param.kind != Parameter.KEYWORD_ONLY for param in signature.parameters.values())
 
     parameters = signature.parameter_list
     i = 0
@@ -149,32 +160,33 @@ def _test_callable_subtypes(obj, param_types, return_type):
     return all(param.is_optional for param in parameters[i:])
 
 
-def _test_literal_subtypes(obj, *options):
+def _test_literal_subtypes(obj: object, *options: object) -> bool:
     return obj in options
 
 
-def _test_optional_subtypes(obj, typ):
+def _test_optional_subtypes(obj: object, typ: Type_) -> bool:
     return obj is None or is_instance(obj, typ)
 
 
-def _test_union_subtypes(obj, *types):
+def _test_union_subtypes(obj: object, *types: Type_) -> bool:
     return any(is_instance(obj, typ) for typ in types)
 
 
-def _test_regex_pattern_subtypes(pattern, subtype):
-    return isinstance(pattern.pattern, subtype)
+def _test_regex_pattern_subtypes(pattern: re.Pattern, subtype: Type[AnyStr]) -> bool:
+    return is_instance(pattern.pattern, subtype)
 
 
-def _test_regex_match_subtypes(match, subtype):
-    return isinstance(match.string, subtype)
+def _test_regex_match_subtypes(match: re.Match, subtype: Type[AnyStr]) -> bool:
+    return is_instance(match.string, subtype)
 
 
-def _return_true(_):
+def _return_true(_) -> bool:
     return True
 
 
 TESTS = {
     Any: _return_true,
+    float: lambda value: isinstance(value, (int, float)),
 }
 
 
