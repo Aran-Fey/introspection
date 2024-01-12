@@ -102,6 +102,9 @@ def _test_dict_subtypes(obj: dict, key_type: Type_, value_type: Type_) -> bool:
 
 
 def _test_tuple_subtypes(obj: tuple, *subtypes: Type_) -> bool:
+    if len(subtypes) == 2 and subtypes[-1] == ...:
+        return _test_iterable_subtypes(obj, subtypes[0])
+
     if len(obj) != len(subtypes):
         return False
 
@@ -135,7 +138,9 @@ def _test_callable_subtypes(
             return False
 
     if param_types is ...:
-        return all(param.kind != Parameter.KEYWORD_ONLY for param in signature.parameters.values())
+        # I thought functions with keyword-only arguments wouldn't match, but they do. So this is
+        # really just `return True`.
+        return True
 
     parameters = signature.parameter_list
     i = 0

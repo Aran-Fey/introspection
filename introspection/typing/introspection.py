@@ -207,8 +207,8 @@ GENERIC_INHERITANCE = {
     "typing.MutableSet": [("AbstractSet", T)],
     "typing.ByteString": [("Sequence", int)],
     "typing.ItemsView": [
-        ("MappingView", Tuple[K_co, V_co]),
-        ("AbstractSet", Tuple[K_co, V_co]),
+        ("MappingView", Tuple[K_co, V_co]),  # type: ignore
+        ("AbstractSet", Tuple[K_co, V_co]),  # type: ignore
     ],
     "typing.KeysView": [
         ("MappingView", K_co),
@@ -248,15 +248,9 @@ if sys.version_info >= (3, 9):
             "collections.ChainMap": GENERIC_INHERITANCE["typing.ChainMap"],
             "collections.abc.Awaitable": GENERIC_INHERITANCE["typing.Awaitable"],
             "collections.abc.Coroutine": GENERIC_INHERITANCE["typing.Coroutine"],
-            "collections.abc.AsyncIterable": GENERIC_INHERITANCE[
-                "typing.AsyncIterable"
-            ],
-            "collections.abc.AsyncIterator": GENERIC_INHERITANCE[
-                "typing.AsyncIterator"
-            ],
-            "collections.abc.AsyncGenerator": GENERIC_INHERITANCE[
-                "typing.AsyncGenerator"
-            ],
+            "collections.abc.AsyncIterable": GENERIC_INHERITANCE["typing.AsyncIterable"],
+            "collections.abc.AsyncIterator": GENERIC_INHERITANCE["typing.AsyncIterator"],
+            "collections.abc.AsyncGenerator": GENERIC_INHERITANCE["typing.AsyncGenerator"],
             "collections.abc.Iterable": GENERIC_INHERITANCE["typing.Iterable"],
             "collections.abc.Iterator": GENERIC_INHERITANCE["typing.Iterator"],
             "collections.abc.Generator": GENERIC_INHERITANCE["typing.Generator"],
@@ -267,21 +261,15 @@ if sys.version_info >= (3, 9):
             "collections.abc.Set": GENERIC_INHERITANCE["typing.AbstractSet"],
             "collections.abc.MutableSet": GENERIC_INHERITANCE["typing.MutableSet"],
             "collections.abc.Mapping": GENERIC_INHERITANCE["typing.Mapping"],
-            "collections.abc.MutableMapping": GENERIC_INHERITANCE[
-                "typing.MutableMapping"
-            ],
+            "collections.abc.MutableMapping": GENERIC_INHERITANCE["typing.MutableMapping"],
             "collections.abc.Sequence": GENERIC_INHERITANCE["typing.Sequence"],
-            "collections.abc.MutableSequence": GENERIC_INHERITANCE[
-                "typing.MutableSequence"
-            ],
+            "collections.abc.MutableSequence": GENERIC_INHERITANCE["typing.MutableSequence"],
             "collections.abc.ByteString": GENERIC_INHERITANCE["typing.ByteString"],
             "collections.abc.MappingView": GENERIC_INHERITANCE["typing.MappingView"],
             "collections.abc.KeysView": GENERIC_INHERITANCE["typing.KeysView"],
             "collections.abc.ItemsView": GENERIC_INHERITANCE["typing.ItemsView"],
             "collections.abc.ValuesView": GENERIC_INHERITANCE["typing.ValuesView"],
-            "contextlib.AbstractContextManager": GENERIC_INHERITANCE[
-                "typing.ContextManager"
-            ],
+            "contextlib.AbstractContextManager": GENERIC_INHERITANCE["typing.ContextManager"],
             "contextlib.AbstractAsyncContextManager": GENERIC_INHERITANCE[
                 "typing.AsyncContextManager"
             ],
@@ -303,7 +291,7 @@ PARAMETERIZED_GENERIC_META = _resolve_dotted_names(PARAMETERIZED_GENERIC_META)
 def _get_type_parameters(type_):
     if sys.version_info >= (3, 10):
         if isinstance(type_, types.UnionType):
-            return type_.__parameters__
+            return type_.__parameters__  # type: ignore
 
     if safe_is_subclass(type_, Generic):
         # Classes that inherit from Generic directly (like
@@ -313,7 +301,7 @@ def _get_type_parameters(type_):
         if not hasattr(type_, "__orig_bases__"):
             return None
 
-        return type_.__parameters__
+        return type_.__parameters__  # type: ignore
 
     if isinstance(type_, PARAMETERIZED_GENERIC_META):
         if sys.version_info < (3, 7):
@@ -853,7 +841,7 @@ def get_generic_base_class(type_: Type_) -> Type_:
     return base
 
 
-def get_type_arguments(type_: Type_) -> Tuple[object]:
+def get_type_arguments(type_: Type_) -> Tuple[object, ...]:
     """
     Given a parameterized generic type as input, returns a tuple of its type
     arguments.
@@ -907,7 +895,7 @@ def get_type_arguments(type_: Type_) -> Tuple[object]:
     return args
 
 
-def get_type_parameters(type_: Type_) -> Tuple[TypeVar]:
+def get_type_parameters(type_: Type_) -> Tuple[TypeVar, ...]:
     """
     Returns the TypeVars of a generic type.
 
@@ -966,7 +954,7 @@ def get_type_parameters(type_: Type_) -> Tuple[TypeVar]:
     except (KeyError, TypeError):
         pass
     else:
-        params = ordered_set.OrderedSet()
+        params = ordered_set.OrderedSet()  # type: ignore
 
         for base, *typevars in bases:
             params.update(typevars)
@@ -1089,9 +1077,7 @@ def get_type_argument_for(
         params, _ = stack[-1]
 
         if len(params) > 1:
-            raise ArgumentRequired(
-                "type_var", reason=f"{base_type!r} has more than 1 TypeVar"
-            )
+            raise ArgumentRequired("type_var", reason=f"{base_type!r} has more than 1 TypeVar")
 
         type_var = params[0]
 
@@ -1152,7 +1138,7 @@ def get_type_name(type_: Type_) -> str:
     return _get_name(type_)
 
 
-def get_parent_types(type_: Type_) -> Tuple[Type_]:
+def get_parent_types(type_: Type_) -> Tuple[Type_, ...]:
     """
     Given a type as input, returns a tuple of its parent types - including type
     arguments, if it's a generic type.
@@ -1182,7 +1168,7 @@ def get_parent_types(type_: Type_) -> Tuple[Type_]:
     # without parameterizing it, then `__orig_bases__` will contain `Generic`
     # for some godforsaken reason.
     try:
-        orig_bases = type_.__orig_bases__
+        orig_bases = type_.__orig_bases__  # type: ignore
     except AttributeError:
         return type_.__bases__
 

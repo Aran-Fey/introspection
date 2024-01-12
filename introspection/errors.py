@@ -1,6 +1,7 @@
 import types
 import dataclasses
 from typing import *  # type: ignore
+import typing_extensions
 
 from .types import *
 from . import call_frame
@@ -41,6 +42,7 @@ V_co = TypeVar("V_co", covariant=True)
 M_co = TypeVar("M_co", covariant=True, bound=Union[type, Iterable[type]])
 
 
+@typing_extensions.dataclass_transform()
 class Error(Exception):
     _STR: ClassVar[str]
 
