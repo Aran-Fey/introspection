@@ -64,7 +64,9 @@ def is_instance(
 
     # Verify the subtypes
     if base_type not in SUBTYPE_TESTS:
-        raise NotImplementedError
+        raise NotImplementedError(
+            f"`is_instance` currently doesn't support parameterized {base_type!r}"
+        )
 
     subtypes = get_type_arguments(type_)
 
@@ -80,17 +82,19 @@ def _safe_instancecheck(obj: object, type_: Any) -> bool:
 
 
 def _test_typevar(obj: object, var: TypeVar) -> bool:
-    if var.__bound__ is not None and not _safe_instancecheck(obj, var.__bound__):
-        return False
+    if var.__bound__ is not None:
+        return is_instance(obj, var.__bound__)
 
     if var.__constraints__:
-        if not any(is_instance(obj, typ) for typ in var.__constraints__):
-            return False
+        return any(is_instance(obj, typ) for typ in var.__constraints__)
 
     return True
 
 
 def _test_dict_subtypes(obj: dict, key_type: Type_, value_type: Type_) -> bool:
+    if key_type in (object, Any) and value_type in (object, Any):
+        return True
+
     for key, value in obj.items():
         if not is_instance(key, key_type):
             return False
@@ -119,7 +123,21 @@ def _test_type_subtypes(obj: type, type_: Type_) -> bool:
 
 
 def _test_iterable_subtypes(obj: Iterable, item_type: Type_) -> bool:
+    if item_type in (object, Any):
+        return True
+
+    # If the object is an iterator, looping over it would exhaust it. We don't want that.
+    if isinstance(obj, collections.abc.Iterator):
+        raise NotImplementedError("Can't type check the contents of an iterator")
+
     return all(is_instance(item, item_type) for item in obj)
+
+
+def _test_awaitable_subtypes(obj: Awaitable, result_type: Type_) -> bool:
+    if result_type in (object, Any):
+        return True
+
+    raise NotImplementedError("Can't type check the result of an Awaitable")
 
 
 def _test_annotated_subtypes(obj: Annotated, typ: Type_, *_) -> bool:
@@ -205,7 +223,7 @@ GENERIC_BASE_TESTS = eval_or_discard(
 )
 
 
-SUBTYPE_TESTS = eval_or_discard(
+SUBTYPE_TESTS: Mapping[object, Callable[..., bool]] = eval_or_discard(
     {
         "dict": _test_dict_subtypes,
         "frozenset": _test_iterable_subtypes,
@@ -213,8 +231,10 @@ SUBTYPE_TESTS = eval_or_discard(
         "set": _test_iterable_subtypes,
         "tuple": _test_tuple_subtypes,
         "type": _test_type_subtypes,
+        "collections.abc.Awaitable": _test_awaitable_subtypes,
         "collections.abc.Callable": _test_callable_subtypes,
         "collections.abc.Iterable": _test_iterable_subtypes,
+        "Awaitable": _test_awaitable_subtypes,
         "Callable": _test_callable_subtypes,
         "Literal": _test_literal_subtypes,
         "Optional": _test_optional_subtypes,

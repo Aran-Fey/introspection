@@ -1,11 +1,14 @@
-from typing import Generic, TypeVar, Callable, overload, Optional, Union
+from typing import *  # type: ignore
 from typing_extensions import Self
 
 S = TypeVar("S")
 T = TypeVar("T")
 
 
-def eval_or_discard(mapping, namespace=None):
+def eval_or_discard(
+    mapping: Mapping[str, T],
+    namespace: Optional[Dict[str, Any]] = None,
+) -> Mapping[object, T]:
     result = {}
 
     for key, value in mapping.items():

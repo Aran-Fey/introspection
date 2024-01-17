@@ -58,8 +58,8 @@ def test_annotation_to_string_old_style_unions(expected):
         (TypeVar("T", covariant=True), "T"),
         (TypeVar("T", contravariant=True), "T"),
         (ParamSpec("P"), "P"),
-        (ParamSpec("P").args, "P.args"),
-        (ParamSpec("P").kwargs, "P.kwargs"),
+        (ParamSpec("P").args, "P.args"),  # type: ignore
+        (ParamSpec("P").kwargs, "P.kwargs"),  # type: ignore
     ],
 )
 def test_annotation_to_string(annotation, expected):
@@ -73,8 +73,8 @@ def test_annotation_to_string(annotation, expected):
         (TypeVar("T", covariant=True), "+T"),
         (TypeVar("T", contravariant=True), "-T"),
         (ParamSpec("P"), "~P"),
-        (ParamSpec("P").args, "~P.args"),
-        (ParamSpec("P").kwargs, "~P.kwargs"),
+        (ParamSpec("P").args, "~P.args"),  # type: ignore
+        (ParamSpec("P").kwargs, "~P.kwargs"),  # type: ignore
     ],
 )
 def test_annotation_to_string_with_variance_prefixes(annotation, expected):
@@ -154,6 +154,25 @@ def test_resolve_forward_refs(annotation, expected):
     assert resolve_forward_refs(annotation) == expected
 
 
+# TypeVars can't be compared with ==, so they need a specialized test function
+@pytest.mark.parametrize(
+    "annotation, expected",
+    [
+        (TypeVar("T", bound="int"), TypeVar("T", bound=int)),
+        (TypeVar("T", bound="int", covariant=True), TypeVar("T", bound=int, covariant=True)),
+        (TypeVar("T", "int", "str"), TypeVar("T", int, str)),
+    ],
+)
+def test_resolve_typevar_forward_refs(annotation, expected: TypeVar):
+    result: TypeVar = resolve_forward_refs(annotation)  # type: ignore
+
+    assert result.__name__ == expected.__name__
+    assert result.__bound__ == expected.__bound__
+    assert result.__constraints__ == expected.__constraints__
+    assert result.__covariant__ == expected.__covariant__
+    assert result.__contravariant__ == expected.__contravariant__
+
+
 if hasattr(typing, "Literal"):
 
     @pytest.mark.parametrize(
@@ -211,11 +230,22 @@ def test_resolve_forward_refs_error(annotation, kwargs):
     [
         ("ThisClassDoesntExist", {"mode": "getattr"}, "ThisClassDoesntExist"),
         ("this is a syntax error", {}, "this is a syntax error"),
-        ('List["Foo"]', {}, List["Foo"]),
+        ('List["Foo"]', {}, List["Foo"]),  # type: ignore[Foo-not-defined]
     ],
 )
 def test_resolve_forward_refs_non_strict(annotation, kwargs, expected):
     ann = resolve_forward_refs(annotation, strict=False, **kwargs)
+    assert ann == expected
+
+
+@pytest.mark.parametrize(
+    "annotation, expected",
+    [
+        ("List[Foo]", List["Foo"]),  # type: ignore[Foo-not-defined]
+    ],
+)
+def test_partially_resolve_forward_refs(annotation: str, expected):
+    ann = resolve_forward_refs(annotation, mode="ast", strict=False)
     assert ann == expected
 
 

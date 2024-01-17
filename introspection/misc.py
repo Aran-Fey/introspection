@@ -749,3 +749,26 @@ def convert_case(name: str, to: Case) -> str:
         "pascal": _merge_pascal,
     }[to]
     return merge_func(words)
+
+
+def find_function_from_coroutine(coro: types.CoroutineType) -> Optional[types.FunctionType]:
+    code_obj = coro.cr_code
+    file_name = code_obj.co_filename
+    function_name = code_obj.co_name
+
+    for module_name, module in sys.modules.items():
+        if module_name.split(".")[-1] != file_name:
+            continue
+
+        try:
+            thing: object = getattr(module, function_name)
+        except AttributeError:
+            continue
+
+        if not isinstance(thing, types.FunctionType):
+            continue
+
+        if thing.__code__ is code_obj:
+            return thing 
+
+    return None

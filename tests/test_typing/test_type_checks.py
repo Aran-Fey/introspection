@@ -8,6 +8,10 @@ from introspection.typing import is_instance, is_subtype
 T = TypeVar("T")
 
 
+async def async_function(result: T = None) -> T:
+    return result
+
+
 @pytest.mark.parametrize(
     "obj, type_, expected",
     [
@@ -43,6 +47,10 @@ T = TypeVar("T")
         (dict, Callable[[], Any], True),
         (list, Callable[[str], list], True),
         # (list, Callable[[str], List[str]], True),
+        (async_function(), Awaitable, True),
+        (async_function(), Awaitable[Any], True),
+        (async_function(), Awaitable[object], True),
+        # (async_function(), Awaitable[int], False),
     ],
 )
 def test_is_instance(obj, type_, expected):

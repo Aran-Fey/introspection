@@ -67,6 +67,11 @@ def resolve_forward_refs(
         >>> resolve_forward_refs('ellipsis')
         <class 'ellipsis'>
 
+    Using `mode='ast'` makes partial evaluation possible::
+
+        >>> resolve_forward_refs('List[ThisCantBeResolved'], mode='ast', strict=False)
+        List['ThisCantBeResolved']
+
     .. versionchanged:: 1.6
         The ``module`` and ``eval_`` parameters are deprecated in favor of
         ``context`` and ``mode``.
@@ -130,9 +135,7 @@ def resolve_forward_refs(
             except Exception:
                 pass
             else:
-                return resolve_forward_refs(
-                    annotation, context, mode=mode, strict=strict
-                )
+                return resolve_forward_refs(annotation, context, mode=mode, strict=strict)
         elif mode == "getattr":
             first_name, *attrs = annotation.split(".")
 
@@ -149,14 +152,16 @@ def resolve_forward_refs(
                 except AttributeError:
                     pass
         elif mode == "ast":
+            expr = ast.parse(annotation, mode="eval")
+
             try:
-                expr = ast.parse(annotation, mode="eval")
-                _, result = _eval_ast(expr.body, scope, strict=strict)
-                return result  # type: ignore
-            except SyntaxError:
+                result = _eval_ast(expr.body, scope, strict=strict)
+            except _AstEvaluationFailed:
                 pass
+            else:
+                return result  # type: ignore
         else:
-            assert False, "Invalid mode: {!r}".format(mode)
+            assert False, f"Invalid mode: {mode!r}"
 
         if annotation == "ellipsis":
             return type(...)
@@ -166,10 +171,12 @@ def resolve_forward_refs(
 
         raise CannotResolveForwardref(annotation, context)
 
+    if annotation is None:
+        return None
+
     # In some versions, `ParamSpec` is a subclass of `list`, so make sure this
     # check happens before the `isinstance(annotation, list)` check below
     if type(annotation) in (
-        typing.TypeVar,
         typing_extensions.TypeVarTuple,
         typing_extensions.ParamSpec,
         typing_extensions.ParamSpecKwargs,
@@ -177,12 +184,30 @@ def resolve_forward_refs(
     ):
         return annotation
 
+    if isinstance(annotation, TypeVar):
+        if annotation.__constraints__:
+            constraints = [
+                resolve_forward_refs(constraint, context, mode=mode, strict=strict)
+                for constraint in annotation.__constraints__
+            ]
+            bound = None
+        else:
+            constraints = ()
+            bound = resolve_forward_refs(annotation.__bound__, context, mode=mode, strict=strict)
+
+        return TypeVar(
+            annotation.__name__,  # type: ignore
+            *constraints,  # type: ignore
+            bound=bound,  # type: ignore
+            covariant=annotation.__covariant__,  # type: ignore
+            contravariant=annotation.__contravariant__,  # type: ignore
+        )
+
     # As a special case, lists are also supported because they're used by
     # `Callable`
     if isinstance(annotation, list):
         return [
-            resolve_forward_refs(typ, context, mode=mode, strict=strict)
-            for typ in annotation
+            resolve_forward_refs(typ, context, mode=mode, strict=strict) for typ in annotation
         ]  # type: ignore
 
     if not is_parameterized_generic(annotation, raising=False):
@@ -195,15 +220,12 @@ def resolve_forward_refs(
 
     type_args = get_type_arguments(annotation)
     type_args = tuple(
-        resolve_forward_refs(typ, context, mode=mode, strict=strict)
-        for typ in type_args
+        resolve_forward_refs(typ, context, mode=mode, strict=strict) for typ in type_args
     )
     return parameterize(base, type_args)
 
 
-def _eval_ast(
-    node: ast.AST, scope: typing.Mapping[str, object], strict: bool
-) -> Tuple[bool, object]:
+def _eval_ast(node: ast.AST, scope: typing.Mapping[str, object], strict: bool) -> object:
     # Compared to "eval" and "getattr", this method of evaluating forward refs
     # has the advantage of being able to perform partial evaluation. For
     # example, the forward ref `"ClassVar[NameThatCannotBeResolved]"` can be
@@ -211,60 +233,46 @@ def _eval_ast(
     #
     # Sometimes we need to know whether the forward ref was resolved or not.
     # That's why this function returns a tuple of `(bool, object)`.
-    def recurse(node: ast.AST) -> Tuple[bool, object]:
+    def recurse(node: ast.AST) -> object:
         return _eval_ast(node, scope, strict)
+
+    if strict:
+        safe_recurse = recurse
+    else:
+
+        def safe_recurse(node: ast.AST) -> object:
+            try:
+                return _eval_ast(node, scope, strict)
+            except Exception:
+                return ast.unparse(node)
 
     if type(node) is ast.Name:
         name = node.id
-        try:
-            return True, scope[name]
-        except KeyError:
-            if strict:
-                raise NameError(name) from None
-            else:
-                return False, name
+        return scope[name]
     elif type(node) is ast.Attribute:
-        success, obj = recurse(node.value)
-        if not success:
-            raise SyntaxError(f"Failed to resolve {ast.dump(node.value)}")
-
-        try:
-            return True, getattr(obj, node.attr)
-        except AttributeError as error:
-            if (
-                not strict
-                and isinstance(obj, types.ModuleType)
-                and str(error).startswith("partially initialized module")
-            ):
-                return False, ast.dump(node)
-            raise
+        obj = recurse(node.value)
+        return getattr(obj, node.attr)
     elif type(node) is ast.Subscript:
-        success, generic_type = recurse(node.value)
-        if not success:
-            if strict:
-                raise SyntaxError(f"Failed to resolve {ast.dump(node.value)}")
-            else:
-                return False, ast.dump(node)
-
-        _, subtype = recurse(node.slice)
-        return True, generic_type[subtype]  # type: ignore
+        generic_type = recurse(node.value)
+        subtype = safe_recurse(node.slice)
+        return generic_type[subtype]  # type: ignore
     elif type(node) is ast.Constant:
-        return True, node.value
+        return node.value
     elif type(node) is ast.Tuple:
-        return True, tuple(recurse(elt)[1] for elt in node.elts)
+        return tuple(safe_recurse(elt) for elt in node.elts)
     elif type(node) is ast.List:
-        return True, [recurse(elt)[1] for elt in node.elts]
+        return [safe_recurse(elt) for elt in node.elts]
     elif type(node) is ast.BinOp:
         if type(node.op) is ast.BitOr:
-            _, left = recurse(node.left)
-            _, right = recurse(node.right)
+            left = safe_recurse(node.left)
+            right = safe_recurse(node.right)
             # Use `Union` instead of `|` because:
             # 1. It works in older python versions
             # 2. It works even if `left` and `right` are strings because they
             #    couldn't be resolved
-            return True, Union[left, right]  # type: ignore
+            return Union[left, right]  # type: ignore
 
-    raise SyntaxError(f"Unsupported AST node: {node!r}")
+    raise NotImplementedError(f"Can't evaluate AST node {node}")
 
 
 def annotation_to_string(
@@ -417,7 +425,5 @@ def annotation_for_callable(callable_: typing.Callable[..., object]) -> Type_:
     if len(options) == 1:
         return typing.Callable[param_types, return_type]  # type: ignore
 
-    options = tuple(
-        typing.Callable[option, return_type] for option in options  # type: ignore
-    )
+    options = tuple(typing.Callable[option, return_type] for option in options)  # type: ignore
     return typing.Union[options]  # type: ignore
