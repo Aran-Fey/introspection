@@ -254,6 +254,7 @@ TESTS = {
 GENERIC_BASE_TESTS = eval_or_discard(
     {
         "Literal": _return_true,
+        "typing_extensions.Literal": _return_true,
         "Optional": _return_true,
         "Union": _return_true,
     },
@@ -275,6 +276,7 @@ SUBTYPE_TESTS: Mapping[object, Callable[..., bool]] = eval_or_discard(
         "Awaitable": _test_awaitable_subtypes,
         "Callable": _test_callable_subtypes,
         "Literal": _test_literal_subtypes,
+        "typing_extensions.Literal": _test_literal_subtypes,
         "Optional": _test_optional_subtypes,
         "Union": _test_union_subtypes,
         "typing_extensions.Annotated": _test_annotated_subtypes,

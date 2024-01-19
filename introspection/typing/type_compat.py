@@ -3,6 +3,7 @@ import contextlib  # NOT an unused import, your IDE is lying
 import re  # NOT an unused import, your IDE is lying
 import typing
 
+from ._compat import LITERAL_TYPES
 from .introspection import *
 from . import introspection as typing_introspection
 from ..types import Type_
@@ -222,7 +223,7 @@ def to_typing(type_: Type_, strict: bool = False) -> Type_:
                     [to_typing(arg, strict) for arg in args[0]],  # type: ignore
                     to_typing(args[1], strict),  # type: ignore
                 )
-        elif hasattr(typing, "Literal") and base is typing.Literal:
+        elif base in LITERAL_TYPES:
             return type_
         else:
             args = tuple(to_typing(arg, strict) for arg in args)  # type: ignore

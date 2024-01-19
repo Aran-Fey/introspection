@@ -113,6 +113,7 @@ def test_is_forwardref_non_raising(obj):
         (List[Callable[[E], int]], True),  # type: ignore
         (List[Callable], True),
         (typing_extensions.Protocol, True),
+        (typing_extensions.Literal, True),
     ],
 )
 def test_is_type(type_, expected):
@@ -440,7 +441,8 @@ def test_is_parameterized_generic(type_, expected):
     assert is_parameterized_generic(type_) == expected
 
 
-if hasattr(typing, 'Literal'):
+if hasattr(typing, "Literal"):
+
     @pytest.mark.parametrize(
         ["type_", "expected"],
         [
@@ -452,7 +454,8 @@ if hasattr(typing, 'Literal'):
         assert is_parameterized_generic(type_) == expected
 
 
-if hasattr(typing, 'Protocol'):
+if hasattr(typing, "Protocol"):
+
     @pytest.mark.parametrize(
         ["type_", "expected"],
         [

@@ -136,6 +136,7 @@ _VARIADIC_GENERICS = {
 VARIADIC_GENERICS: Set[object] = {
     getattr(typing, attr) for attr in _VARIADIC_GENERICS if hasattr(typing, attr)
 }
+VARIADIC_GENERICS.add(typing_extensions.Literal)
 
 if sys.version_info >= (3, 9):
     VARIADIC_GENERICS.add(tuple)
@@ -339,22 +340,8 @@ def _is_parameterized_generic(cls):
     return False
 
 
-def _is_typing_type(cls):
-    if not isinstance(cls, (TypingMeta, _TypingBase)):  # type: ignore
-        return False
-
-    if _is_parameterized_generic(cls):
-        return True
-
-    return cls.__module__ == "typing"
-
-
 def _get_generic_base_class(cls):  # type: ignore
     return cls.__origin__
-
-
-def _to_python(cls):
-    return getattr(cls, "__extra__", None)
 
 
 def _get_name(cls):  # type: ignore
@@ -367,60 +354,68 @@ def _get_name(cls):  # type: ignore
     return name
 
 
-if sys.version_info >= (3, 7):
-    SPECIAL_GENERICS = {Optional, Union, ClassVar, Callable}
+SPECIAL_GENERICS = {
+    Optional,
+    Union,
+    ClassVar,
+    Callable,
+    Literal,
+    typing_extensions.Literal,
+    Final,
+    typing_extensions.Final,
+}
 
-    if hasattr(typing, "Literal"):  # python 3.8+
-        SPECIAL_GENERICS.add(Literal)
 
-    if hasattr(typing, "Final"):  # python 3.8+
-        SPECIAL_GENERICS.add(Final)
+def _is_parameterized_generic(cls):
+    if isinstance(cls, GenericAliases):
+        return not cls._special
 
-    def _is_parameterized_generic(cls):
-        if isinstance(cls, GenericAliases):
-            return not cls._special
+    return False
 
+
+def _is_generic_base_class(cls):
+    if isinstance(cls, GenericAliases):
+        # The _special attribute was removed in 3.9
+        if not cls._special:
+            return False
+    elif not isinstance(cls, (type, _SpecialForm)):  # type: ignore
         return False
 
-    def _is_generic_base_class(cls):
-        if isinstance(cls, GenericAliases):
-            # The _special attribute was removed in 3.9
-            if not cls._special:
-                return False
-        elif not isinstance(cls, (type, _SpecialForm)):  # type: ignore
-            return False
+    return is_generic(cls)
 
-        return is_generic(cls)
 
-    def _is_typing_type(cls):
-        if isinstance(cls, GenericAliases):
+def _is_typing_type(cls):
+    if isinstance(cls, GenericAliases):
+        return True
+
+    if sys.version_info >= (3, 10):
+        if cls is types.UnionType or isinstance(cls, types.UnionType):
             return True
 
-        if sys.version_info >= (3, 10):
-            if cls is types.UnionType or isinstance(cls, types.UnionType):
-                return True
+    try:
+        module = cls.__module__
+    except AttributeError:
+        return False
 
-        try:
-            module = cls.__module__
-        except AttributeError:
-            return False
+    return module in ("typing", "typing_extensions")
 
-        return module == "typing"
 
-    def _get_generic_base_class(cls):  # type: ignore
-        if cls._name is not None:
-            return getattr(typing, cls._name)
+def _get_generic_base_class(cls):  # type: ignore
+    if cls._name is not None:
+        return getattr(typing, cls._name)
 
-        return cls.__origin__
+    return cls.__origin__
 
-    def _to_python(cls):
-        return getattr(cls, "__origin__", None)
 
-    def _get_name(cls):
-        try:
-            return cls.__name__
-        except AttributeError:
-            return cls._name
+def _to_python(cls):  # NOT an unused function! IDE is wrong!
+    return getattr(cls, "__origin__", None)
+
+
+def _get_name(cls):
+    try:
+        return cls.__name__
+    except AttributeError:
+        return cls._name
 
 
 if sys.version_info >= (3, 9):

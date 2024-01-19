@@ -11,6 +11,7 @@ from typing import *
 
 import typing_extensions
 
+from ._compat import LITERAL_TYPES
 from .introspection import (
     is_parameterized_generic,
     get_generic_base_class,
@@ -238,7 +239,7 @@ def resolve_forward_refs(  # type: ignore[wtf]
     base = get_generic_base_class(annotation)
 
     # Handle special cases where we can't blindly recurse into the subtypes
-    if base is typing_extensions.Literal:
+    if base in LITERAL_TYPES:
         return annotation
 
     if base is typing_extensions.Annotated:
@@ -312,7 +313,7 @@ def _eval_ast(
 
         # If we're dealing with `typing.Literal` or `typing.Annotated`, we must leave strings as
         # strings. But for any other type, we must treat them as forward references.
-        if generic_type is typing_extensions.Literal:
+        if generic_type in LITERAL_TYPES:
             pass
         elif generic_type is typing_extensions.Annotated:
             assert isinstance(subtype, tuple)
@@ -425,7 +426,7 @@ def annotation_to_string(
 
             return f"{prefix}[{params}, {return_str}]"
 
-        if base is typing_extensions.Literal:
+        if base in LITERAL_TYPES:
             literals = ", ".join(repr(value) for value in subtypes)
             prefix = recurse(base)
             return f"{prefix}[{literals}]"
