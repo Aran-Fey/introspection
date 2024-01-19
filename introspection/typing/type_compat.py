@@ -162,22 +162,22 @@ def to_python(type_: Type_, strict: bool = False) -> Type_:
 
     if base in (collections.abc.Callable, typing.Callable):
         if args[0] is ...:
-            args = (..., to_python(args[1], strict))
+            args = (..., to_python(args[1], strict))  # type: ignore
         else:
             args = (
-                [to_python(arg, strict) for arg in args[0]],
-                to_python(args[1], strict),
+                [to_python(arg, strict) for arg in args[0]],  # type: ignore
+                to_python(args[1], strict),  # type: ignore
             )
     elif hasattr(typing, "Literal") and base is typing.Literal:
         return type_
     else:
-        args = tuple(to_python(arg, strict) for arg in args)
+        args = tuple(to_python(arg, strict) for arg in args)  # type: ignore
 
     # Some generics, like typing.Optional, don't accept tuples
     if len(args) == 1:
         args = args[0]
 
-    return base[args]
+    return base[args]  # type: ignore
 
 
 def to_typing(type_: Type_, strict: bool = False) -> Type_:
@@ -204,30 +204,30 @@ def to_typing(type_: Type_, strict: bool = False) -> Type_:
 
     if isinstance(type_, str):
         try:
-            type_ = FORWARDREF_TO_TYPING[type_]
+            type_ = FORWARDREF_TO_TYPING[type_]  # type: ignore
         except KeyError:
             pass
 
-        if hasattr(typing, type_):
-            return getattr(typing, type_)
+        if hasattr(typing, type_):  # type: ignore
+            return getattr(typing, type_)  # type: ignore
     elif is_parameterized_generic(type_):
         base = to_typing(get_generic_base_class(type_), strict)
         args = get_type_arguments(type_)
 
         if base is typing.Callable:
             if args[0] is ...:
-                args = (..., to_typing(args[1], strict))
+                args = (..., to_typing(args[1], strict))  # type: ignore
             else:
                 args = (
-                    [to_typing(arg, strict) for arg in args[0]],
-                    to_typing(args[1], strict),
+                    [to_typing(arg, strict) for arg in args[0]],  # type: ignore
+                    to_typing(args[1], strict),  # type: ignore
                 )
         elif hasattr(typing, "Literal") and base is typing.Literal:
             return type_
         else:
-            args = tuple(to_typing(arg, strict) for arg in args)
+            args = tuple(to_typing(arg, strict) for arg in args)  # type: ignore
 
-        return base[args]
+        return base[args]  # type: ignore
     elif is_typing_type(type_):
         return type_
     else:
@@ -237,6 +237,6 @@ def to_typing(type_: Type_, strict: bool = False) -> Type_:
             pass
 
     if strict:
-        raise NoTypingEquivalent(type_)
+        raise NoTypingEquivalent(type_)  # type: ignore
     else:
         return type_

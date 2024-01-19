@@ -1,6 +1,6 @@
 import inspect
 import types
-from typing import *  # type: ignore
+from typing import *
 from typing_extensions import Self
 
 from . import errors

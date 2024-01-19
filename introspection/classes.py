@@ -1,8 +1,8 @@
 import collections
 import inspect
 import functools
-from typing import *  # type: ignore
-from typing_extensions import *  # type: ignore
+from typing import *
+from typing_extensions import *
 
 import sentinel
 
@@ -43,19 +43,19 @@ def iter_subclasses(cls: Type[T], include_abstract: bool = False) -> Iterator[Ty
     :return: An iterator yielding subclasses
     """
     seen: Set[type] = set()
-    queue = cls.__subclasses__()
+    queue: List[type] = cls.__subclasses__()
 
     while queue:
-        cls = queue.pop()  # type: ignore
+        subcls = queue.pop()
 
-        if cls in seen:
+        if subcls in seen:
             continue
-        seen.add(cls)
+        seen.add(subcls)
 
-        if include_abstract or not inspect.isabstract(cls):
-            yield cls
+        if include_abstract or not inspect.isabstract(subcls):
+            yield subcls
 
-        queue += cls.__subclasses__()
+        queue += subcls.__subclasses__()
 
 
 def get_subclasses(cls: Type[T], include_abstract: bool = False) -> Set[Type[T]]:
@@ -472,29 +472,33 @@ def wrap_method(
 def _get_original_method(cls: type, method_name: str, method_type):
     cls_vars = static_vars(cls)
 
+    original_method: Callable[..., Any]
+
     try:
         original_method = cls_vars[method_name]  # type: ignore
     except KeyError:
         # === SPECIAL METHOD: __new__ ===
         if method_name == "__new__":
-            original_method, wrap_original = _make_original_new_method(cls)  # type: ignore
+            original_method, wrap_original = _make_original_new_method(cls)
 
         # === STATICMETHODS ===
         elif method_type is staticmethod:
 
-            def original_method(*args, **kwargs):  # type: ignore
-                super_method = getattr(super(cls, cls), method_name)  # type: ignore
+            def _original_method1(*args, **kwargs):
+                super_method = getattr(super(cls, cls), method_name)  # type: ignore[wtf]
                 return super_method(*args, **kwargs)
 
+            original_method = _original_method1
             wrap_original = lambda func: func
 
         # === INSTANCE- AND CLASSMETHODS ===
         else:
 
-            def original_method(self_or_cls, *args, **kwargs):
-                super_method = getattr(super(cls, self_or_cls), method_name)  # type: ignore
+            def _original_method2(self_or_cls, *args, **kwargs):
+                super_method = getattr(super(cls, self_or_cls), method_name)  # type: ignore[wtf]
                 return super_method(*args, **kwargs)
 
+            original_method = _original_method2
             wrap_original = lambda func: func
     else:
         if isinstance(original_method, (staticmethod, classmethod)):
@@ -507,7 +511,7 @@ def _get_original_method(cls: type, method_name: str, method_type):
 
 def _make_original_new_method(cls: type):
     def original_method(class_: type, *args, **kwargs):
-        super_new = super(cls, class_).__new__  # type: ignore
+        super_new = super(cls, class_).__new__  # type: ignore[wtf]
 
         # object.__new__ accepts no arguments if the class
         # implements its own __new__ method, so we must
@@ -537,7 +541,7 @@ def _make_original_new_method(cls: type):
                     break
 
                 try:
-                    # __new__ is always wrapped in a staticmethod
+                    # __new__ is always wrapped in `staticmethod`
                     new = static_vars(c)["__new__"].__func__  # type: ignore
                 except KeyError:
                     continue

@@ -1,4 +1,4 @@
-from typing import *  # type: ignore
+from typing import *
 from typing_extensions import Self
 
 S = TypeVar("S")

@@ -1,6 +1,6 @@
 import collections.abc
 import inspect
-from typing import *  # type: ignore
+from typing import *
 from typing_extensions import Self, Literal
 
 from . import signature_
@@ -20,7 +20,7 @@ class BoundArguments(inspect.BoundArguments, collections.abc.MutableMapping[str,
 
     __slots__ = ()
 
-    signature: "signature_.Signature"  # type: ignore[reportIncompatibleMethodOverride]
+    signature: "signature_.Signature"
 
     @classmethod
     def from_bound_arguments(cls, bound_args: inspect.BoundArguments) -> Self:
@@ -31,12 +31,10 @@ class BoundArguments(inspect.BoundArguments, collections.abc.MutableMapping[str,
         :param bound_args: An :class:`inspect.BoundArguments` instance
         :return: A new ``BoundArguments`` instance
         """
-        from .signature_ import Signature
-
         signature = bound_args.signature
 
-        if not isinstance(signature, Signature):
-            signature = Signature.from_signature(signature)
+        if not isinstance(signature, signature_.Signature):
+            signature = signature_.Signature.from_signature(signature)
 
         return cls(signature, bound_args.arguments)
 
@@ -71,9 +69,7 @@ class BoundArguments(inspect.BoundArguments, collections.abc.MutableMapping[str,
             if name not in missing:
                 continue
 
-            if param.is_vararg or (
-                not include_optional_parameters and param.is_optional
-            ):
+            if param.is_vararg or (not include_optional_parameters and param.is_optional):
                 missing.remove(name)
 
         return missing

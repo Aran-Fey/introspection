@@ -182,7 +182,7 @@ def iter_class_attributes(
 
     if start is not None:
         if start_after is not None:
-            raise ConflictingArguments(iter_class_attributes, "start", "start_after")
+            raise ConflictingArguments("start", "start_after")
 
         mro = mro[mro.index(start) :]
     elif start_after is not None:

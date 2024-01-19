@@ -5,7 +5,7 @@ import sys
 import types
 
 from collections import defaultdict, deque
-from typing import *  # type: ignore
+from typing import *
 from typing_extensions import ParamSpec, TypeAlias
 
 from .errors import *
@@ -350,7 +350,7 @@ def unwrap(
     for function in iter_wrapped(function, stop):
         pass
 
-    return function  # type: ignore
+    return function
 
 
 FunctionContainer: TypeAlias = Union[staticmethod, classmethod, property]
@@ -769,6 +769,6 @@ def find_function_from_coroutine(coro: types.CoroutineType) -> Optional[types.Fu
             continue
 
         if thing.__code__ is code_obj:
-            return thing 
+            return thing
 
     return None

@@ -1,6 +1,6 @@
 import types
 import dataclasses
-from typing import *  # type: ignore
+from typing import *
 import typing_extensions
 
 from .types import *
@@ -202,11 +202,11 @@ class NoConcreteTypeForTypeVar(Error):
 
 
 class CannotResolveForwardref(Error, ValueError):
-    name: str
+    forward_ref: ForwardReference
     context: ForwardRefContext
 
     def __str__(self) -> str:
-        return f"Cannot resolve name {self.name!r} with context {self.context!r}"
+        return f"Cannot resolve forward reference {self.forward_ref!r} in context {self.context!r}"
 
 
 class NoTypingEquivalent(Error, ValueError):

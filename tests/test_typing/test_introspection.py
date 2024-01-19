@@ -4,8 +4,9 @@ import collections.abc
 import re
 import sys
 import types
+import typing
 import typing_extensions
-from typing import *  # type: ignore
+from typing import *
 
 from introspection.typing import *
 from introspection import errors
@@ -27,7 +28,7 @@ class MyGeneric(Generic[E]):
 
 
 class UnhashableMeta(type):
-    __hash__ = None
+    __hash__ = None  # type: ignore
 
 
 class UnhashableClass(metaclass=UnhashableMeta):
@@ -104,12 +105,12 @@ def test_is_forwardref_non_raising(obj):
         (Callable[[], int], True),
         (Optional[int], True),
         (ByteString, True),
-        (List[E], True),
-        (MyGeneric[E], True),
-        (MyGeneric[int], True),
-        (List[Tuple[E]], True),
+        (List[E], True),  # type: ignore
+        (MyGeneric[E], True),  # type: ignore
+        (MyGeneric[int], True),  # type: ignore
+        (List[Tuple[E]], True),  # type: ignore
         (List[Tuple], True),
-        (List[Callable[[E], int]], True),
+        (List[Callable[[E], int]], True),  # type: ignore
         (List[Callable], True),
         (typing_extensions.Protocol, True),
     ],
@@ -154,12 +155,12 @@ def test_is_type_no_forwardref(type_, expected):
         (Callable[[], int], True),
         (Optional[int], True),
         (ByteString, True),
-        (List[E], True),
-        (MyGeneric[E], True),
-        (MyGeneric[int], True),
-        (List[Tuple[E]], True),
+        (List[E], True),  # type: ignore
+        (MyGeneric[E], True),  # type: ignore
+        (MyGeneric[int], True),  # type: ignore
+        (List[Tuple[E]], True),  # type: ignore
         (List[Tuple], True),
-        (List[Callable[[E], int]], True),
+        (List[Callable[[E], int]], True),  # type: ignore
         (List[Callable], True),
     ],
 )
@@ -223,26 +224,26 @@ def test_is_typing_type_non_raising(type_):
         (Callable[[], int], False),
         (Optional[int], False),
         (ByteString, False),
-        (List[E], True),
-        (Tuple[E], True),
-        (MyGeneric[E], True),
-        (MyGeneric[int], False),
-        (List[Tuple[E]], True),
+        (List[E], True),  # type: ignore
+        (Tuple[E], True),  # type: ignore
+        (MyGeneric[E], True),  # type: ignore
+        (MyGeneric[int], False),  # type: ignore
+        (List[Tuple[E]], True),  # type: ignore
         (List[Tuple], False),
-        (List[Callable[[E], int]], True),
+        (List[Callable[[E], int]], True),  # type: ignore
         (List[Callable], False),
         (typing_extensions.Protocol, True),
         (typing_extensions.Literal, True),
         (typing_extensions.Literal[1, 2], False),
         (typing_extensions.ClassVar, True),
         (typing_extensions.ClassVar[str], False),
-        (typing_extensions.ClassVar[E], sys.version_info >= (3, 7)),
+        (typing_extensions.ClassVar[E], sys.version_info >= (3, 7)),  # type: ignore
         (typing_extensions.Final, True),
         (typing_extensions.Final[str], False),
-        (typing_extensions.Final[E], True),
+        (typing_extensions.Final[E], True),  # type: ignore
         (typing_extensions.Annotated, True),
         (typing_extensions.Annotated[str, ""], False),
-        (typing_extensions.Annotated[E, None], True),
+        (typing_extensions.Annotated[E, None], True),  # type: ignore
     ],
 )
 def test_is_generic(type_, expected):
@@ -300,13 +301,13 @@ def test_is_generic_non_raising(type_):
         (Callable[[], int], False),
         (Optional[int], False),
         (ByteString, False),
-        (List[E], False),
-        (Tuple[E], False),
-        (MyGeneric[E], False),
-        (MyGeneric[int], False),
-        (List[Tuple[E]], False),
+        (List[E], False),  # type: ignore
+        (Tuple[E], False),  # type: ignore
+        (MyGeneric[E], False),  # type: ignore
+        (MyGeneric[int], False),  # type: ignore
+        (List[Tuple[E]], False),  # type: ignore
         (List[Tuple], False),
-        (List[Callable[[E], int]], False),
+        (List[Callable[[E], int]], False),  # type: ignore
         (List[Callable], False),
         (typing_extensions.Literal, True),
         (typing_extensions.Literal[3], False),
@@ -369,20 +370,20 @@ def test_is_variadic_generic_non_raising(type_):
         (Callable[[], int], False),
         (Optional[int], False),
         (ByteString, False),
-        (List[E], False),
-        (MyGeneric[E], False),
+        (List[E], False),  # type: ignore
+        (MyGeneric[E], False),  # type: ignore
         (typing_extensions.Literal, True),
         (typing_extensions.Literal[1, 2], False),
-        (typing_extensions.Literal[1, E], False),
+        (typing_extensions.Literal[1, E], False),  # type: ignore
         (typing_extensions.ClassVar, True),
         (typing_extensions.ClassVar[int], False),
-        (typing_extensions.ClassVar[E], False),
+        (typing_extensions.ClassVar[E], False),  # type: ignore
         (typing_extensions.Final, True),
         (typing_extensions.Final[int], False),
-        (typing_extensions.Final[E], False),
+        (typing_extensions.Final[E], False),  # type: ignore
         (typing_extensions.Annotated, True),
         (typing_extensions.Annotated[int, 5], False),
-        (typing_extensions.Annotated[E, 5], False),
+        (typing_extensions.Annotated[E, 5], False),  # type: ignore
     ],
 )
 def test_is_generic_base_class(type_, expected):
@@ -425,18 +426,42 @@ def test_is_generic_base_class_error(type_):
         (Union[int, str], True),
         (Callable[[], int], True),
         (Optional[int], True),
-        (MyGeneric[str], True),
-        (MyGeneric[E], True),
-        (List[E], True),
-        (List[Tuple[E]], True),
+        (MyGeneric[str], True),  # type: ignore
+        (MyGeneric[E], True),  # type: ignore
+        (List[E], True),  # type: ignore
+        (List[Tuple[E]], True),  # type: ignore
         (typing_extensions.Literal, False),
         (typing_extensions.Literal[3], True),
         (typing_extensions.Protocol, False),
-        (typing_extensions.Protocol[E], True),
+        (typing_extensions.Protocol[E], True),  # type: ignore
     ],
 )
 def test_is_parameterized_generic(type_, expected):
     assert is_parameterized_generic(type_) == expected
+
+
+if hasattr(typing, 'Literal'):
+    @pytest.mark.parametrize(
+        ["type_", "expected"],
+        [
+            (typing.Literal, False),
+            (typing.Literal[3], True),
+        ],
+    )
+    def test_literal_is_parameterized_generic(type_, expected):
+        assert is_parameterized_generic(type_) == expected
+
+
+if hasattr(typing, 'Protocol'):
+    @pytest.mark.parametrize(
+        ["type_", "expected"],
+        [
+            (typing.Protocol, False),
+            (typing.Protocol[E], True),  # type: ignore
+        ],
+    )
+    def test_protocol_is_parameterized_generic(type_, expected):
+        assert is_parameterized_generic(type_) == expected
 
 
 @pytest.mark.parametrize(
@@ -465,9 +490,9 @@ if is_py39_plus:
             (re.Pattern[str], True),
             (re.Match[bytes], True),
             (collections.Counter[str], True),
-            (collections.defaultdict[int, E], True),
-            (list[E], True),
-            (list[tuple[E]], True),
+            (collections.defaultdict[int, E], True),  # type: ignore
+            (list[E], True),  # type: ignore
+            (list[tuple[E]], True),  # type: ignore
         ],
     )
     def test_is_parameterized_generic_py39(type_, expected):
@@ -497,21 +522,21 @@ if is_py39_plus:
         (Union[int, str], True),
         (Callable[[], int], True),
         (Optional[int], True),
-        (MyGeneric[str], True),
-        (List[E], False),
-        (List[List[E]], False),
+        (MyGeneric[str], True),  # type: ignore
+        (List[E], False),  # type: ignore
+        (List[List[E]], False),  # type: ignore
         (typing_extensions.Literal, False),
         (typing_extensions.Literal[1, 2], True),
         (typing_extensions.Protocol, False),
         (typing_extensions.Final, False),
         (typing_extensions.Final[str], True),
-        (typing_extensions.Final[E], False),
+        (typing_extensions.Final[E], False),  # type: ignore
         (typing_extensions.ClassVar, False),
         (typing_extensions.ClassVar[str], True),
-        (typing_extensions.ClassVar[E], sys.version_info < (3, 7)),
+        (typing_extensions.ClassVar[E], sys.version_info < (3, 7)),  # type: ignore
         (typing_extensions.Annotated, False),
         (typing_extensions.Annotated[str, "idk lol"], True),
-        (typing_extensions.Annotated[E, "foobar"], False),
+        (typing_extensions.Annotated[E, "foobar"], False),  # type: ignore
     ],
 )
 def test_is_fully_parameterized_generic(type_, expected):
@@ -553,17 +578,17 @@ if is_py39_plus:
             (type[str], True),
             (list[int], True),
             (tuple[int], True),
-            (tuple[E], False),
-            (list[E], False),
-            (list[tuple[E]], False),
+            (tuple[E], False),  # type: ignore
+            (list[E], False),  # type: ignore
+            (list[tuple[E]], False),  # type: ignore
             (tuple[list[int]], True),
-            (tuple[list[E]], False),
+            (tuple[list[E]], False),  # type: ignore
             (re.Pattern[str], True),
             (re.Match[bytes], True),
             (collections.Counter[str], True),
-            (collections.defaultdict[int, E], False),
+            (collections.defaultdict[int, E], False),  # type: ignore
             (collections.abc.Iterable[str], True),
-            (collections.abc.Iterable[E], False),
+            (collections.abc.Iterable[E], False),  # type: ignore
         ],
     )
     def test_is_fully_parameterized_generic_py39(type_, expected):
@@ -574,7 +599,7 @@ if is_py39_plus:
     "type_, expected",
     [
         (List[int], List),
-        (List[E], List),
+        (List[E], List),  # type: ignore
         (Union[int, str], Union),
         (Callable[[], int], Callable),
         (Optional[int], Optional),
@@ -632,7 +657,7 @@ if is_py39_plus:
         "type_, expected",
         [
             (list[int], list),
-            (list[E], list),
+            (list[E], list),  # type: ignore
             (tuple[list[str]], tuple),
             (re.Pattern[str], re.Pattern),
             (re.Match[bytes], re.Match),
@@ -654,13 +679,13 @@ if is_py39_plus:
         (Callable[..., int], (..., int)),
         (Optional[int], (int,)),
         (Type[str], (str,)),
-        (List[E], (E,)),
-        (Generator[E, int, E][str], (str, int, str)),
-        (Tuple[E, int, E][str], (str, int, str)),
-        (Callable[[E, int], E][str], ([str, int], str)),
-        (Tuple[List[E]][str], (List[str],)),
+        (List[E], (E,)),  # type: ignore
+        (Generator[E, int, E][str], (str, int, str)),  # type: ignore
+        (Tuple[E, int, E][str], (str, int, str)),  # type: ignore
+        (Callable[[E, int], E][str], ([str, int], str)),  # type: ignore
+        (Tuple[List[E]][str], (List[str],)),  # type: ignore
         (
-            Tuple[List[Type[E]]][str],
+            Tuple[List[Type[E]]][str],  # type: ignore
             (List[Type[str]],),
         ),
     ],
@@ -717,12 +742,12 @@ if is_py39_plus:
             (collections.abc.Callable[[str], int], ([str], int)),
             (collections.abc.Callable[..., int], (..., int)),
             (type[str], (str,)),
-            (list[E], (E,)),
-            (collections.abc.Generator[E, int, E][str], (str, int, str)),
-            (tuple[E, int, E][str], (str, int, str)),
-            (collections.abc.Callable[[E, int], E][str], ([str, int], str)),
-            (tuple[list[E]][str], (list[str],)),
-            (tuple[list[type[E]]][str], (list[type[str]],)),
+            (list[E], (E,)),  # type: ignore
+            (collections.abc.Generator[E, int, E][str], (str, int, str)),  # type: ignore
+            (tuple[E, int, E][str], (str, int, str)),  # type: ignore
+            (collections.abc.Callable[[E, int], E][str], ([str, int], str)),  # type: ignore
+            (tuple[list[E]][str], (list[str],)),  # type: ignore
+            (tuple[list[type[E]]][str], (list[type[str]],)),  # type: ignore
         ],
     )
     def test_get_type_arguments_py39(type_, expected):
@@ -739,18 +764,18 @@ if is_py39_plus:
         (Tuple, "(+T_co,)"),
         (Type, "(+CT_co,)"),
         (ByteString, "()"),
-        (List[E], "(~E,)"),
+        (List[E], "(~E,)"),  # type: ignore
         (List[int], "()"),
-        (Generator[E, int, E], "(~E,)"),
-        (Tuple[E, int, T_co], "(~E, +T_co)"),
-        (Callable[[E, int], E][T_co], "(+T_co,)"),
-        (Tuple[List[T_co]], "(+T_co,)"),
+        (Generator[E, int, E], "(~E,)"),  # type: ignore
+        (Tuple[E, int, T_co], "(~E, +T_co)"),  # type: ignore
+        (Callable[[E, int], E][T_co], "(+T_co,)"),  # type: ignore
+        (Tuple[List[T_co]], "(+T_co,)"),  # type: ignore
         (MyGeneric, "(~E,)"),
-        (typing_extensions.Protocol[E], "(~E,)"),
+        (typing_extensions.Protocol[E], "(~E,)"),  # type: ignore
         (typing_extensions.ClassVar, "(+T_co,)"),
         (typing_extensions.ClassVar[int], "()"),
         (
-            typing_extensions.ClassVar[E],
+            typing_extensions.ClassVar[E],  # type: ignore
             "(~E,)" if sys.version_info >= (3, 7) else "()",
         ),
         (typing_extensions.Final, "(+T_co,)"),
@@ -808,12 +833,12 @@ if is_py39_plus:
             (tuple, "(+T_co,)"),
             (type, "(+CT_co,)"),
             (collections.abc.ByteString, "()"),
-            (list[E], "(~E,)"),
+            (list[E], "(~E,)"),  # type: ignore
             (list[int], "()"),
-            (collections.abc.Generator[E, int, E], "(~E,)"),
-            (tuple[E, int, T_co], "(~E, +T_co)"),
-            (collections.abc.Callable[[E, int], E][T_co], "(+T_co,)"),
-            (tuple[list[T_co]], "(+T_co,)"),
+            (collections.abc.Generator[E, int, E], "(~E,)"),  # type: ignore
+            (tuple[E, int, T_co], "(~E, +T_co)"),  # type: ignore
+            (collections.abc.Callable[[E, int], E][T_co], "(+T_co,)"),  # type: ignore
+            (tuple[list[T_co]], "(+T_co,)"),  # type: ignore
         ],
     )
     def test_get_type_parameters_py39(type_, expected):
@@ -826,8 +851,8 @@ if is_py39_plus:
     [
         (int, "int"),
         (None, "NoneType"),
-        (type(None), "NoneType"),
-        (type(...), "ellipsis"),
+        (type(None), "NoneType"),  # type: ignore
+        (type(...), "ellipsis"),  # type: ignore
         (UnhashableClass, "UnhashableClass"),
         (MyGeneric, "MyGeneric"),
         (Any, "Any"),
@@ -875,8 +900,8 @@ if sys.version_info >= (3, 10):
             (types.UnionType, True),
             (str | None, True),
             (str | int, True),
-            (str | T, True),
-            ((str | T)[int], True),
+            (str | T, True),  # type: ignore
+            ((str | T)[int], True),  # type: ignore
         ],
     )
     def test_uniontype_is_type(type_, expected):
@@ -888,8 +913,8 @@ if sys.version_info >= (3, 10):
             (types.UnionType, True),
             (str | None, True),
             (str | int, True),
-            (str | T, True),
-            ((str | T)[int], True),
+            (str | T, True),  # type: ignore
+            ((str | T)[int], True),  # type: ignore
         ],
     )
     def test_uniontype_is_typing_type(type_, expected):
@@ -901,9 +926,9 @@ if sys.version_info >= (3, 10):
             (types.UnionType, False),
             (str | None, False),
             (str | int, False),
-            (str | T, True),
-            (E | T | str, True),
-            ((str | T)[int], False),
+            (str | T, True),  # type: ignore
+            (E | T | str, True),  # type: ignore
+            ((str | T)[int], False),  # type: ignore
         ],
     )
     def test_uniontype_is_generic(type_, expected):
@@ -915,9 +940,9 @@ if sys.version_info >= (3, 10):
             (types.UnionType, False),
             (str | None, False),
             (str | int, False),
-            (str | T, False),
-            (E | T | str, False),
-            ((str | T)[int], False),
+            (str | T, False),  # type: ignore
+            (E | T | str, False),  # type: ignore
+            ((str | T)[int], False),  # type: ignore
         ],
     )
     def test_uniontype_is_variadic_generic(type_, expected):
@@ -929,9 +954,9 @@ if sys.version_info >= (3, 10):
             (types.UnionType, False),
             (str | None, True),
             (str | int, True),
-            (str | T, True),
-            (E | T | str, True),
-            ((str | T)[int], True),
+            (str | T, True),  # type: ignore
+            (E | T | str, True),  # type: ignore
+            ((str | T)[int], True),  # type: ignore
         ],
     )
     def test_uniontype_is_parameterized_generic(type_, expected):
@@ -943,9 +968,9 @@ if sys.version_info >= (3, 10):
             (types.UnionType, False),
             (str | None, True),
             (str | int, True),
-            (str | T, False),
-            (E | T | str, False),
-            ((str | T)[float], True),
+            (str | T, False),  # type: ignore
+            (E | T | str, False),  # type: ignore
+            ((str | T)[float], True),  # type: ignore
         ],
     )
     def test_uniontype_is_fully_parameterized_generic(type_, expected):
@@ -955,9 +980,9 @@ if sys.version_info >= (3, 10):
         "type_",
         [
             str | int,
-            str | T,
-            E | T | str,
-            (str | T)[int],
+            str | T,  # type: ignore
+            E | T | str,  # type: ignore
+            (str | T)[int],  # type: ignore
         ],
     )
     def test_uniontype_get_generic_base_class(type_):
@@ -971,9 +996,9 @@ if sys.version_info >= (3, 10):
                 (str,),
             ),  # No None in the output since this is seen as an Optional[str]
             (str | float, (str, float)),
-            (str | T, (str, T)),
-            (E | T | str, (E, T, str)),
-            ((str | T)[int], (str, int)),
+            (str | T, (str, T)),  # type: ignore
+            (E | T | str, (E, T, str)),  # type: ignore
+            ((str | T)[int], (str, int)),  # type: ignore
         ],
     )
     def test_uniontype_get_type_arguments(type_, expected):
@@ -992,9 +1017,9 @@ if sys.version_info >= (3, 10):
         [
             (str | None, ()),
             (str | int, ()),
-            (str | T, (T,)),
-            (E | T | str, (E, T)),
-            ((str | T)[float], ()),
+            (str | T, (T,)),  # type: ignore
+            (E | T | str, (E, T)),  # type: ignore
+            ((str | T)[float], ()),  # type: ignore
         ],
     )
     def test_uniontype_get_type_parameters(type_: Type_, expected: Tuple[TypeVar]):

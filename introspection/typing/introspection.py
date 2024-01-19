@@ -7,11 +7,11 @@ import sys
 import types
 import typing
 import typing_extensions
-from typing import *  # type: ignore
+from typing import *
 
 from .i_hate_circular_imports import parameterize
 from ..classes import safe_is_subclass
-from ..types import Type_, GenericAliases
+from ..types import Type_, GenericAliases, TypeParameter
 from ..errors import *
 
 __all__ = [
@@ -112,7 +112,7 @@ def _resolve_dotted_names(
 
             result.append(value)
 
-        return type(names)(result)  # type: ignore
+        return type(names)(result)
 
 
 # NOTE: The following function implementations work in python 3.5.
@@ -303,23 +303,8 @@ def _get_type_parameters(type_):
 
         return type_.__parameters__  # type: ignore
 
-    if isinstance(type_, PARAMETERIZED_GENERIC_META):
-        if sys.version_info < (3, 7):
-            # Callable is an outlier that never has __orig_bases__
-            if not type_.__orig_bases__ and type_._gorg is not Callable:
-                return None
-
+    if isinstance(type_, PARAMETERIZED_GENERIC_META):  # type: ignore
         return type_.__parameters__
-
-    if sys.version_info < (3, 7) and hasattr(typing, "_Union"):
-        if isinstance(type_, _Union):
-            return type_.__parameters__
-
-    # Special case: ClassVar can only be parameterized once in older
-    # versions
-    if sys.version_info < (3, 7) and hasattr(typing, "_ClassVar"):
-        if isinstance(type_, _ClassVar):
-            return ()
 
     return None
 
@@ -332,30 +317,30 @@ PARAMLESS_SUBSCRIPTABLES = {
 
 
 def _is_generic_base_class(cls):
-    if isinstance(cls, (CallableMeta, _Union)):
+    if isinstance(cls, (CallableMeta, _Union)):  # type: ignore
         return cls.__args__ is None
 
-    if isinstance(cls, GenericMeta):
+    if isinstance(cls, GenericMeta):  # type: ignore
         return cls.__args__ is None and bool(cls.__parameters__)
 
-    if type(cls) is _ClassVar:
+    if type(cls) is _ClassVar:  # type: ignore
         return cls.__type__ is None
 
     return cls in {Union, Optional, ClassVar}
 
 
 def _is_parameterized_generic(cls):
-    if isinstance(cls, (GenericMeta, _Union)):
+    if isinstance(cls, (GenericMeta, _Union)):  # type: ignore
         return cls.__args__ is not None
 
-    if type(cls) is _ClassVar:
+    if type(cls) is _ClassVar:  # type: ignore
         return cls.__type__ is not None
 
     return False
 
 
 def _is_typing_type(cls):
-    if not isinstance(cls, (TypingMeta, _TypingBase)):
+    if not isinstance(cls, (TypingMeta, _TypingBase)):  # type: ignore
         return False
 
     if _is_parameterized_generic(cls):
@@ -364,7 +349,7 @@ def _is_typing_type(cls):
     return cls.__module__ == "typing"
 
 
-def _get_generic_base_class(cls):
+def _get_generic_base_class(cls):  # type: ignore
     return cls.__origin__
 
 
@@ -372,7 +357,7 @@ def _to_python(cls):
     return getattr(cls, "__extra__", None)
 
 
-def _get_name(cls):
+def _get_name(cls):  # type: ignore
     try:
         return cls.__name__
     except AttributeError:
@@ -402,7 +387,7 @@ if sys.version_info >= (3, 7):
             # The _special attribute was removed in 3.9
             if not cls._special:
                 return False
-        elif not isinstance(cls, (type, _SpecialForm)):
+        elif not isinstance(cls, (type, _SpecialForm)):  # type: ignore
             return False
 
         return is_generic(cls)
@@ -422,7 +407,7 @@ if sys.version_info >= (3, 7):
 
         return module == "typing"
 
-    def _get_generic_base_class(cls):
+    def _get_generic_base_class(cls):  # type: ignore
         if cls._name is not None:
             return getattr(typing, cls._name)
 
@@ -442,7 +427,7 @@ if sys.version_info >= (3, 9):
 
     def _is_generic_base_class(cls):
         if safe_is_subclass(cls, Generic):
-            return bool(cls.__parameters__)
+            return bool(cls.__parameters__)  # type: ignore
 
         return False
 
@@ -457,7 +442,7 @@ if sys.version_info >= (3, 9):
             if getattr(cls, "_name", None) is not None:
                 return getattr(typing, cls._name)
 
-            if isinstance(cls, typing._AnnotatedAlias):
+            if isinstance(cls, typing._AnnotatedAlias):  # type: ignore
                 return Annotated
 
             try:
@@ -473,13 +458,13 @@ if sys.version_info >= (3, 9):
 
 if hasattr(typing, "get_args"):  # python 3.8+
 
-    def _get_type_args(cls):
+    def _get_type_args(cls):  # type: ignore
         return get_args(cls)
 
 else:
     if hasattr(Union, "_subs_tree"):  # python <3.7
 
-        def _get_base_and_args(cls):
+        def _get_base_and_args(cls):  # type: ignore
             # In older python versions, generics only store the
             # last pair of arguments. For instance,
             #    >>> Tuple[List[T]][int].__args__
@@ -874,7 +859,7 @@ def get_type_arguments(type_: Type_) -> Tuple[object, ...]:
 
     try:
         if isinstance(type_, dataclasses.InitVar):
-            return (type_.type,)  # type: ignore
+            return (type_.type,)
     except AttributeError:
         pass
 
@@ -895,7 +880,7 @@ def get_type_arguments(type_: Type_) -> Tuple[object, ...]:
     return args
 
 
-def get_type_parameters(type_: Type_) -> Tuple[TypeVar, ...]:
+def get_type_parameters(type_: Type_) -> Tuple[TypeParameter, ...]:
     """
     Returns the TypeVars of a generic type.
 
@@ -954,7 +939,7 @@ def get_type_parameters(type_: Type_) -> Tuple[TypeVar, ...]:
     except (KeyError, TypeError):
         pass
     else:
-        params = ordered_set.OrderedSet()  # type: ignore
+        params = ordered_set.OrderedSet(())
 
         for base, *typevars in bases:
             params.update(typevars)
@@ -1058,12 +1043,12 @@ def get_type_argument_for(
         for base in get_parent_types(cls):
             if is_parameterized_generic(base):
                 cls = get_generic_base_class(base)
-                if not safe_is_subclass(cls, base_type):
+                if not safe_is_subclass(cls, base_type):  # type: ignore
                     continue
 
                 args = get_type_arguments(base)
                 break
-            elif safe_is_subclass(base, base_type):
+            elif safe_is_subclass(base, base_type):  # type: ignore
                 cls = base
                 args = ()
                 break
@@ -1092,7 +1077,7 @@ def get_type_argument_for(
             if assume_any:
                 return Any
 
-            raise TypeVarNotSet(type_var, base_type, type_)
+            raise TypeVarNotSet(type_var, base_type, type_)  # type: ignore
 
         if not isinstance(arg, TypeVar):
             return arg
@@ -1100,7 +1085,7 @@ def get_type_argument_for(
         current_var = arg
 
     if not allow_typevar:
-        raise NoConcreteTypeForTypeVar(type_var, base_type, type_, current_var)
+        raise NoConcreteTypeForTypeVar(type_var, base_type, type_, current_var)  # type: ignore
 
     return current_var
 

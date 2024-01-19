@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import ast
 import builtins
 import collections.abc
@@ -5,7 +7,7 @@ import importlib
 import types
 import typing
 import warnings
-from typing import *  # type: ignore
+from typing import *
 
 import typing_extensions
 
@@ -19,10 +21,33 @@ from .introspection import (
 from .i_hate_circular_imports import parameterize
 from ..parameter import Parameter
 from ..signature_ import Signature
-from ..types import Type_, TypeAnnotation, ForwardRefContext
+from ..types import Type_, TypeAnnotation, ForwardReference, ForwardRefContext
 from ..errors import *
 
-__all__ = ["resolve_forward_refs", "annotation_to_string", "annotation_for_callable"]
+__all__ = [
+    "is_forward_ref",
+    "resolve_forward_refs",
+    "annotation_to_string",
+    "annotation_for_callable",
+]
+
+
+def is_forward_ref(annotation: TypeAnnotation) -> typing_extensions.TypeGuard[ForwardReference]:
+    """ """
+    return isinstance(annotation, (str, ForwardRef))
+
+
+@overload
+def resolve_forward_refs(
+    annotation: TypeAnnotation,
+    context: ForwardRefContext = None,
+    *,
+    mode: Literal["eval", "getattr", "ast"] = "eval",
+    strict: bool = True,
+    max_depth: Optional[int] = None,
+    treat_name_errors_as_imports: bool = False,
+) -> TypeAnnotation:
+    ...
 
 
 @overload
@@ -35,19 +60,7 @@ def resolve_forward_refs(
     ...
 
 
-@overload
-def resolve_forward_refs(
-    annotation: TypeAnnotation,
-    context: ForwardRefContext = None,
-    *,
-    mode: Literal["eval", "getattr", "ast"] = "eval",
-    strict: bool = True,
-    extra_globals: typing.Mapping[str, object] = {},
-) -> TypeAnnotation:
-    ...
-
-
-def resolve_forward_refs(
+def resolve_forward_refs(  # type: ignore[wtf]
     annotation: TypeAnnotation,
     context: ForwardRefContext = None,
     eval_: Optional[bool] = None,
@@ -55,7 +68,8 @@ def resolve_forward_refs(
     *,
     module: typing.Optional[types.ModuleType] = None,
     mode: Literal["eval", "getattr", "ast"] = "eval",
-    extra_globals: typing.Mapping[str, object] = {},
+    max_depth: Optional[int] = None,
+    treat_name_errors_as_imports: bool = False,
 ) -> TypeAnnotation:
     """
     Resolves forward references in a type annotation.
@@ -101,8 +115,19 @@ def resolve_forward_refs(
             DeprecationWarning,
         )
 
-    if isinstance(context, str):
-        context = importlib.import_module(context)
+    if max_depth is None:
+        max_depth = cast(int, float("inf"))
+    elif max_depth <= 0:
+        return annotation
+
+    def recurse(annotation: TypeAnnotation) -> TypeAnnotation:
+        return resolve_forward_refs(
+            annotation,
+            context,
+            mode=mode,
+            strict=strict,
+            max_depth=max_depth - 1,
+        )
 
     if isinstance(annotation, ForwardRef):
         if context is None:
@@ -111,11 +136,12 @@ def resolve_forward_refs(
         annotation = _get_forward_ref_code(annotation)
 
     if isinstance(annotation, str):
-        scope = collections.ChainMap()
-        scope.maps.append(extra_globals)  # type: ignore
+        scope: collections.ChainMap[str, object] = collections.ChainMap()
 
         if context is None:
-            scope.maps.extend(vars(module) for module in (builtins, typing, collections.abc, collections))  # type: ignore
+            scope.maps.extend(
+                vars(module) for module in (collections.abc, collections, typing, typing_extensions)  # type: ignore
+            )
         elif isinstance(context, types.ModuleType):
             scope.maps.append(vars(context))
         elif isinstance(context, str):
@@ -127,6 +153,13 @@ def resolve_forward_refs(
             module = importlib.import_module(context.__module__)
             scope.maps.append(vars(module))
 
+        scope.maps.append(vars(builtins))  # type: ignore
+
+        if treat_name_errors_as_imports:
+            from ._utils import ImporterDict
+
+            scope.maps.append(ImporterDict())  # type: ignore
+
         if mode == "eval":
             try:
                 # The globals must be a real dict, so the scope will be used as
@@ -135,7 +168,7 @@ def resolve_forward_refs(
             except Exception:
                 pass
             else:
-                return resolve_forward_refs(annotation, context, mode=mode, strict=strict)
+                return recurse(annotation)
         elif mode == "getattr":
             first_name, *attrs = annotation.split(".")
 
@@ -153,10 +186,9 @@ def resolve_forward_refs(
                     pass
         elif mode == "ast":
             expr = ast.parse(annotation, mode="eval")
-
             try:
-                result = _eval_ast(expr.body, scope, strict=strict)
-            except _AstEvaluationFailed:
+                result = _eval_ast(expr.body, scope, strict=strict, max_depth=max_depth)
+            except Exception:
                 pass
             else:
                 return result  # type: ignore
@@ -186,14 +218,11 @@ def resolve_forward_refs(
 
     if isinstance(annotation, TypeVar):
         if annotation.__constraints__:
-            constraints = [
-                resolve_forward_refs(constraint, context, mode=mode, strict=strict)
-                for constraint in annotation.__constraints__
-            ]
+            constraints = [recurse(constraint) for constraint in annotation.__constraints__]
             bound = None
         else:
             constraints = ()
-            bound = resolve_forward_refs(annotation.__bound__, context, mode=mode, strict=strict)
+            bound = recurse(annotation.__bound__)
 
         return TypeVar(
             annotation.__name__,  # type: ignore
@@ -203,29 +232,38 @@ def resolve_forward_refs(
             contravariant=annotation.__contravariant__,  # type: ignore
         )
 
-    # As a special case, lists are also supported because they're used by
-    # `Callable`
-    if isinstance(annotation, list):
-        return [
-            resolve_forward_refs(typ, context, mode=mode, strict=strict) for typ in annotation
-        ]  # type: ignore
-
     if not is_parameterized_generic(annotation, raising=False):
         return annotation
 
     base = get_generic_base_class(annotation)
 
+    # Handle special cases where we can't blindly recurse into the subtypes
     if base is typing_extensions.Literal:
         return annotation
 
+    if base is typing_extensions.Annotated:
+        type_args = list(get_type_arguments(annotation))
+        type_args[0] = recurse(type_args[0])  # type: ignore
+        return parameterize(base, type_args)
+
+    if base in (typing.Callable, collections.abc.Callable):
+        arg_types, return_type = get_type_arguments(annotation)
+
+        if isinstance(arg_types, list):
+            arg_types = [recurse(typ) for typ in arg_types]
+
+        return_type = recurse(return_type)  # type: ignore
+
+        return parameterize(base, (arg_types, return_type))
+
     type_args = get_type_arguments(annotation)
-    type_args = tuple(
-        resolve_forward_refs(typ, context, mode=mode, strict=strict) for typ in type_args
-    )
+    type_args = tuple(recurse(typ) for typ in type_args)  # type: ignore
     return parameterize(base, type_args)
 
 
-def _eval_ast(node: ast.AST, scope: typing.Mapping[str, object], strict: bool) -> object:
+def _eval_ast(
+    node: ast.AST, scope: typing.Mapping[str, object], strict: bool, max_depth: int
+) -> object:
     # Compared to "eval" and "getattr", this method of evaluating forward refs
     # has the advantage of being able to perform partial evaluation. For
     # example, the forward ref `"ClassVar[NameThatCannotBeResolved]"` can be
@@ -234,7 +272,10 @@ def _eval_ast(node: ast.AST, scope: typing.Mapping[str, object], strict: bool) -
     # Sometimes we need to know whether the forward ref was resolved or not.
     # That's why this function returns a tuple of `(bool, object)`.
     def recurse(node: ast.AST) -> object:
-        return _eval_ast(node, scope, strict)
+        if max_depth <= 1:
+            return ast.unparse(node)
+
+        return _eval_ast(node, scope, strict, max_depth - 1)
 
     if strict:
         safe_recurse = recurse
@@ -242,9 +283,22 @@ def _eval_ast(node: ast.AST, scope: typing.Mapping[str, object], strict: bool) -
 
         def safe_recurse(node: ast.AST) -> object:
             try:
-                return _eval_ast(node, scope, strict)
+                return recurse(node)
             except Exception:
                 return ast.unparse(node)
+
+    def safe_recurse_if_forwardref(obj: object) -> object:
+        if max_depth <= 1:
+            return obj
+
+        return resolve_forward_refs(
+            obj,  # type: ignore
+            scope,
+            mode="ast",
+            strict=strict,
+            max_depth=max_depth - 1,
+            treat_name_errors_as_imports=False,
+        )
 
     if type(node) is ast.Name:
         name = node.id
@@ -255,6 +309,21 @@ def _eval_ast(node: ast.AST, scope: typing.Mapping[str, object], strict: bool) -
     elif type(node) is ast.Subscript:
         generic_type = recurse(node.value)
         subtype = safe_recurse(node.slice)
+
+        # If we're dealing with `typing.Literal` or `typing.Annotated`, we must leave strings as
+        # strings. But for any other type, we must treat them as forward references.
+        if generic_type is typing_extensions.Literal:
+            pass
+        elif generic_type is typing_extensions.Annotated:
+            assert isinstance(subtype, tuple)
+            typ, *annotations = subtype
+            subtype = (safe_recurse(typ), *annotations)
+        else:
+            if isinstance(subtype, tuple):
+                subtype = tuple(safe_recurse_if_forwardref(t) for t in subtype)
+            else:
+                subtype = safe_recurse_if_forwardref(subtype)
+
         return generic_type[subtype]  # type: ignore
     elif type(node) is ast.Constant:
         return node.value
@@ -319,16 +388,16 @@ def annotation_to_string(
         elems = ", ".join(recurse(ann) for ann in elems)
         return "{}[{}]".format(prefix, elems)
 
-    if isinstance(annotation, list):
-        return process_nested("", annotation)
-
     if isinstance(annotation, ForwardRef):
-        return repr(_get_forward_ref_code(annotation))
+        return _get_forward_ref_code(annotation)
+
+    if isinstance(annotation, str):
+        return annotation
 
     if annotation is ...:
         return "..."
 
-    if annotation is type(None):
+    if annotation in (None, type(None)):
         return "None"
 
     if is_parameterized_generic(annotation, raising=False):
@@ -340,10 +409,37 @@ def annotation_to_string(
             subtypes = [subtypes[0], None]
 
         if base is typing.Union and new_style_unions:
-            return " | ".join(recurse(sub) for sub in subtypes)
+            return " | ".join(recurse(sub) for sub in subtypes)  # type: ignore
+
+        if base in (typing.Callable, collections.abc.Callable):
+            param_types, return_type = subtypes
+
+            prefix = recurse(base)
+            return_str = recurse(return_type)  # type: ignore
+
+            if isinstance(param_types, list):
+                params = ", ".join(recurse(param_type) for param_type in param_types)
+                params = f"[{params}]"
+            else:
+                params = "..."
+
+            return f"{prefix}[{params}, {return_str}]"
+
+        if base is typing_extensions.Literal:
+            literals = ", ".join(repr(value) for value in subtypes)
+            prefix = recurse(base)
+            return f"{prefix}[{literals}]"
+
+        if base is typing_extensions.Annotated:
+            sub_type, *annotations = subtypes
+            sub_strs = [recurse(sub_type)]  # type: ignore
+            sub_strs.extend(repr(ann) for ann in annotations)
+
+            prefix = recurse(base)
+            return f'{prefix}[{", ".join(sub_strs)}]'
 
         prefix = recurse(base)
-        return process_nested(prefix, subtypes)
+        return process_nested(prefix, subtypes)  # type: ignore
 
     if isinstance(annotation, (typing.TypeVar, typing_extensions.ParamSpec)):
         result = annotation.__name__
@@ -380,7 +476,7 @@ def annotation_to_string(
         else:
             return "{}.{}".format(annotation.__module__, annotation.__qualname__)
 
-    return repr(annotation)
+    return repr(annotation)  # This point should never be reached, but just in case...
 
 
 def annotation_for_callable(callable_: typing.Callable[..., object]) -> Type_:

@@ -1,6 +1,6 @@
 import traceback
 import warnings
-from typing import *  # type: ignore
+from typing import *
 
 __all__ = [
     "print_exception",

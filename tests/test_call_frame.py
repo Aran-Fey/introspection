@@ -1,4 +1,5 @@
 import inspect
+import sys
 import types
 import pytest
 
@@ -69,12 +70,17 @@ def test_class_scope_name():
     assert Class.frame.scope_name == "Class"
 
 
-# FIXME: This test randomly fails, apparently because of the file path being
-# cached in a .pyc file
 def test_file_name():
     frame = CallFrame.current()
 
-    assert frame.file_name == __file__
+    # On Windows, the capitalization of the drive letter isn't consistent
+    if sys.platform == "win32":
+        assert frame.file_name[0].lower() == __file__[0].lower()
+        assert frame.file_name[1:] == __file__[1:]
+    else:
+        assert frame.file_name == __file__
+
+    del frame
 
 
 def test_context():
@@ -108,7 +114,8 @@ def test_resolve_builtin_name():
 def test_resolve_nonexistent_name():
     frame = CallFrame.current()
 
-    with pytest.raises(errors.NameNotAccessibleFromFrame("firetruck", frame)):  # type: ignore
+    error = errors.NameNotAccessibleFromFrame("firetruck", frame)
+    with pytest.raises(error):  # type: ignore[pytest-raisin]
         frame.resolve_name("firetruck")
 
     # Deprecated exception

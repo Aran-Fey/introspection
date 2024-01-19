@@ -8,8 +8,13 @@ from introspection.typing import is_instance, is_subtype
 T = TypeVar("T")
 
 
-async def async_function(result: T = None) -> T:
-    return result
+class AwaitableObject:
+    def __await__(self) -> Iterator[None]:
+        ...
+
+
+def func_with_forwardrefs(arg: "int") -> "str":
+    ...
 
 
 @pytest.mark.parametrize(
@@ -47,14 +52,28 @@ async def async_function(result: T = None) -> T:
         (dict, Callable[[], Any], True),
         (list, Callable[[str], list], True),
         # (list, Callable[[str], List[str]], True),
-        (async_function(), Awaitable, True),
-        (async_function(), Awaitable[Any], True),
-        (async_function(), Awaitable[object], True),
-        # (async_function(), Awaitable[int], False),
+        (AwaitableObject(), Awaitable, True),
+        (AwaitableObject(), Awaitable[Any], True),
+        (AwaitableObject(), Awaitable[object], True),
+        # (AwaitableObject(), Awaitable[int], False),
+        (func_with_forwardrefs, Callable[[int], str], True),
+        (func_with_forwardrefs, Callable[[float], str], False),
+        (func_with_forwardrefs, Callable[[int], bytes], False),
     ],
 )
 def test_is_instance(obj, type_, expected):
     assert is_instance(obj, type_) == expected
+
+
+@pytest.mark.parametrize(
+    "obj, type_, expected",
+    [
+        (3, "ThisIsAnInvalidForwardRef", False),
+        # (3, "datetime", False),  # This is interesting because `datetime` is a module
+    ],
+)
+def test_is_instance_with_forwardref_type(obj, type_, expected):
+    assert is_instance(obj, type_, treat_name_errors_as_imports=True) == expected
 
 
 @pytest.mark.parametrize(

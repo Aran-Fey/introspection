@@ -2,7 +2,17 @@ import types
 import typing
 import typing_extensions
 
-import sentinel  # type: ignore[reportMissingTypeStubs]
+import sentinel
+
+
+__all__ = [
+    "TypeParameter",
+    "Type_",
+    "ParameterizedGeneric",
+    "ForwardReference",
+    "TypeAnnotation",
+    "ForwardRefContext",
+]
 
 
 NONE = sentinel.create("NONE")
@@ -21,13 +31,33 @@ T = typing.TypeVar("T")
 P = typing_extensions.ParamSpec("P")
 Class = typing.TypeVar("Class", bound=type)
 
+TypeParameter = typing.Union[typing.TypeVar, typing_extensions.TypeVarTuple]
 Function = types.FunctionType
 ParameterizedGeneric: typing_extensions.TypeAlias = "types.GenericAlias"
-Type_ = typing.Union[type, typing.TypeVar, ParameterizedGeneric]
-TypeAnnotation = typing.Union[Type_, str, typing.ForwardRef, None]
+Type_ = typing.Union[type, typing.TypeVar, ParameterizedGeneric, None]
+ForwardReference = typing.Union[str, typing.ForwardRef]
+TypeAnnotation = typing.Union[Type_, ForwardReference]
+ForwardRefContext = typing.Union[
+    None, type, types.FunctionType, types.ModuleType, str, typing.Mapping[str, object]
+]
 
 
-class Slot(typing.Protocol[T]):  # type: ignore[reportInvalidTypeVarUse]
+# class _MetaGeneric(typing_extensions.Protocol[T]):  # type: ignore
+#     def __getitem__(self, subtypes: typing.Union[T, typing.Tuple[T, ...]]) -> ParameterizedGeneric:
+#         ...
+
+
+# class _ClassGeneric(typing_extensions.Protocol[T]):  # type: ignore
+#     def __class_getitem__(
+#         cls, subtypes: typing.Union[T, typing.Tuple[T, ...]]
+#     ) -> ParameterizedGeneric:
+#         ...
+
+
+# GenericType = typing.Union[_MetaGeneric[T], typing.Type[_ClassGeneric[T]]]
+
+
+class Slot(typing.Protocol[T]):  # type: ignore[variance]
     def __get__(self, instance: T, owner: typing.Optional[typing.Type[T]]) -> object:
         ...
 
@@ -36,11 +66,6 @@ class Slot(typing.Protocol[T]):  # type: ignore[reportInvalidTypeVarUse]
 
     def __delete__(self, instance: T) -> None:
         ...
-
-
-ForwardRefContext = typing.Union[
-    None, type, types.FunctionType, types.ModuleType, str, typing.Mapping[str, object]
-]
 
 
 class ObjectWithQualname(typing.Protocol):

@@ -11,7 +11,7 @@ from introspection import ArgumentBundle
     ],
 )
 def test_call(func, args, kwargs, expected):
-    bundle = ArgumentBundle(*args, **kwargs)  # type: ignore
+    bundle = ArgumentBundle(*args, **kwargs)
 
     assert bundle.call(func) == expected
 
@@ -24,7 +24,7 @@ def test_call(func, args, kwargs, expected):
     ],
 )
 def test_str(args, kwargs, expected):
-    bundle = ArgumentBundle(*args, **kwargs)  # type: ignore
+    bundle = ArgumentBundle(*args, **kwargs)
 
     assert str(bundle) == expected
 
@@ -37,6 +37,6 @@ def test_str(args, kwargs, expected):
     ],
 )
 def test_repr(args, kwargs, expected):
-    bundle = ArgumentBundle(*args, **kwargs)  # type: ignore
+    bundle = ArgumentBundle(*args, **kwargs)
 
     assert repr(bundle) == expected

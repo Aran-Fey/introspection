@@ -2,7 +2,7 @@ import collections
 import functools
 import inspect
 from typing import *
-from typing_extensions import Self
+from typing_extensions import Self, Concatenate
 
 from .argument_bundle import ArgumentBundle
 from .misc import rename
@@ -39,7 +39,7 @@ def set_signature(
     *,
     remove_parameters: None = None,
     add_self: Literal[True],
-) -> Callable[[Callable[..., object]], Callable[Concatenate[Self, P], T]]:  # type: ignore
+) -> Callable[[Callable[..., object]], Callable[Concatenate[Any, P], T]]:
     ...
 
 
@@ -63,7 +63,7 @@ def set_signature(
     remove_parameters: None = None,
     add_self: Literal[True],
     return_annotation: Type[T],
-) -> Callable[[Callable[..., object]], Callable[Concatenate[Self, P], T]]:  # type: ignore
+) -> Callable[[Callable[..., object]], Callable[Concatenate[Any, P], T]]:
     ...
 
 
@@ -87,7 +87,7 @@ def set_signature(
     add_self: Literal[True],
     # The return type should ideally be Callable[Concatenate[Self, ...], T], but
     # that crashes in 3.10
-) -> Callable[[Callable[..., object]], Callable[..., T]]:  # type: ignore
+) -> Callable[[Callable[..., object]], Callable[..., T]]:
     ...
 
 
@@ -113,11 +113,11 @@ def set_signature(
     return_annotation: Type[T],
     # The return type should ideally be Callable[Concatenate[Self, ...], T], but
     # that crashes in 3.10
-) -> Callable[[Callable[..., object]], Callable[..., T]]:  # type: ignore
+) -> Callable[[Callable[..., object]], Callable[..., T]]:
     ...
 
 
-def set_signature(
+def set_signature(  # type: ignore[wtf]
     signature: Union[Callable[P, T], inspect.Signature],
     *,
     remove_parameters: Optional[Iterable[Union[str, int, inspect._ParameterKind]]] = None,
@@ -232,7 +232,7 @@ def wraps(
     ...
 
 
-def wraps(
+def wraps(  # type: ignore
     wrapped_func: Callable,
     *,
     name: Optional[str] = None,

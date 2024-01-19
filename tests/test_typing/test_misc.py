@@ -4,7 +4,8 @@ import builtins
 import io
 import sys
 import typing
-from typing import *  # type: ignore
+from typing import *
+from typing_extensions import ParamSpec
 
 from introspection.typing.misc import *
 
@@ -21,19 +22,31 @@ THIS_MODULE = sys.modules[__name__]
         "List",
         "io.IOBase",
         "List[str]",
-        "List['Foo']",
         "Tuple[List[int], bool]",
         "...",
         "Callable[[int], None]",
-        "int | str",
-        "int | None",
-        "int | str | None",
     ],
 )
 def test_annotation_to_string_simple(expected):
     annotation = eval(expected)
 
     assert annotation_to_string(annotation) == expected
+
+
+if sys.version_info >= (3, 10):
+
+    @pytest.mark.parametrize(
+        "expected",
+        [
+            "int | str",
+            "int | None",
+            "int | str | None",
+        ],
+    )
+    def test_annotation_to_string_simple_py310(expected):
+        annotation = eval(expected)
+
+        assert annotation_to_string(annotation) == expected
 
 
 @pytest.mark.parametrize(
@@ -54,6 +67,7 @@ def test_annotation_to_string_old_style_unions(expected):
     [
         (None, "None"),
         (type(None), "None"),
+        (List["Foo"], "List[Foo]"),  # type: ignore[foo-not-defined]
         (TypeVar("T"), "T"),
         (TypeVar("T", covariant=True), "T"),
         (TypeVar("T", contravariant=True), "T"),
@@ -100,7 +114,7 @@ if hasattr(typing, "TypeVarTuple"):
     @pytest.mark.parametrize(
         "annotation, expected",
         [
-            (TypeVarTuple("T"), "T"),
+            (TypeVarTuple("T"), "T"),  # type: ignore
         ],
     )
     def test_typevartuple_to_string(annotation, expected):
@@ -146,12 +160,23 @@ if hasattr(typing, "Literal"):
         (Tuple["Dict[str, int]"], Tuple[Dict[str, int]]),
         (Callable[["int"], str], Callable[[int], str]),
         ("ellipsis", type(...)),
-        ("int if False else float", float),
         ('List["int"]', List[int]),
+        ('Literal["int"]', Literal["int"]),  # `Literal` arguments must be left as strings
     ],
 )
-def test_resolve_forward_refs(annotation, expected):
-    assert resolve_forward_refs(annotation) == expected
+@pytest.mark.parametrize("mode", ["eval", "ast"])
+def test_resolve_forward_refs(mode, annotation, expected):
+    assert resolve_forward_refs(annotation, globals(), mode=mode) == expected
+
+
+@pytest.mark.parametrize(
+    "annotation, expected",
+    [
+        ("int if False else float", float),
+    ],
+)
+def test_resolve_forward_refs_eval(annotation, expected):
+    assert resolve_forward_refs(annotation, globals(), mode="eval") == expected
 
 
 # TypeVars can't be compared with ==, so they need a specialized test function
@@ -164,7 +189,7 @@ def test_resolve_forward_refs(annotation, expected):
     ],
 )
 def test_resolve_typevar_forward_refs(annotation, expected: TypeVar):
-    result: TypeVar = resolve_forward_refs(annotation)  # type: ignore
+    result = cast(TypeVar, resolve_forward_refs(annotation))
 
     assert result.__name__ == expected.__name__
     assert result.__bound__ == expected.__bound__
@@ -184,6 +209,20 @@ if hasattr(typing, "Literal"):
     )
     def test_resolve_forward_refs_literal(annotation, expected):
         assert resolve_forward_refs(annotation) == expected
+
+
+@pytest.mark.parametrize(
+    "annotation",
+    [
+        "enum.Enum",
+        "types.FunctionType",
+        "queue.Queue",
+    ],
+)
+@pytest.mark.parametrize("mode", ["eval", "ast", "getattr"])
+def test_resolve_forward_refs_with_missing_imports(mode, annotation):
+    result = resolve_forward_refs(annotation, mode=mode, treat_name_errors_as_imports=True)
+    assert not isinstance(result, str)
 
 
 memoryview = bytearray
@@ -242,10 +281,11 @@ def test_resolve_forward_refs_non_strict(annotation, kwargs, expected):
     "annotation, expected",
     [
         ("List[Foo]", List["Foo"]),  # type: ignore[Foo-not-defined]
+        ("Callable[[Foo], str]", Callable[["Foo"], str]),  # type: ignore[Foo-not-defined]
     ],
 )
 def test_partially_resolve_forward_refs(annotation: str, expected):
-    ann = resolve_forward_refs(annotation, mode="ast", strict=False)
+    ann = resolve_forward_refs(annotation, globals(), mode="ast", strict=False)
     assert ann == expected
 
 

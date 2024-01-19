@@ -222,7 +222,7 @@ def test_iter_wrapped_with_staticmethod():
     bar.__wrapped__ = foo
     static_bar = staticmethod(bar)
 
-    assert list(iter_wrapped(static_bar)) == [bar, foo]
+    assert list(iter_wrapped(static_bar)) == [bar, foo]  # type: ignore
 
 
 def test_iter_wrapped_with_stop():

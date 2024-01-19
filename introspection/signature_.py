@@ -8,7 +8,7 @@ import sys
 import types
 import typing
 from numbers import Number
-from typing import *  # type: ignore
+from typing import *
 from typing_extensions import Self
 
 from renumerate import renumerate
@@ -648,7 +648,7 @@ class Signature(inspect.Signature):
 
     __slots__ = ()
 
-    parameters: types.MappingProxyType[str, Parameter]  # type: ignore[reportIncompatibleMethodOverride]
+    parameters: types.MappingProxyType[str, Parameter]
 
     def __init__(
         self,

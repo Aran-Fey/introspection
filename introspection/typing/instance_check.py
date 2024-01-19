@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 import collections.abc
 import re
-from types import EllipsisType
-from typing import *  # type: ignore
+import sys
+import types
+from typing import *
 import typing_extensions
 
 from .introspection import (
@@ -9,12 +12,14 @@ from .introspection import (
     is_parameterized_generic,
     get_generic_base_class,
 )
-from .subtype_check import is_subtype
+from ._utils import TypeCheckingConfig
+from .subtype_check import _is_subtype
 from .type_compat import to_python
+from ..errors import CannotResolveForwardref
 from ..parameter import Parameter
 from ..signature_ import Signature
 from .._utils import eval_or_discard
-from ..types import Type_
+from ..types import Type_, TypeAnnotation, ForwardRefContext
 
 __all__ = ["is_instance"]
 
@@ -24,7 +29,10 @@ T = TypeVar("T")
 
 def is_instance(
     obj: object,
-    type_: Union[Type[T], Type_],
+    type_: Union[Type[T], TypeAnnotation],
+    *,
+    forward_ref_context: ForwardRefContext = None,
+    treat_name_errors_as_imports: bool = False,
 ) -> typing_extensions.TypeGuard[T]:
     """
     Returns whether ``obj`` is an instance of ``type_``. Unlike the builtin
@@ -37,15 +45,29 @@ def is_instance(
 
     .. versionadded:: 1.5
     """
+    config = TypeCheckingConfig(forward_ref_context, treat_name_errors_as_imports)
+    return _is_instance(config, obj, type_)
+
+
+def _is_instance(
+    config: TypeCheckingConfig,
+    obj: object,
+    type_: TypeAnnotation,
+) -> bool:
+    # Make sure we're working with an actual type, not a forward reference
+    try:
+        type_ = config.resolve_at_least_1_level_of_forward_refs(type_)
+    except CannotResolveForwardref:
+        return False
+
     # Find out if the type has type parameters
     if not is_parameterized_generic(type_):
         if type_ in TESTS:
             test = TESTS[type_]
             return test(obj)
 
-        cls = type(type_)
-        if cls is TypeVar:
-            return _test_typevar(obj, type_)  # type: ignore
+        if isinstance(type_, TypeVar):
+            return _test_typevar(config, obj, type_)
 
         return _safe_instancecheck(obj, type_)
 
@@ -71,7 +93,7 @@ def is_instance(
     subtypes = get_type_arguments(type_)
 
     test = SUBTYPE_TESTS[base_type]
-    return test(obj, *subtypes)
+    return test(config, obj, *subtypes)
 
 
 def _safe_instancecheck(obj: object, type_: Any) -> bool:
@@ -81,48 +103,50 @@ def _safe_instancecheck(obj: object, type_: Any) -> bool:
         raise NotImplementedError(f"`is_instance` currently doesn't support the type {type_!r}")
 
 
-def _test_typevar(obj: object, var: TypeVar) -> bool:
+def _test_typevar(config: TypeCheckingConfig, obj: object, var: TypeVar) -> bool:
     if var.__bound__ is not None:
-        return is_instance(obj, var.__bound__)
+        return _is_instance(config, obj, var.__bound__)
 
     if var.__constraints__:
-        return any(is_instance(obj, typ) for typ in var.__constraints__)
+        return any(_is_instance(config, obj, typ) for typ in var.__constraints__)
 
     return True
 
 
-def _test_dict_subtypes(obj: dict, key_type: Type_, value_type: Type_) -> bool:
+def _test_dict_subtypes(
+    config: TypeCheckingConfig, obj: dict, key_type: Type_, value_type: Type_
+) -> bool:
     if key_type in (object, Any) and value_type in (object, Any):
         return True
 
     for key, value in obj.items():
-        if not is_instance(key, key_type):
+        if not _is_instance(config, key, key_type):
             return False
 
-        if not is_instance(value, value_type):
+        if not _is_instance(config, value, value_type):
             return False
 
     return True
 
 
-def _test_tuple_subtypes(obj: tuple, *subtypes: Type_) -> bool:
+def _test_tuple_subtypes(config: TypeCheckingConfig, obj: tuple, *subtypes: Type_) -> bool:
     if len(subtypes) == 2 and subtypes[-1] == ...:
-        return _test_iterable_subtypes(obj, subtypes[0])
+        return _test_iterable_subtypes(config, obj, subtypes[0])
 
     if len(obj) != len(subtypes):
         return False
 
-    return all(is_instance(element, typ) for element, typ in zip(obj, subtypes))
+    return all(_is_instance(config, element, typ) for element, typ in zip(obj, subtypes))
 
 
-def _test_type_subtypes(obj: type, type_: Type_) -> bool:
+def _test_type_subtypes(config: TypeCheckingConfig, obj: type, type_: Type_) -> bool:
     try:
         return issubclass(obj, type_)  # type: ignore
     except TypeError:
         raise NotImplementedError(f"`is_instance` currently doesn't support the type {type_!r}")
 
 
-def _test_iterable_subtypes(obj: Iterable, item_type: Type_) -> bool:
+def _test_iterable_subtypes(config: TypeCheckingConfig, obj: Iterable, item_type: Type_) -> bool:
     if item_type in (object, Any):
         return True
 
@@ -130,29 +154,39 @@ def _test_iterable_subtypes(obj: Iterable, item_type: Type_) -> bool:
     if isinstance(obj, collections.abc.Iterator):
         raise NotImplementedError("Can't type check the contents of an iterator")
 
-    return all(is_instance(item, item_type) for item in obj)
+    return all(_is_instance(config, item, item_type) for item in obj)
 
 
-def _test_awaitable_subtypes(obj: Awaitable, result_type: Type_) -> bool:
+def _test_awaitable_subtypes(
+    config: TypeCheckingConfig, obj: Awaitable, result_type: Type_
+) -> bool:
     if result_type in (object, Any):
         return True
 
     raise NotImplementedError("Can't type check the result of an Awaitable")
 
 
-def _test_annotated_subtypes(obj: Annotated, typ: Type_, *_) -> bool:
+def _test_annotated_subtypes(config: TypeCheckingConfig, obj: Annotated, typ: Type_, *_) -> bool:
     return is_instance(obj, typ)
 
 
 def _test_callable_subtypes(
+    config: TypeCheckingConfig,
     obj: Callable,
-    param_types: Union[List[Type_], EllipsisType],
+    param_types: Union[List[Type_], types.EllipsisType],
     return_type: Type_,
 ) -> bool:
+    try:
+        context = sys.modules[obj.__module__]
+    except AttributeError:
+        context = None
+
+    new_config = TypeCheckingConfig(context, config.treat_name_errors_as_imports)
+
     signature = Signature.from_callable(obj)
 
     if signature.return_annotation is not Signature.empty:
-        if not is_subtype(signature.return_annotation, return_type):
+        if not _is_subtype(new_config, signature.return_annotation, return_type):
             return False
 
     if param_types is ...:
@@ -173,7 +207,7 @@ def _test_callable_subtypes(
 
         if param.annotation is not Parameter.empty:
             # Functions are contravariant in their parameters, so the sub- and supertype are swapped here
-            if not is_subtype(param_type, param.annotation):
+            if not _is_subtype(new_config, param_type, param.annotation):
                 return False
 
         if param.kind != Parameter.VAR_POSITIONAL:
@@ -183,24 +217,28 @@ def _test_callable_subtypes(
     return all(param.is_optional for param in parameters[i:])
 
 
-def _test_literal_subtypes(obj: object, *options: object) -> bool:
+def _test_literal_subtypes(config: TypeCheckingConfig, obj: object, *options: object) -> bool:
     return obj in options
 
 
-def _test_optional_subtypes(obj: object, typ: Type_) -> bool:
-    return obj is None or is_instance(obj, typ)
+def _test_optional_subtypes(config: TypeCheckingConfig, obj: object, typ: Type_) -> bool:
+    return obj is None or _is_instance(config, obj, typ)
 
 
-def _test_union_subtypes(obj: object, *types: Type_) -> bool:
-    return any(is_instance(obj, typ) for typ in types)
+def _test_union_subtypes(config: TypeCheckingConfig, obj: object, *types: Type_) -> bool:
+    return any(_is_instance(config, obj, typ) for typ in types)
 
 
-def _test_regex_pattern_subtypes(pattern: re.Pattern, subtype: Type[AnyStr]) -> bool:
-    return is_instance(pattern.pattern, subtype)
+def _test_regex_pattern_subtypes(
+    config: TypeCheckingConfig, pattern: re.Pattern, subtype: Type[AnyStr]
+) -> bool:
+    return _is_instance(config, pattern.pattern, subtype)
 
 
-def _test_regex_match_subtypes(match: re.Match, subtype: Type[AnyStr]) -> bool:
-    return is_instance(match.string, subtype)
+def _test_regex_match_subtypes(
+    config: TypeCheckingConfig, match: re.Match, subtype: Type[AnyStr]
+) -> bool:
+    return _is_instance(config, match.string, subtype)
 
 
 def _return_true(_) -> bool:
