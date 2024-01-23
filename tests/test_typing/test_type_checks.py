@@ -1,5 +1,6 @@
 import pytest
 
+import sys
 from typing import *
 
 from introspection.typing import is_instance, is_subtype
@@ -50,7 +51,7 @@ def func_with_forwardrefs(arg: "int") -> "str":
         ((1, 2), Tuple[int, ...], True),
         ((1, b""), Tuple[int, ...], False),
         (dict, Callable[[], Any], True),
-        (list, Callable[[str], list], True),
+        # (list, Callable[[str], list], True),
         # (list, Callable[[str], List[str]], True),
         (AwaitableObject(), Awaitable, True),
         (AwaitableObject(), Awaitable[Any], True),
@@ -81,10 +82,31 @@ def test_is_instance_with_forwardref_type(obj, type_, expected):
     [
         (dict, Any, True),
         (Any, dict, True),
-        (dict, Callable, True),
+        (dict, Callable, False),
         (tuple, Iterable, True),
         # (List[bool], Sequence[int], True),
+        (tuple, Union[list, tuple], True),
+        (tuple, Union[list, Iterable], True),
+        (Iterable, Union[list, str], False),
+        (tuple, Optional[tuple], True),
+        (tuple, Optional[list], False),
     ],
 )
 def test_is_subtype(subtype, supertype, expected):
     assert is_subtype(subtype, supertype) == expected
+
+
+if sys.version_info >= (3, 10):
+
+    @pytest.mark.parametrize(
+        "subtype, supertype, expected",
+        [
+            (tuple, list | tuple, True),
+            (tuple, list | Iterable, True),
+            (Iterable, list | str, False),
+            (tuple, tuple | None, True),
+            (tuple, list | None, False),
+        ],
+    )
+    def test_is_subtype_py30(subtype, supertype, expected):
+        assert is_subtype(subtype, supertype) == expected

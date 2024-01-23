@@ -4,11 +4,34 @@ import importlib
 import sys
 import types
 import typing
-from typing import Iterator
+import typing_extensions
 
 from .misc import resolve_forward_refs, is_forward_ref
 from ..errors import CannotResolveForwardref
 from ..types import Type_, TypeAnnotation, ForwardRefContext
+
+
+T = typing.TypeVar("T")
+
+
+def resolve_name_in_all_typing_modules(name: str) -> typing.Iterable[Type_]:
+    for module in (collections.abc, typing, typing_extensions):
+        try:
+            obj = getattr(module, name)
+        except AttributeError:
+            pass
+        else:
+            yield obj
+
+
+def resolve_names_in_all_typing_modules(
+    mapping: typing.Mapping[str, T]
+) -> typing.Mapping[Type_, T]:
+    return {
+        obj: value
+        for name, value in mapping.items()
+        for obj in resolve_name_in_all_typing_modules(name)
+    }
 
 
 @dataclasses.dataclass
@@ -60,8 +83,19 @@ class ImporterDict(collections.abc.Mapping[str, types.ModuleType]):
         except ImportError:
             raise KeyError(name)
 
-    def __iter__(self) -> Iterator[str]:
+    def __iter__(self) -> typing.Iterator[str]:
         yield from ()
 
     def __len__(self) -> int:
         return 0
+
+
+NOT_INSTANCE_OR_SUBTYPE_CHECKED: typing.Container[Type_] = {
+    obj
+    for name in (
+        "Optional",
+        "Union",
+        "Any",
+    )
+    for obj in resolve_name_in_all_typing_modules(name)
+}

@@ -1,11 +1,15 @@
-import collections.abc
+import types
 import typing
 from typing_extensions import TypeGuard
 
-from ._utils import TypeCheckingConfig
+from ._utils import (
+    NOT_INSTANCE_OR_SUBTYPE_CHECKED,
+    TypeCheckingConfig,
+    resolve_names_in_all_typing_modules,
+)
 from .introspection import get_type_arguments, is_parameterized_generic, get_generic_base_class
 from .type_compat import to_python
-from ..errors import CannotResolveForwardref
+from ..errors import CannotResolveForwardref, NotAParameterizedGeneric
 from ..types import Type_, TypeAnnotation, ForwardRefContext
 
 __all__ = ["is_subtype"]
@@ -48,71 +52,81 @@ def _is_subtype(
     except CannotResolveForwardref:
         return False
 
+    if subtype is typing.Any:
+        return True
+
     if supertype in (typing.Any, object):
         return True
 
-    # Find out if the type has type parameters
-    if not is_parameterized_generic(subtype):
-        if subtype is typing.Any:
-            return True
-
-        # If the subtype has no type arguments, we can just ignore the supertype's arguments - the
-        # subtype is effectively parameterized with a bunch of `typing.Any`.
-        if is_parameterized_generic(supertype):
-            supertype = get_generic_base_class(supertype)
-
-        return _is_subclass(subtype, supertype)
-
-    sub_base = get_generic_base_class(subtype)
-
     if not is_parameterized_generic(supertype):
-        return _is_subclass(sub_base, supertype)
+        return _unparameterized_supertype_check(subtype, supertype)
 
     super_base = get_generic_base_class(supertype)
-
-    try:
-        if not _is_subclass(sub_base, super_base):
-            return False
-    except TypeError:
+    if not _unparameterized_supertype_check(subtype, super_base):
         return False
-
-    sub_args = get_type_arguments(subtype)
-    super_args = get_type_arguments(supertype)
 
     if super_base in TYPE_ARGS_TESTS:
         test = TYPE_ARGS_TESTS[super_base]
-        return test(sub_args, super_args)
+        super_args = get_type_arguments(supertype)
+        return test(config, subtype, super_args)
 
     raise NotImplementedError(f"is_subtype doesn't support parameterized {super_base!r} yet")
 
 
-def _is_subclass(sub_cls: Type_, super_cls: Type_) -> bool:
-    sub_cls = to_python(sub_cls, strict=False)
-    super_cls = to_python(super_cls, strict=False)
+def _unparameterized_supertype_check(subtype: Type_, supertype: Type_) -> bool:
+    # Check for trivial cases: Everything is a `Union`. Everything is an `Optional`. Etc.
+    if supertype in NOT_INSTANCE_OR_SUBTYPE_CHECKED:
+        return True
 
-    if super_cls not in SUBCLASS_TESTS:
+    # Ignore the subtype's type arguments, if it has any. Since the supertype doesn't have any type
+    # arguments, which is equivalent to being parameterized with `Any`, the subtype's type arguments
+    # don't matter. (This is true even for types with variadic arguments, like `tuple`.)
+    try:
+        subtype = get_generic_base_class(subtype)
+    except NotAParameterizedGeneric:
+        pass
+
+    subtype = to_python(subtype, strict=False)
+    supertype = to_python(supertype, strict=False)
+
+    try:
+        return issubclass(subtype, supertype)  # type: ignore
+    except TypeError:
+        raise NotImplementedError(f"is_subtype({subtype!r}, {supertype!r}) isn't supported yet")
+
+
+def _test_union_subtypes(config: TypeCheckingConfig, subtype: Type_, union_types: tuple) -> bool:
+    for union_type in union_types:
         try:
-            return issubclass(sub_cls, super_cls)  # type: ignore
-        except TypeError:
-            raise NotImplementedError(f"is_subtype({sub_cls!r}, {super_cls!r}) isn't supported yet")
+            union_type = config.resolve_at_least_1_level_of_forward_refs(union_type)
+        except CannotResolveForwardref:
+            continue
 
-    test = SUBCLASS_TESTS[super_cls]
-    return test(sub_cls)
+        if _is_subtype(config, subtype, union_type):
+            return True
 
-
-SUBCLASS_TESTS: typing.Dict[Type_, typing.Callable[[object], bool]] = {
-    collections.abc.Callable: callable,
-    typing.Callable: callable,
-}
+    return False
 
 
-def _test_callable_subtypes(sub_args, super_args) -> bool:
-    raise NotImplementedError
+def _test_optional_subtypes(
+    config: TypeCheckingConfig,
+    subtype: Type_,
+    optional_type: tuple,  # this is a 1-element tuple
+) -> bool:
+    if subtype is None or subtype is type(None):
+        return True
+
+    return _test_union_subtypes(config, subtype, optional_type)
 
 
 TYPE_ARGS_TESTS: typing.Mapping[
-    Type_, typing.Callable[[typing.Sequence[object], typing.Sequence[object]], bool]
-] = {
-    collections.abc.Callable: _test_callable_subtypes,
-    typing.Callable: _test_callable_subtypes,
-}
+    Type_, typing.Callable[[TypeCheckingConfig, Type_, typing.Tuple[object, ...]], bool]
+] = resolve_names_in_all_typing_modules(
+    {
+        "Union": _test_union_subtypes,
+        "Optional": _test_optional_subtypes,
+    }
+)
+
+if hasattr(types, "UnionType"):
+    TYPE_ARGS_TESTS[types.UnionType] = _test_union_subtypes  # type: ignore

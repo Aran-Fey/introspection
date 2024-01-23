@@ -4,7 +4,6 @@ import collections.abc
 import re
 import sys
 import types
-import typing
 from typing import *
 import typing_extensions
 
@@ -13,7 +12,11 @@ from .introspection import (
     is_parameterized_generic,
     get_generic_base_class,
 )
-from ._utils import TypeCheckingConfig
+from ._utils import (
+    NOT_INSTANCE_OR_SUBTYPE_CHECKED,
+    TypeCheckingConfig,
+    resolve_names_in_all_typing_modules,
+)
 from .subtype_check import _is_subtype
 from .type_compat import to_python
 from ..errors import CannotResolveForwardref
@@ -76,14 +79,15 @@ def _is_instance(
     base_type = get_generic_base_class(type_)
     base_type = to_python(base_type, strict=False)
 
-    if base_type in GENERIC_BASE_TESTS:
-        test = GENERIC_BASE_TESTS[base_type]
-        result = test(obj)
-    else:
-        result = _safe_instancecheck(obj, base_type)
+    if base_type not in NOT_INSTANCE_OR_SUBTYPE_CHECKED:
+        if base_type in GENERIC_BASE_TESTS:
+            test = GENERIC_BASE_TESTS[base_type]
+            result = test(obj)
+        else:
+            result = _safe_instancecheck(obj, base_type)
 
-    if not result:
-        return False
+        if not result:
+            return False
 
     # Verify the subtypes
     if base_type not in SUBTYPE_TESTS:
@@ -207,7 +211,8 @@ def _test_callable_subtypes(
             return False
 
         if param.annotation is not Parameter.empty:
-            # Functions are contravariant in their parameters, so the sub- and supertype are swapped here
+            # Functions are contravariant in their parameters, so the sub- and supertype are swapped
+            # here
             if not _is_subtype(new_config, param_type, param.annotation):
                 return False
 
@@ -256,14 +261,13 @@ TESTS = {
 }
 
 
-GENERIC_BASE_TESTS = eval_or_discard(
+GENERIC_BASE_TESTS = resolve_names_in_all_typing_modules(
     {
         "Literal": _test_literal,
         "typing_extensions.Literal": _test_literal,
         "Optional": _return_true,
         "Union": _return_true,
-    },
-    globals(),
+    }
 )
 
 
@@ -282,24 +286,21 @@ SUBTYPE_TESTS: Mapping[object, Callable[..., bool]] = eval_or_discard(
     },
     globals(),
 )
-for name, func in {
-    "Iterable": _test_iterable_subtypes,
-    "Sequence": _test_iterable_subtypes,
-    "Mapping": _test_mapping_subtypes,
-    "AbstractSet": _test_iterable_subtypes,
-    "Set": _test_iterable_subtypes,
-    "Awaitable": _test_awaitable_subtypes,
-    "Callable": _test_callable_subtypes,
-    "Annotated": _test_annotated_subtypes,
-    "Literal": _test_literal_subtypes,
-}.items():
-    for module in (collections.abc, typing, typing_extensions):
-        try:
-            cls = getattr(module, name)
-        except AttributeError:
-            pass
-        else:
-            SUBTYPE_TESTS[cls] = func  # type: ignore
+SUBTYPE_TESTS.update(  # type: ignore
+    resolve_names_in_all_typing_modules(
+        {
+            "Iterable": _test_iterable_subtypes,
+            "Sequence": _test_iterable_subtypes,
+            "Mapping": _test_mapping_subtypes,
+            "AbstractSet": _test_iterable_subtypes,
+            "Set": _test_iterable_subtypes,
+            "Awaitable": _test_awaitable_subtypes,
+            "Callable": _test_callable_subtypes,
+            "Annotated": _test_annotated_subtypes,
+            "Literal": _test_literal_subtypes,
+        }
+    )
+)
 
 
 # Stop the IDE from complaining about unused imports
