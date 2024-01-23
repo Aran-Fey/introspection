@@ -4,6 +4,7 @@ import collections.abc
 import re
 import sys
 import types
+import typing
 from typing import *
 import typing_extensions
 
@@ -113,7 +114,7 @@ def _test_typevar(config: TypeCheckingConfig, obj: object, var: TypeVar) -> bool
     return True
 
 
-def _test_dict_subtypes(
+def _test_mapping_subtypes(
     config: TypeCheckingConfig, obj: dict, key_type: Type_, value_type: Type_
 ) -> bool:
     if key_type in (object, Any) and value_type in (object, Any):
@@ -245,6 +246,10 @@ def _return_true(_) -> bool:
     return True
 
 
+def _test_literal(value: object) -> bool:
+    return isinstance(value, (bool, int, float, str, bytes))
+
+
 TESTS = {
     Any: _return_true,
     float: lambda value: isinstance(value, (int, float)),
@@ -253,8 +258,8 @@ TESTS = {
 
 GENERIC_BASE_TESTS = eval_or_discard(
     {
-        "Literal": _return_true,
-        "typing_extensions.Literal": _return_true,
+        "Literal": _test_literal,
+        "typing_extensions.Literal": _test_literal,
         "Optional": _return_true,
         "Union": _return_true,
     },
@@ -264,27 +269,37 @@ GENERIC_BASE_TESTS = eval_or_discard(
 
 SUBTYPE_TESTS: Mapping[object, Callable[..., bool]] = eval_or_discard(
     {
-        "dict": _test_dict_subtypes,
+        "dict": _test_mapping_subtypes,
         "frozenset": _test_iterable_subtypes,
         "list": _test_iterable_subtypes,
         "set": _test_iterable_subtypes,
         "tuple": _test_tuple_subtypes,
         "type": _test_type_subtypes,
-        "collections.abc.Awaitable": _test_awaitable_subtypes,
-        "collections.abc.Callable": _test_callable_subtypes,
-        "collections.abc.Iterable": _test_iterable_subtypes,
-        "Awaitable": _test_awaitable_subtypes,
-        "Callable": _test_callable_subtypes,
-        "Literal": _test_literal_subtypes,
-        "typing_extensions.Literal": _test_literal_subtypes,
         "Optional": _test_optional_subtypes,
         "Union": _test_union_subtypes,
-        "typing_extensions.Annotated": _test_annotated_subtypes,
         "re.Pattern": _test_regex_pattern_subtypes,
         "re.Match": _test_regex_match_subtypes,
     },
     globals(),
 )
+for name, func in {
+    "Iterable": _test_iterable_subtypes,
+    "Sequence": _test_iterable_subtypes,
+    "Mapping": _test_mapping_subtypes,
+    "AbstractSet": _test_iterable_subtypes,
+    "Set": _test_iterable_subtypes,
+    "Awaitable": _test_awaitable_subtypes,
+    "Callable": _test_callable_subtypes,
+    "Annotated": _test_annotated_subtypes,
+    "Literal": _test_literal_subtypes,
+}.items():
+    for module in (collections.abc, typing, typing_extensions):
+        try:
+            cls = getattr(module, name)
+        except AttributeError:
+            pass
+        else:
+            SUBTYPE_TESTS[cls] = func  # type: ignore
 
 
 # Stop the IDE from complaining about unused imports
