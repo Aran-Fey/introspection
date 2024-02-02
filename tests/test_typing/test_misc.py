@@ -11,6 +11,7 @@ from introspection.typing.misc import *
 
 
 T = TypeVar("T")
+RecursiveType = List["RecursiveType"]
 
 THIS_MODULE = sys.modules[__name__]
 
@@ -162,6 +163,8 @@ if hasattr(typing, "Literal"):
         ("ellipsis", type(...)),
         ('List["int"]', List[int]),
         ('Literal["int"]', Literal["int"]),  # `Literal` arguments must be left as strings
+        ('"int"', int),  # Double stringified
+        ("RecursiveType", RecursiveType),
     ],
 )
 @pytest.mark.parametrize("mode", ["eval", "ast"])
