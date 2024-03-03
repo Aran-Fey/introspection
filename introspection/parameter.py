@@ -69,6 +69,9 @@ class Parameter(inspect.Parameter):
         :param parameter: An :class:`inspect.Parameter` instance
         :return: A new :class:`Parameter` instance
         """
+        if isinstance(parameter, cls):
+            return parameter
+
         return cls(
             parameter.name,
             kind=parameter.kind,

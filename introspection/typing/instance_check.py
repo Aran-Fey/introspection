@@ -59,10 +59,7 @@ def _is_instance(
     type_: TypeAnnotation,
 ) -> bool:
     # Make sure we're working with an actual type, not a forward reference
-    try:
-        type_ = config.resolve_at_least_1_level_of_forward_refs(type_)
-    except CannotResolveForwardref:
-        return False
+    type_ = config.resolve_at_least_1_level_of_forward_refs(type_)
 
     # Find out if the type has type parameters
     if not is_parameterized_generic(type_):
@@ -181,14 +178,10 @@ def _test_callable_subtypes(
     param_types: Union[List[Type_], types.EllipsisType],
     return_type: Type_,
 ) -> bool:
-    try:
-        context = sys.modules[obj.__module__]
-    except AttributeError:
-        context = None
-
-    new_config = TypeCheckingConfig(context, config.treat_name_errors_as_imports)
-
     signature = Signature.from_callable(obj)
+    new_config = TypeCheckingConfig(
+        signature.forward_ref_context, config.treat_name_errors_as_imports
+    )
 
     if signature.return_annotation is not Signature.empty:
         if not _is_subtype(new_config, signature.return_annotation, return_type):

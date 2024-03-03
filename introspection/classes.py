@@ -6,6 +6,7 @@ from typing_extensions import *
 
 import sentinel
 
+from .mark import FORWARDS_ARGUMENTS, forwards_arguments
 from .misc import static_vars, is_abstract, static_mro
 from .errors import *
 from .types import Slot, Function, Class
@@ -280,9 +281,9 @@ def fit_to_class(
     methods: List[Union[type, Function]]
 
     if isinstance(thing, (classmethod, staticmethod)):
-        methods = [thing.__func__]
+        methods = [thing.__func__]  # type: ignore
     elif isinstance(thing, property):
-        methods = [method for method in (thing.fget, thing.fset, thing.fdel) if method is not None]
+        methods = [method for method in (thing.fget, thing.fset, thing.fdel) if method is not None]  # type: ignore
     else:
         methods = [thing]
 
@@ -342,13 +343,12 @@ def wrap_method(
     method_type: Union[None, Type[staticmethod], Type[classmethod]] = auto,  # type: ignore
 ) -> None:
     r"""
-    Adds ``method`` to ``cls``\ 's namespace under the given ``name``,
-    wrapping the existing method (if one exists).
+    Adds ``method`` to ``cls``\ 's namespace under the given ``name``, wrapping the existing method
+    (if one exists).
 
-    The replaced method will be passed in as the first positional argument
-    (even before the implicit ``self``). If the class previously didn't
-    implement this method, an appropriate dummy method will be passed
-    in instead, which merely sends the call further up the MRO.
+    The replaced method will be passed in as the first positional argument (even before the implicit
+    ``self``). If the class previously didn't implement this method, an appropriate dummy method
+    will be passed in instead, which merely sends the call further up the MRO.
 
     ``method_type`` has the same meaning as it does in :func:`~introspection.add_method_to_class`.
 
@@ -370,13 +370,12 @@ def wrap_method(
         Foo(5)  # prints "Initialized instance: <Foo object with foo=5>"
 
     .. note::
-        Adding a ``__new__`` method to a class can lead to unexpected
-        problems because of the way ``object.__new__`` works.
+        Adding a ``__new__`` method to a class can lead to unexpected problems because of the way
+        ``object.__new__`` works.
 
-        If a class doesn't implement a ``__new__`` method at all,
-        ``object.__new__`` silently discards any arguments it receives.
-        But if a class does implement a custom ``__new__`` method,
-        passing arguments into ``object.__new__`` will throw an exception::
+        If a class doesn't implement a ``__new__`` method at all, ``object.__new__`` silently
+        discards any arguments it receives. But if a class does implement a custom ``__new__``
+        method, passing arguments into ``object.__new__`` will throw an exception::
 
             class ThisWorks:
                 def __init__(self, some_arg):
@@ -392,12 +391,10 @@ def wrap_method(
             ThisWorks(5)  # works
             ThisDoesntWork(5)  # throws TypeError: object.__new__() takes exactly one argument
 
-        This is why, when this function is used to add a ``__new__``
-        method to a class that previously didn't have one, it
-        automatically generates a dummy ``__new__`` that *attempts*
-        to figure out whether it should forward its arguments to
-        the base class's ``__new__`` method or not. This is why
-        the following code will work just fine::
+        This is why, when this function is used to add a ``__new__`` method to a class that
+        previously didn't have one, it automatically generates a dummy ``__new__`` that *attempts*
+        to figure out whether it should forward its arguments to the base class's ``__new__`` method
+        or not. This is why the following code will work just fine::
 
             class ThisWorks:
                 def __init__(self, some_arg):
@@ -410,10 +407,9 @@ def wrap_method(
 
             ThisWorks(5)  # works!
 
-        However, it is impossible to always correctly figure out
-        if the arguments should be passed on or not. If there is
-        another ``__new__`` method that passes on its arguments,
-        things will go wrong::
+        However, it is impossible to always correctly figure out if the arguments should be passed
+        on or not. If there is another ``__new__`` method that passes on its arguments, things will
+        go wrong::
 
             class Parent:
                 def __init__(self, some_arg):
@@ -431,16 +427,18 @@ def wrap_method(
             Parent(5)  # works!
             Child(5)  # throws TypeError
 
-        In such a scenario, the method sees that ``Child.__new__``
-        exists, and therefore it is ``Child.__new__``\ 's responsibility
-        to handle the arguments correctly. It should consume all the
-        arguments, but doesn't, so an exception is raised.
+        In such a scenario, the method sees that ``Child.__new__`` exists, and therefore it is
+        ``Child.__new__``\ 's responsibility to handle the arguments correctly. It should consume
+        all the arguments, but doesn't, so an exception is raised.
 
-        As a workaround, you can mark ``Child.__new__`` as a
-        method that forwards its arguments. This is done by
-        setting its ``_forwards_args`` attribute to ``True``::
+        As a workaround, you can mark ``Child.__new__`` as a method that forwards its arguments.
+        This is done by decorating it with ``@introspection.mark.forwards_arguments`::
 
-            Child.__new__._forwards_args = True
+            @introspection.mark.forwards_arguments
+            def __new__(original_new, cls, *args, **kwargs):
+                return original_new(cls, *args, **kwargs)
+
+            wrap_method(__new__, Parent)
 
             Child(5)  # works!
 
@@ -513,27 +511,20 @@ def _make_original_new_method(cls: type):
     def original_method(class_: type, *args, **kwargs):
         super_new = super(cls, class_).__new__  # type: ignore[wtf]
 
-        # object.__new__ accepts no arguments if the class
-        # implements its own __new__ method, so we must
-        # take care to not pass it any if this is the only
-        # __new__ method in the whole MRO. But if there's
-        # no __init__ method either, then receiving any
-        # arguments should results in an exception.
+        # object.__new__ accepts no arguments if the class implements its own __new__ method, so we
+        # must take care to not pass it any if this is the only __new__ method in the whole MRO. But
+        # if there's no __init__ method either, then receiving any arguments should results in an
+        # exception.
 
-        # If super_new is not object.__new__, then it's
-        # their responsibility to deal with the arguments.
-        # In this case, we always forward them.
-        # If the class implements no __init__ method at all,
-        # we forward them as well.
+        # If super_new is not object.__new__, then it's their responsibility to deal with the
+        # arguments. In this case, we always forward them. If the class implements no __init__
+        # method at all, we forward them as well.
         if super_new is object.__new__ and class_.__init__ is not object.__init__:
-            # At this point, we know that the next __new__
-            # method in the MRO is object.__new__, so we
-            # must decide how to handle the arguments.
+            # At this point, we know that the next __new__ method in the MRO is object.__new__, so
+            # we must decide how to handle the arguments.
 
-            # If there's a __new__ method in the MRO that
-            # is not object.__new__ and is not marked as
-            # ._forwards_args, then that method should've
-            # consumed all the arguments.
+            # If there's a __new__ method in the MRO that is not object.__new__ and is not marked as
+            # `@forwards_arguments`, then that method should've consumed all the arguments.
             forward_args = False
 
             for c in static_mro(class_):  # pragma: no branch
@@ -546,7 +537,10 @@ def _make_original_new_method(cls: type):
                 except KeyError:
                     continue
 
-                if getattr(new, "_forwards_args", False):
+                if new in FORWARDS_ARGUMENTS:
+                    continue
+
+                if getattr(new, "_forwards_args", False):  # Legacy version of `@forwards_arguments`
                     continue
 
                 forward_args = True
@@ -558,11 +552,8 @@ def _make_original_new_method(cls: type):
 
         return super_new(class_, *args, **kwargs)  # type: ignore
 
-    # We're just gonna assume that the user is going to properly
-    # call our original_method, because if not, they should've
-    # just used add_method_to_class instead.
-    def wrap_original(func):
-        func._forwards_args = True
-        return func
+    # We're just gonna assume that the user is going to properly call our original_method, because
+    # if not, they should've just used `add_method_to_class` instead.
+    wrap_original = forwards_arguments
 
     return original_method, wrap_original

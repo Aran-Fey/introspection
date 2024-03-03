@@ -46,11 +46,8 @@ def _is_subtype(
     supertype: TypeAnnotation,
 ) -> bool:
     # Make sure we're working with actual types, not forward references
-    try:
-        subtype = config.resolve_at_least_1_level_of_forward_refs(subtype)
-        supertype = config.resolve_at_least_1_level_of_forward_refs(supertype)  # type: ignore
-    except CannotResolveForwardref:
-        return False
+    subtype = config.resolve_at_least_1_level_of_forward_refs(subtype)
+    supertype = config.resolve_at_least_1_level_of_forward_refs(supertype)  # type: ignore
 
     if subtype is typing.Any:
         return True
@@ -96,14 +93,20 @@ def _unparameterized_supertype_check(subtype: Type_, supertype: Type_) -> bool:
 
 
 def _test_union_subtypes(config: TypeCheckingConfig, subtype: Type_, union_types: tuple) -> bool:
+    errors: typing.List[Exception] = []
+
     for union_type in union_types:
         try:
             union_type = config.resolve_at_least_1_level_of_forward_refs(union_type)
-        except CannotResolveForwardref:
+        except CannotResolveForwardref as error:
+            errors.append(error)
             continue
 
         if _is_subtype(config, subtype, union_type):
             return True
+
+    if errors:
+        raise errors[0]
 
     return False
 

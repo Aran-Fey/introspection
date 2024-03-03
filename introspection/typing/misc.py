@@ -33,7 +33,9 @@ __all__ = [
 ]
 
 
-def is_forward_ref(annotation: TypeAnnotation) -> typing_extensions.TypeGuard[ForwardReference]:
+def is_forward_ref(
+    annotation: TypeAnnotation,
+) -> typing_extensions.TypeGuard[ForwardReference]:
     """ """
     return isinstance(annotation, (str, ForwardRef))
 
@@ -48,8 +50,7 @@ def resolve_forward_refs(
     max_depth: Optional[int] = None,
     extra_globals: Mapping[str, object] = {},
     treat_name_errors_as_imports: bool = False,
-) -> TypeAnnotation:
-    ...
+) -> TypeAnnotation: ...
 
 
 @overload
@@ -58,8 +59,7 @@ def resolve_forward_refs(
     module: typing.Optional[types.ModuleType] = None,
     eval_: bool = True,
     strict: bool = True,
-) -> TypeAnnotation:
-    ...
+) -> TypeAnnotation: ...
 
 
 def resolve_forward_refs(  # type: ignore
@@ -153,7 +153,8 @@ def resolve_forward_refs(  # type: ignore
 
         if context is None:
             scope.maps.extend(
-                vars(module) for module in (collections.abc, collections, typing, typing_extensions)  # type: ignore
+                vars(module)
+                for module in (collections.abc, collections, typing, typing_extensions)  # type: ignore
             )
         elif isinstance(context, types.ModuleType):
             scope.maps.append(vars(context))

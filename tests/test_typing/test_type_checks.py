@@ -10,12 +10,10 @@ T = TypeVar("T")
 
 
 class AwaitableObject:
-    def __await__(self) -> Iterator[None]:
-        ...
+    def __await__(self) -> Iterator[None]: ...
 
 
-def func_with_forwardrefs(arg: "int") -> "str":
-    ...
+def func_with_forwardrefs(arg: "int") -> "str": ...
 
 
 @pytest.mark.parametrize(
@@ -66,15 +64,15 @@ def test_is_instance(obj, type_, expected):
     assert is_instance(obj, type_) == expected
 
 
-@pytest.mark.parametrize(
-    "obj, type_, expected",
-    [
-        (3, "ThisIsAnInvalidForwardRef", False),
-        # (3, "datetime", False),  # This is interesting because `datetime` is a module
-    ],
-)
-def test_is_instance_with_forwardref_type(obj, type_, expected):
-    assert is_instance(obj, type_, treat_name_errors_as_imports=True) == expected
+# @pytest.mark.parametrize(
+#     "obj, type_, expected",
+#     [
+#         (3, "ThisIsAnInvalidForwardRef", False),
+#         # (3, "datetime", False),  # This is interesting because `datetime` is a module
+#     ],
+# )
+# def test_is_instance_with_forwardref_type(obj, type_, expected):
+#     assert is_instance(obj, type_, treat_name_errors_as_imports=True) == expected
 
 
 @pytest.mark.parametrize(

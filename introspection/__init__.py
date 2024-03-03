@@ -2,7 +2,7 @@
 New and improved introspection functions
 """
 
-__version__ = "1.7.9"
+__version__ = "1.7.10"
 
 from .parameter import *
 from .signature_ import *
@@ -20,6 +20,7 @@ from .hazmat import *
 
 from . import dunder
 from . import errors
+from . import mark
 from . import types
 
 # Make sure a ``from introspection import *`` doesn't import the ``typing``

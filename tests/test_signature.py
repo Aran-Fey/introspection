@@ -219,6 +219,49 @@ def test_method_signature_with_repeated_argument():
     assert sig.parameters["foo"].kind is Parameter.KEYWORD_ONLY
 
 
+def test_class_signature():
+    class Cls:
+        def __init__(self, init):
+            pass
+
+    sig = Signature.from_callable(Cls)
+    assert list(sig.parameters) == ["init"]
+
+
+def test_class_signature_with_metaclass():
+    class Meta(type):
+        def __call__(self, meta):
+            pass
+
+    class Cls(metaclass=Meta):
+        def __new__(cls, new):
+            pass
+
+        def __init__(self, init):
+            pass
+
+    sig = Signature.from_callable(Cls)
+    assert list(sig.parameters) == ["meta"]
+
+
+def test_builtin_class_signature():
+    # Just make sure it doesn't crash
+    _ = Signature.from_callable(float, use_signature_db=False)
+
+
+def test_doesnt_alter_signature_mark():
+    class Cls:
+        @introspection.mark.does_not_alter_signature
+        def __new__(cls, *args, **kwargs):
+            return super().__new__(cls, *args, **kwargs)
+
+        def __init__(self, init):
+            pass
+
+    sig = Signature.from_callable(Cls)
+    assert list(sig.parameters) == ["init"]
+
+
 def test_replace():
     sig = Signature([Parameter("foo")], return_annotation=int)
 
