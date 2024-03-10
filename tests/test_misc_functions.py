@@ -505,22 +505,14 @@ def test_is_sub_qualname(sub_name, super_name, expected):
 
 
 @pytest.mark.parametrize(
-    "camel, expected",
+    "original, case, expected",
     [
-        ("FooBar", "foo_bar"),
-        ("HTTPAdapter", "http_adapter"),
+        ("FooBar", "upper snake", "FOO_BAR"),
+        ("HTTPAdapter", "snake", "http_adapter"),
+        ("foo_bar", "pascal", "FooBar"),
+        ("http_adapter", "camel", "httpAdapter"),
+        ("remoteCode_execution", "kebab", "remote-code-execution"),
     ],
 )
-def test_camel_to_snake(camel, expected):
-    assert camel_to_snake(camel) == expected
-
-
-@pytest.mark.parametrize(
-    "snake, expected",
-    [
-        ("foo_bar", "FooBar"),
-        ("http_adapter", "HttpAdapter"),
-    ],
-)
-def test_snake_to_camel(snake, expected):
-    assert snake_to_camel(snake) == expected
+def test_convert_case(original, case, expected):
+    assert convert_case(original, case) == expected

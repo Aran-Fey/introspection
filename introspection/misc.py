@@ -3,6 +3,7 @@ import copy
 import inspect
 import sys
 import types
+import warnings
 
 from collections import defaultdict, deque
 from typing import *
@@ -573,7 +574,14 @@ def camel_to_snake(camel: str) -> str:
         'http_adapter'
 
     .. versionadded:: 1.5
+    .. deprecated:: 1.7.12
+        Use :func:`convert_case` instead.
     """
+    warnings.warn(
+        "The `camel_to_snake` function is deprecated in favor of `convert_case`",
+        DeprecationWarning,
+    )
+
     chars: List[str] = []
     last_char_was_upper = True
 
@@ -607,7 +615,14 @@ def snake_to_camel(snake: str) -> str:
         'HttpAdapter'
 
     .. versionadded:: 1.5
+    .. deprecated:: 1.7.12
+        Use :func:`convert_case` instead.
     """
+    warnings.warn(
+        "The `snake_to_camel` function is deprecated in favor of `convert_case`",
+        DeprecationWarning,
+    )
+
     chars: List[str] = []
     last_char_was_underscore = True
 
@@ -625,7 +640,7 @@ def snake_to_camel(snake: str) -> str:
     return "".join(chars)
 
 
-def detect_case(name: str) -> Case:
+def detect_case(name: str) -> Union[Case, Literal["mixed"]]:
     """
     Detects the case of a name, for example::
 
@@ -633,38 +648,51 @@ def detect_case(name: str) -> Case:
         'snake'
         >>> detect_case('FooBar')
         'pascal'
+        >>> detect_case('foo_bar-qux')
+        'mixed'
     """
-    if name[0].islower():
-        if "-" in name:
-            return "kebab"
-        elif name.islower():
-            return "snake"
-        else:
-            return "camel"
+    has_upper = has_lower = False
+    has_dash = has_underscore = has_whitespace = False
 
-    if "-" in name:
-        return "upper kebab"
-    elif "_" in name:
-        return "upper snake"
+    for char in name:
+        if char == "-":
+            has_dash = True
+        elif char == "_":
+            has_underscore = True
+        elif char.isspace():
+            has_whitespace = True
+        elif char.isupper():
+            has_upper = True
+        elif char.islower():
+            has_lower = True
+
+    if has_upper and has_lower:
+        return "mixed"
+
+    if has_dash + has_underscore + has_whitespace != 1:
+        return "mixed"
+
+    if has_dash:
+        return "upper kebab" if has_upper else "kebab"
+    elif has_underscore:
+        return "upper snake" if has_upper else "snake"
     else:
-        return "pascal"
+        return "pascal" if name[0].isupper() else "camel"
 
 
-def _split_snake(name: str) -> List[str]:
-    return name.split("_")
-
-
-def _split_kebab(name: str) -> List[str]:
-    return name.split("-")
-
-
-def _split_camel_and_pascal(name: str) -> List[str]:
+def _split_name(name: str) -> List[str]:
     words: List[str] = []
     word: List[str] = []
     last_char_was_upper = True
 
     for i, char in enumerate(name):
         is_upper = char.isupper()
+
+        if char in "-_" or char.isspace():
+            words.append("".join(word))
+            word.clear()
+            last_char_was_upper = False
+            continue
 
         if (
             word
@@ -716,20 +744,11 @@ def convert_case(name: str, to: Case) -> str:
     """
     Converts a name to a different case, for example::
 
-        >>> convert_case('FooBar', 'snake')
-        'foo_bar'
+        >>> convert_case('HTMLParser', 'snake')
+        'html_parser'
     """
     case_ = detect_case(name)
-
-    split_func = {
-        "snake": _split_snake,
-        "upper snake": _split_snake,
-        "kebab": _split_kebab,
-        "upper kebab": _split_kebab,
-        "camel": _split_camel_and_pascal,
-        "pascal": _split_camel_and_pascal,
-    }[case_]
-    words = split_func(name)
+    words = _split_name(name)
 
     # Special case conversions between pascal and camel so that capitalization is preserved. For
     # example, `FancyHTML` should become `fancyHTML`, not `fancyHtml`.

@@ -23,6 +23,6 @@ def get_type_annotations(cls: type) -> Dict[str, TypeInfo]:
 
         for attr_name, annotation in annotations.items():
             if attr_name not in result:
-                result[attr_name] = TypeInfo(annotation)
+                result[attr_name] = TypeInfo(annotation, forward_ref_context=class_)
 
     return result
