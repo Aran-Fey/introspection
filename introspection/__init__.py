@@ -2,7 +2,7 @@
 New and improved introspection functions
 """
 
-__version__ = "1.7.10"
+__version__ = "1.7.11"
 
 from .parameter import *
 from .signature_ import *
