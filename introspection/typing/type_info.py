@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import typing
-import typing_extensions
+from typing import Optional, List, Tuple
+from typing_extensions import Annotated
 
 from ._utils import resolve_at_least_1_level_of_forward_refs
 from .introspection import (
@@ -10,7 +10,6 @@ from .introspection import (
     get_generic_base_class,
     get_type_parameters,
 )
-from .misc import annotation_to_string
 from .type_compat import to_python
 from ..errors import NotAGeneric
 from ..types import Type_, TypeAnnotation, ForwardRefContext, TypeParameter
@@ -25,7 +24,7 @@ class TypeInfo:
         self,
         type_: TypeAnnotation,
         *,
-        forward_ref_context: ForwardRefContext = None,
+        forward_ref_context: Optional[ForwardRefContext] = None,
         treat_name_errors_as_imports: bool = False,
     ):
         self.raw = type_
@@ -34,14 +33,14 @@ class TypeInfo:
             type_, forward_ref_context, treat_name_errors_as_imports
         )
 
-        annotations: typing.List[object] = []
+        annotations: List[object] = []
 
         args = None
         while is_parameterized_generic(resolved_type):
             args = get_type_arguments(resolved_type)
             resolved_type = get_generic_base_class(resolved_type)
 
-            if resolved_type is typing_extensions.Annotated:
+            if resolved_type is Annotated:
                 annotations += args[1:]
                 resolved_type = resolve_at_least_1_level_of_forward_refs(
                     args[0],  # type: ignore
@@ -56,14 +55,14 @@ class TypeInfo:
         self._context = forward_ref_context
 
     @cached_property
-    def parameters(self) -> typing.Optional[typing.Tuple[TypeParameter, ...]]:
+    def parameters(self) -> Optional[Tuple[TypeParameter, ...]]:
         try:
             return get_type_parameters(self.type)
         except NotAGeneric:
             return None
 
     @property
-    def arguments(self) -> typing.Optional[typing.Tuple[object, ...]]:
+    def arguments(self) -> Optional[Tuple[object, ...]]:
         return self._arguments
 
     @property

@@ -203,7 +203,7 @@ class NoConcreteTypeForTypeVar(Error):
 
 class CannotResolveForwardref(Error, ValueError):
     forward_ref: ForwardReference
-    context: ForwardRefContext
+    context: Optional[ForwardRefContext]
 
     def __str__(self) -> str:
         return f"Cannot resolve forward reference {self.forward_ref!r} in context {self.context!r}"

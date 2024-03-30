@@ -43,7 +43,7 @@ def is_forward_ref(
 @overload
 def resolve_forward_refs(
     annotation: TypeAnnotation,
-    context: ForwardRefContext = None,
+    context: Optional[ForwardRefContext] = None,
     *,
     mode: Literal["eval", "getattr", "ast"] = "eval",
     strict: bool = True,
@@ -64,7 +64,7 @@ def resolve_forward_refs(
 
 def resolve_forward_refs(  # type: ignore
     annotation: TypeAnnotation,
-    context: ForwardRefContext = None,
+    context: Optional[ForwardRefContext] = None,
     eval_: Optional[bool] = None,
     strict: bool = True,
     *,
@@ -458,7 +458,7 @@ def annotation_to_string(
         if base in (typing.Callable, collections.abc.Callable):
             param_types, return_type = subtypes
 
-            prefix = recurse(base)
+            prefix = recurse(base)  # type: ignore[wtf]
             return_str = recurse(return_type)  # type: ignore
 
             if isinstance(param_types, list):
@@ -471,7 +471,7 @@ def annotation_to_string(
 
         if base in LITERAL_TYPES:
             literals = ", ".join(repr(value) for value in subtypes)
-            prefix = recurse(base)
+            prefix = recurse(base)  # type: ignore[wtf]
             return f"{prefix}[{literals}]"
 
         if base is typing_extensions.Annotated:
@@ -479,10 +479,10 @@ def annotation_to_string(
             sub_strs = [recurse(sub_type)]  # type: ignore
             sub_strs.extend(repr(ann) for ann in annotations)
 
-            prefix = recurse(base)
+            prefix = recurse(base)  # type: ignore[wtf]
             return f'{prefix}[{", ".join(sub_strs)}]'
 
-        prefix = recurse(base)
+        prefix = recurse(base)  # type: ignore[wtf]
         return process_nested(prefix, subtypes)  # type: ignore
 
     if isinstance(annotation, (typing.TypeVar, typing_extensions.ParamSpec)):

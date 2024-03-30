@@ -16,7 +16,7 @@ from .mark import DOES_NOT_ALTER_SIGNATURE
 from .misc import unwrap, static_mro, static_vars, extract_functions
 from ._utils import SIG_EMPTY
 from .errors import *
-from .types import P, TypeAnnotation
+from .types import P, TypeAnnotation, ForwardRefContext
 
 __all__ = ["Signature"]
 
@@ -39,13 +39,13 @@ class Signature(inspect.Signature):
     __slots__ = ("forward_ref_context",)
 
     parameters: types.MappingProxyType[str, Parameter]  # type: ignore
-    forward_ref_context: Optional[str]
+    forward_ref_context: Optional[ForwardRefContext]
 
     def __init__(
         self,
         parameters: Union[Iterable[Parameter], Mapping[str, Parameter], None] = None,
         return_annotation: Any = SIG_EMPTY,
-        forward_ref_context: Optional[str] = None,
+        forward_ref_context: Optional[ForwardRefContext] = None,
         validate_parameters: bool = True,
     ):
         """
@@ -144,7 +144,7 @@ class Signature(inspect.Signature):
             callable_ = cast(Callable[P, Any], _find_constructor_function(callable_))
 
         ignore_first_parameter = False
-        
+
         if inspect.ismethod(callable_):
             callable_ = callable_.__func__  # type: ignore
             ignore_first_parameter = True
@@ -153,7 +153,7 @@ class Signature(inspect.Signature):
             callable_ = unwrap(callable_, lambda func: hasattr(func, "__signature__"))  # type: ignore
 
         if not callable(callable_):
-            raise InvalidArgumentType("callable_", callable_, typing.Callable)
+            raise InvalidArgumentType("callable_", callable_, typing.Callable)  # type: ignore
 
         try:
             sig = inspect.signature(callable_, follow_wrapped=False)

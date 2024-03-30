@@ -38,7 +38,7 @@ Type_ = typing.Union[type, typing.TypeVar, ParameterizedGeneric, None]
 ForwardReference = typing.Union[str, typing.ForwardRef]
 TypeAnnotation = typing.Union[Type_, ForwardReference]
 ForwardRefContext = typing.Union[
-    None, type, types.FunctionType, types.ModuleType, str, typing.Mapping[str, object]
+    type, types.FunctionType, types.ModuleType, str, typing.Mapping[str, object]
 ]
 
 
@@ -58,14 +58,11 @@ ForwardRefContext = typing.Union[
 
 
 class Slot(typing.Protocol[T]):  # type: ignore[variance]
-    def __get__(self, instance: T, owner: typing.Optional[typing.Type[T]]) -> object:
-        ...
+    def __get__(self, instance: T, owner: typing.Optional[typing.Type[T]]) -> object: ...
 
-    def __set__(self, instance: T, value: object) -> None:
-        ...
+    def __set__(self, instance: T, value: object) -> None: ...
 
-    def __delete__(self, instance: T) -> None:
-        ...
+    def __delete__(self, instance: T) -> None: ...
 
 
 class ObjectWithQualname(typing.Protocol):

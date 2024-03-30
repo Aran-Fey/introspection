@@ -19,7 +19,6 @@ from ._utils import (
 )
 from .subtype_check import _is_subtype
 from .type_compat import to_python
-from ..errors import CannotResolveForwardref
 from ..parameter import Parameter
 from ..signature_ import Signature
 from .._utils import eval_or_discard
@@ -35,7 +34,7 @@ def is_instance(
     obj: object,
     type_: Union[Type[T], TypeAnnotation],
     *,
-    forward_ref_context: ForwardRefContext = None,
+    forward_ref_context: Optional[ForwardRefContext] = None,
     treat_name_errors_as_imports: bool = False,
 ) -> typing_extensions.TypeGuard[T]:
     """
@@ -180,7 +179,8 @@ def _test_callable_subtypes(
 ) -> bool:
     signature = Signature.from_callable(obj)
     new_config = TypeCheckingConfig(
-        signature.forward_ref_context, config.treat_name_errors_as_imports
+        signature.forward_ref_context,  # type: ignore[wtf]
+        config.treat_name_errors_as_imports,
     )
 
     if signature.return_annotation is not Signature.empty:

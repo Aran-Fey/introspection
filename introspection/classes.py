@@ -336,9 +336,27 @@ def add_method_to_class(
     setattr(cls, method_name, method)
 
 
+@overload
 def wrap_method(
-    method: Callable[..., Any],
     cls: type,
+    method: Callable[..., object],
+    name: Optional[str] = None,
+    method_type: Union[None, Type[staticmethod], Type[classmethod]] = auto,  # type: ignore
+) -> None: ...
+
+
+@overload  # Deprecated signature
+def wrap_method(
+    method: Callable[..., object],
+    cls: type,
+    name: Optional[str] = None,
+    method_type: Union[None, Type[staticmethod], Type[classmethod]] = auto,  # type: ignore
+) -> None: ...
+
+
+def wrap_method(  # type: ignore[wtf]
+    cls: Union[type, Callable[..., object]],
+    method: Union[type, Callable[..., object]],
     name: Optional[str] = None,
     method_type: Union[None, Type[staticmethod], Type[classmethod]] = auto,  # type: ignore
 ) -> None:
@@ -443,12 +461,19 @@ def wrap_method(
             Child(5)  # works!
 
     .. versionadded:: 1.3
+    .. versionchanged:: 1.7.13
+        Swapped the first two parameters. Passing the function as the first argument is still
+        possible, but deprecated.
 
     :param method: The method to add to the class
     :param cls: The class to which to add the method
     :param name: The name under which the method is registered in the class namespace
     :param method_type: One of :class:`staticmethod`, :class:`classmethod`, or ``None`` (or omitted)
     """
+    # Deprecated call signature: Swap the first two arguments
+    if not isinstance(cls, type):
+        cls, method = method, cls
+
     if not isinstance(cls, type):
         raise InvalidArgumentType("cls", cls, type)
 

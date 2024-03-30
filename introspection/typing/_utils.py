@@ -36,7 +36,7 @@ def resolve_names_in_all_typing_modules(
 
 @dataclasses.dataclass
 class TypeCheckingConfig:
-    forward_ref_context: ForwardRefContext
+    forward_ref_context: typing.Optional[ForwardRefContext]
     treat_name_errors_as_imports: bool
 
     def resolve_at_least_1_level_of_forward_refs(self, annotation: TypeAnnotation) -> Type_:
@@ -48,7 +48,9 @@ class TypeCheckingConfig:
 
 
 def resolve_at_least_1_level_of_forward_refs(
-    annotation: TypeAnnotation, context: ForwardRefContext, treat_name_errors_as_imports: bool
+    annotation: TypeAnnotation,
+    context: typing.Optional[ForwardRefContext],
+    treat_name_errors_as_imports: bool,
 ) -> Type_:
     # Given a forward reference as input, this function resolves the outermost type, but may leave
     # subtypes unevaluated. If the input isn't a forward reference, it is returned as-is.

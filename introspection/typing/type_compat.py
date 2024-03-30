@@ -66,13 +66,11 @@ for key, value in FORWARDREF_TO_TYPING.items():
 
 
 @typing.overload
-def to_python(type_: Type_, strict: typing.Literal[True]) -> type:
-    ...
+def to_python(type_: Type_, strict: typing.Literal[True]) -> type: ...
 
 
 @typing.overload
-def to_python(type_: Type_, strict: bool = False) -> Type_:
-    ...
+def to_python(type_: Type_, strict: bool = False) -> Type_: ...
 
 
 def to_python(type_: Type_, strict: bool = False) -> Type_:
@@ -147,7 +145,7 @@ def to_python(type_: Type_, strict: bool = False) -> Type_:
         ...,
         typing.Any,
     ):
-        return collections.abc.Callable
+        return collections.abc.Callable  # type: ignore[wtf]
 
     # At this point we know that the type arguments aren't redundant, so if
     # python doesn't have a generic equivalent of the base type, then we can't

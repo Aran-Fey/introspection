@@ -61,18 +61,15 @@ def _resolve_dotted_name(name: str) -> object:
 
 
 @overload
-def _resolve_dotted_names(names: Dict[str, T]) -> Dict[object, T]:
-    ...
+def _resolve_dotted_names(names: Dict[str, T]) -> Dict[object, T]: ...
 
 
 @overload
-def _resolve_dotted_names(names: Tuple[str, ...]) -> Tuple[object, ...]:
-    ...
+def _resolve_dotted_names(names: Tuple[str, ...]) -> Tuple[object, ...]: ...
 
 
 @overload
-def _resolve_dotted_names(names: Iterable[str]) -> Iterable[object]:
-    ...
+def _resolve_dotted_names(names: Iterable[str]) -> Iterable[object]: ...
 
 
 def _resolve_dotted_names(
@@ -294,7 +291,7 @@ def _get_type_parameters(type_):
         if isinstance(type_, types.UnionType):
             return type_.__parameters__  # type: ignore
 
-    if safe_is_subclass(type_, Generic):
+    if safe_is_subclass(type_, Generic):  # type: ignore[wtf]
         # Classes that inherit from Generic directly (like
         # ``class Protocol(Generic):``) and Generic itself don't
         # have __orig_bases__, while classes that have type
@@ -421,7 +418,7 @@ def _get_name(cls):
 if sys.version_info >= (3, 9):
 
     def _is_generic_base_class(cls):
-        if safe_is_subclass(cls, Generic):
+        if safe_is_subclass(cls, Generic):  # type: ignore[wtf]
             return bool(cls.__parameters__)  # type: ignore
 
         return False
@@ -818,7 +815,7 @@ def get_generic_base_class(type_: Type_) -> Type_:
         if len(args) == 1:
             base = Optional
 
-    return base
+    return base  # type: ignore[wtf]
 
 
 def get_type_arguments(type_: Type_) -> Tuple[object, ...]:
@@ -1070,7 +1067,7 @@ def get_type_argument_for(
             arg = args[i]
         except IndexError:
             if assume_any:
-                return Any
+                return Any  # type: ignore
 
             raise TypeVarNotSet(type_var, base_type, type_)  # type: ignore
 
@@ -1150,11 +1147,11 @@ def get_parent_types(type_: Type_) -> Tuple[Type_, ...]:
     try:
         orig_bases = type_.__orig_bases__  # type: ignore
     except AttributeError:
-        return type_.__bases__
+        return type_.__bases__  # type: ignore[wtf]
 
     parent_types = []
 
-    for base, orig_base in zip(type_.__bases__, orig_bases):
+    for base, orig_base in zip(type_.__bases__, orig_bases):  # type: ignore[wtf]
         # Non-generic types show up as-is in both tuples
         if base is orig_base:
             parent_types.append(base)

@@ -3,6 +3,7 @@ from typing import *
 from typing_extensions import Self
 
 from ._utils import PARAM_EMPTY
+from .types import ForwardRefContext
 
 __all__ = ["Parameter"]
 
@@ -20,7 +21,7 @@ class Parameter(inspect.Parameter):
     This class adds a new special value for the ``default`` attribute: :attr:`Parameter.missing`.
     """
 
-    __slots__ = ()
+    __slots__ = ("forward_ref_context",)
 
     #: A special class-level marker that can be used to specify
     #: that the parameter is optional, but doesn't have a (known)
@@ -46,6 +47,7 @@ class Parameter(inspect.Parameter):
         kind: inspect._ParameterKind = inspect.Parameter.POSITIONAL_OR_KEYWORD,
         default: Any = PARAM_EMPTY,
         annotation: Any = PARAM_EMPTY,
+        forward_ref_context: Optional[ForwardRefContext] = None,
     ):
         """
         :param name: The parameter's name
@@ -60,6 +62,8 @@ class Parameter(inspect.Parameter):
             annotation = inspect.Parameter.empty
 
         super().__init__(name, kind, default=default, annotation=annotation)
+
+        self.forward_ref_context = forward_ref_context
 
     @classmethod
     def from_parameter(cls, parameter: inspect.Parameter) -> Self:

@@ -1,5 +1,5 @@
 import types
-import typing
+from typing import Any, Callable, List, Mapping, Optional, Tuple, Type, TypeVar
 from typing_extensions import TypeGuard
 
 from ._utils import (
@@ -15,16 +15,16 @@ from ..types import Type_, TypeAnnotation, ForwardRefContext
 __all__ = ["is_subtype"]
 
 
-Type_Variable = typing.TypeVar("Type_Variable", bound=Type_)
+Type_Variable = TypeVar("Type_Variable", bound=Type_)
 
 
 def is_subtype(
     subtype: TypeAnnotation,
     supertype: Type_Variable,
     *,
-    forward_ref_context: ForwardRefContext = None,
+    forward_ref_context: Optional[ForwardRefContext] = None,
     treat_name_errors_as_imports: bool = False,
-) -> TypeGuard[typing.Type[Type_Variable]]:
+) -> TypeGuard[Type[Type_Variable]]:
     """
     Returns whether ``subtype`` is a subtype of ``supertype``. Unlike the
     builtin ``issubclass``, this function supports generics.
@@ -49,10 +49,10 @@ def _is_subtype(
     subtype = config.resolve_at_least_1_level_of_forward_refs(subtype)
     supertype = config.resolve_at_least_1_level_of_forward_refs(supertype)  # type: ignore
 
-    if subtype is typing.Any:
+    if subtype is Any:
         return True
 
-    if supertype in (typing.Any, object):
+    if supertype in (Any, object):
         return True
 
     if not is_parameterized_generic(supertype):
@@ -93,7 +93,7 @@ def _unparameterized_supertype_check(subtype: Type_, supertype: Type_) -> bool:
 
 
 def _test_union_subtypes(config: TypeCheckingConfig, subtype: Type_, union_types: tuple) -> bool:
-    errors: typing.List[Exception] = []
+    errors: List[Exception] = []
 
     for union_type in union_types:
         try:
@@ -122,13 +122,13 @@ def _test_optional_subtypes(
     return _test_union_subtypes(config, subtype, optional_type)
 
 
-TYPE_ARGS_TESTS: typing.Mapping[
-    Type_, typing.Callable[[TypeCheckingConfig, Type_, typing.Tuple[object, ...]], bool]
-] = resolve_names_in_all_typing_modules(
-    {
-        "Union": _test_union_subtypes,
-        "Optional": _test_optional_subtypes,
-    }
+TYPE_ARGS_TESTS: Mapping[Type_, Callable[[TypeCheckingConfig, Type_, Tuple[object, ...]], bool]] = (
+    resolve_names_in_all_typing_modules(
+        {
+            "Union": _test_union_subtypes,
+            "Optional": _test_optional_subtypes,
+        }
+    )
 )
 
 if hasattr(types, "UnionType"):
