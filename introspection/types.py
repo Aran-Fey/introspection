@@ -6,6 +6,7 @@ import sentinel
 
 
 __all__ = [
+    "Case",
     "TypeParameter",
     "Type_",
     "ParameterizedGeneric",
@@ -31,6 +32,7 @@ T = typing.TypeVar("T")
 P = typing_extensions.ParamSpec("P")
 Class = typing.TypeVar("Class", bound=type)
 
+Case = typing.Literal["snake", "upper snake", "camel", "pascal", "kebab", "upper kebab"]
 TypeParameter = typing.Union[typing.TypeVar, typing_extensions.TypeVarTuple]
 Function = types.FunctionType
 ParameterizedGeneric: typing_extensions.TypeAlias = "types.GenericAlias"

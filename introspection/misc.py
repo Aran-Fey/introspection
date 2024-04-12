@@ -10,7 +10,7 @@ from typing import *
 from typing_extensions import ParamSpec, TypeAlias
 
 from .errors import *
-from .types import ObjectWithQualname
+from .types import ObjectWithQualname, Case
 
 __all__ = [
     "common_ancestor",
@@ -36,7 +36,6 @@ __all__ = [
 
 P = ParamSpec("P")
 T = TypeVar("T")
-Case = Literal["snake", "upper snake", "camel", "pascal", "kebab", "upper kebab"]
 
 
 TYPE_GET_DICT = cast(Callable[[type], Mapping[str, Any]], type.__dict__["__dict__"].__get__)  # type: ignore
@@ -686,21 +685,18 @@ def _split_name(name: str) -> List[str]:
     last_char_was_upper = True
 
     for i, char in enumerate(name):
-        is_upper = char.isupper()
-
         if char in "-_" or char.isspace():
             words.append("".join(word))
             word.clear()
             last_char_was_upper = False
             continue
 
+        is_upper = char.isupper()
+
         if (
             word
             and is_upper
-            and (
-                not last_char_was_upper
-                or (i > 0 and i + 1 < len(name) and not name[i + 1].isupper())
-            )
+            and (not last_char_was_upper or (i > 0 and i + 1 < len(name) and name[i + 1].islower()))
         ):
             words.append("".join(word))
             word.clear()

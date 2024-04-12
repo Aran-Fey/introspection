@@ -7,6 +7,7 @@ import typing
 
 from introspection import *
 from introspection import errors
+from introspection.types import Case
 import introspection
 
 
@@ -500,7 +501,7 @@ def test_resolve_identifier_error(identifier):
         ("foo", "bar.foo", False),
     ],
 )
-def test_is_sub_qualname(sub_name, super_name, expected):
+def test_is_sub_qualname(sub_name: str, super_name: str, expected: bool):
     assert is_sub_qualname(sub_name, super_name) == expected
 
 
@@ -512,7 +513,8 @@ def test_is_sub_qualname(sub_name, super_name, expected):
         ("foo_bar", "pascal", "FooBar"),
         ("http_adapter", "camel", "httpAdapter"),
         ("remoteCode_execution", "kebab", "remote-code-execution"),
+        ("EXAMPLE_PROJECT", "snake", "example_project"),
     ],
 )
-def test_convert_case(original, case, expected):
+def test_convert_case(original: str, case: Case, expected: str):
     assert convert_case(original, case) == expected
