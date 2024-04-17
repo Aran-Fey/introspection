@@ -3,6 +3,7 @@ from __future__ import annotations
 import ast
 import builtins
 import collections.abc
+import dataclasses
 import importlib
 import types
 import typing
@@ -31,6 +32,9 @@ __all__ = [
     "annotation_to_string",
     "annotation_for_callable",
 ]
+
+
+KW_ONLY = getattr(dataclasses, "KW_ONLY", object())
 
 
 def is_forward_ref(
@@ -392,6 +396,7 @@ def annotation_to_string(
     annotation: TypeAnnotation,
     *,
     implicit_typing: bool = True,
+    implicit_dataclasses: bool = True,
     new_style_unions: bool = True,
     optional_as_union: bool = True,
     variance_prefixes: bool = False,
@@ -412,6 +417,7 @@ def annotation_to_string(
     :param annotation: A class or type annotation
     :param implicit_typing: Whether to omit the "typing." prefix from ``typing``
         types' names
+    :param implicit_dataclasses: Whether to omit the "dataclasses." prefix from ``dataclasses.KW_ONLY``
     :param new_style_unions: Whether to use the new-style ``typing.Union`` syntax
         ``int | str`` instead of ``Union[int, str]``
     :param variance_prefixes: Whether `TypeVars` and `ParamSpecs` should be
@@ -440,6 +446,12 @@ def annotation_to_string(
 
     if annotation is ...:
         return "..."
+
+    if annotation is KW_ONLY:
+        if implicit_dataclasses:
+            return "KW_ONLY"
+        else:
+            return "dataclasses.KW_ONLY"
 
     if annotation in (None, type(None)):
         return "None"

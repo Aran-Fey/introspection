@@ -1,6 +1,7 @@
 import pytest
 
 import builtins
+import dataclasses
 import io
 import sys
 import typing
@@ -44,9 +45,18 @@ if sys.version_info >= (3, 10):
             "int | str | None",
         ],
     )
-    def test_annotation_to_string_simple_py310(expected):
+    def test_annotation_to_string_simple_py310(expected: str):
         annotation = eval(expected)
 
+        assert annotation_to_string(annotation) == expected
+
+    @pytest.mark.parametrize(
+        "annotation, expected",
+        [
+            (dataclasses.KW_ONLY, "KW_ONLY"),
+        ],
+    )
+    def test_annotation_to_string_py310(annotation, expected: str):
         assert annotation_to_string(annotation) == expected
 
 
