@@ -20,7 +20,7 @@ class BoundArguments(inspect.BoundArguments, collections.abc.MutableMapping[str,
 
     __slots__ = ()
 
-    signature: "signature_.Signature"
+    signature: "signature_.Signature"  # type: ignore
 
     @classmethod
     def from_bound_arguments(cls, bound_args: inspect.BoundArguments) -> Self:

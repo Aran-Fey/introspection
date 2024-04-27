@@ -28,8 +28,7 @@ def set_signature(
     *,
     remove_parameters: None = None,
     add_self: Literal[False] = False,
-) -> Callable[[Callable[..., object]], Callable[P, T]]:
-    ...
+) -> Callable[[Callable[..., object]], Callable[P, T]]: ...
 
 
 # Self parameter added
@@ -39,8 +38,7 @@ def set_signature(
     *,
     remove_parameters: None = None,
     add_self: Literal[True],
-) -> Callable[[Callable[..., object]], Callable[Concatenate[Any, P], T]]:
-    ...
+) -> Callable[[Callable[..., object]], Callable[Concatenate[Any, P], T]]: ...
 
 
 # Return annotation changed
@@ -51,8 +49,7 @@ def set_signature(
     remove_parameters: None = None,
     add_self: Literal[False] = False,
     return_annotation: Type[T],
-) -> Callable[[Callable[..., object]], Callable[P, T]]:
-    ...
+) -> Callable[[Callable[..., object]], Callable[P, T]]: ...
 
 
 # Self parameter added and return annotation changed
@@ -63,8 +60,7 @@ def set_signature(
     remove_parameters: None = None,
     add_self: Literal[True],
     return_annotation: Type[T],
-) -> Callable[[Callable[..., object]], Callable[Concatenate[Any, P], T]]:
-    ...
+) -> Callable[[Callable[..., object]], Callable[Concatenate[Any, P], T]]: ...
 
 
 # Parameters removed
@@ -74,8 +70,7 @@ def set_signature(
     *,
     remove_parameters: Iterable[Union[str, int, inspect._ParameterKind]],
     add_self: Literal[False] = False,
-) -> Callable[[Callable[..., object]], Callable[..., T]]:
-    ...
+) -> Callable[[Callable[..., object]], Callable[..., T]]: ...
 
 
 # Parameters removed and Self added
@@ -87,8 +82,7 @@ def set_signature(
     add_self: Literal[True],
     # The return type should ideally be Callable[Concatenate[Self, ...], T], but
     # that crashes in 3.10
-) -> Callable[[Callable[..., object]], Callable[..., T]]:
-    ...
+) -> Callable[[Callable[..., object]], Callable[..., T]]: ...
 
 
 # Parameters removed and return annotation changed
@@ -99,8 +93,7 @@ def set_signature(
     remove_parameters: Iterable[Union[str, int, inspect._ParameterKind]],
     add_self: Literal[False] = False,
     return_annotation: Type[T],
-) -> Callable[[Callable[..., object]], Callable[..., T]]:
-    ...
+) -> Callable[[Callable[..., object]], Callable[..., T]]: ...
 
 
 # Parameters removed, return annotation changed and Self added
@@ -113,8 +106,7 @@ def set_signature(
     return_annotation: Type[T],
     # The return type should ideally be Callable[Concatenate[Self, ...], T], but
     # that crashes in 3.10
-) -> Callable[[Callable[..., object]], Callable[..., T]]:
-    ...
+) -> Callable[[Callable[..., object]], Callable[..., T]]: ...
 
 
 def set_signature(  # type: ignore[wtf]
@@ -142,7 +134,7 @@ def set_signature(  # type: ignore[wtf]
         signature = signature.replace(return_annotation=return_annotation)
 
     def decorator(func: Callable) -> Callable[P, T]:
-        func.__signature__ = signature
+        func.__signature__ = signature  # type: ignore
         return func  # type: ignore
 
     return decorator
@@ -176,7 +168,7 @@ def replace_varargs(
         if remove_parameters:
             merged_signature = merged_signature.without_parameters(*remove_parameters)
 
-        func.__signature__ = merged_signature
+        func.__signature__ = merged_signature  # type: ignore
         return func
 
     return decorator  # type: ignore
@@ -190,8 +182,7 @@ def wraps(
     name: Optional[str] = None,
     signature: Union[None, inspect.Signature, Callable] = None,
     remove_parameters: None = None,
-) -> Callable[[Callable[P, T]], Callable[P, T]]:
-    ...
+) -> Callable[[Callable[P, T]], Callable[P, T]]: ...
 
 
 # Case 2: No parameters removed, return annotation changed
@@ -203,8 +194,7 @@ def wraps(
     signature: Union[None, inspect.Signature, Callable[..., object]] = None,
     remove_parameters: None = None,
     return_annotation: Type[T],
-) -> Callable[[Callable[P, T]], Callable[P, T]]:
-    ...
+) -> Callable[[Callable[P, T]], Callable[P, T]]: ...
 
 
 # Case 3: Parameters removed, return annotation unchanged
@@ -215,8 +205,7 @@ def wraps(
     name: Optional[str] = None,
     signature: Union[None, inspect.Signature, Callable[..., object]] = None,
     remove_parameters: Iterable[Union[str, int, inspect._ParameterKind]],
-) -> Callable[[Callable[P, T]], Callable[P, T]]:
-    ...
+) -> Callable[[Callable[P, T]], Callable[P, T]]: ...
 
 
 # Case 4: Parameters removed, return annotation changed
@@ -228,8 +217,7 @@ def wraps(
     signature: Union[None, inspect.Signature, Callable[..., object]] = None,
     remove_parameters: Iterable[Union[str, int, inspect._ParameterKind]],
     return_annotation: Type[T],
-) -> Callable[[Callable[P, T]], Callable[P, T]]:
-    ...
+) -> Callable[[Callable[P, T]], Callable[P, T]]: ...
 
 
 def wraps(  # type: ignore
@@ -273,7 +261,7 @@ def wraps(  # type: ignore
             if return_annotation is not NONE:
                 sig = sig.replace(return_annotation=return_annotation)
 
-            wrapper_func.__signature__ = sig
+            wrapper_func.__signature__ = sig  # type: ignore
 
         return wrapper_func
 

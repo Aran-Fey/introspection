@@ -400,6 +400,7 @@ def annotation_to_string(
     new_style_unions: bool = True,
     optional_as_union: bool = True,
     variance_prefixes: bool = False,
+    aliases: Mapping[object, str] = {},
 ) -> str:
     """
     Converts a type annotation to string. The result is valid python code
@@ -432,6 +433,7 @@ def annotation_to_string(
             new_style_unions=new_style_unions,
             optional_as_union=optional_as_union,
             variance_prefixes=variance_prefixes,
+            aliases=aliases,
         )
 
     def process_nested(prefix: str, elems: Iterable[TypeAnnotation]):
@@ -443,6 +445,11 @@ def annotation_to_string(
 
     if isinstance(annotation, str):
         return annotation
+
+    try:
+        return aliases[annotation]
+    except KeyError:
+        pass
 
     if annotation is ...:
         return "..."

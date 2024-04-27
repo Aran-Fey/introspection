@@ -89,7 +89,7 @@ class Signature(inspect.Signature):
         return cls(params, return_annotation=signature.return_annotation)
 
     @classmethod
-    def from_callable(
+    def from_callable(  # type: ignore[incompatible-override]
         cls,
         callable_: Callable[P, Any],
         *,
@@ -347,7 +347,7 @@ class Signature(inspect.Signature):
     def __hash__(self) -> int:
         return hash(self.__attributes)
 
-    def __eq__(self, other: Self) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, __class__):
             return NotImplemented
 
