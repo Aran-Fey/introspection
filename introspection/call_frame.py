@@ -49,7 +49,7 @@ class CallFrame:
 
     __slots__ = ("_frame",)
 
-    def __init__(self, frame: types.FrameType | inspect.FrameInfo):
+    def __init__(self, frame: Union[types.FrameType, inspect.FrameInfo]):
         """
         Creates a new ``CallFrame`` from a :data:`types.FrameType` or :cls:`inspect.FrameInfo`
         object.
