@@ -101,7 +101,7 @@ def test_store_signature():
         return "bar"
 
     sig = Signature.from_callable(foo)
-    foo.__signature__ = sig
+    foo.__signature__ = sig  # type: ignore
 
     s = inspect.signature(foo)
     assert s is sig
@@ -230,7 +230,7 @@ def test_class_signature():
 
 def test_class_signature_with_metaclass():
     class Meta(type):
-        def __call__(self, meta):
+        def __call__(self, meta):  # type: ignore (invalid override)
             pass
 
     class Cls(metaclass=Meta):

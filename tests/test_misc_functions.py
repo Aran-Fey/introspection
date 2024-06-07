@@ -220,7 +220,7 @@ def test_iter_wrapped_with_staticmethod():
     def bar():
         pass
 
-    bar.__wrapped__ = foo
+    bar.__wrapped__ = foo  # type: ignore
     static_bar = staticmethod(bar)
 
     assert list(iter_wrapped(static_bar)) == [bar, foo]  # type: ignore
@@ -236,8 +236,8 @@ def test_iter_wrapped_with_stop():
     def baz():
         pass
 
-    bar.__wrapped__ = foo
-    baz.__wrapped__ = bar
+    bar.__wrapped__ = foo  # type: ignore
+    baz.__wrapped__ = bar  # type: ignore
 
     stop = lambda func: func.__name__ == "foo"
 
@@ -348,7 +348,7 @@ def test_wraps():
     def bar(*args, **kwargs):
         pass
 
-    assert bar.__wrapped__ is foo
+    assert bar.__wrapped__ is foo  # type: ignore
     assert bar.__name__ == "foo"
     assert bar.__qualname__ == "test_wraps.<locals>.foo"
     assert bar.__module__ == foo.__module__
@@ -365,7 +365,7 @@ def test_wraps_with_extra_kwargs():
     def bar(*args, **kwargs):
         pass
 
-    assert bar.__wrapped__ is foo
+    assert bar.__wrapped__ is foo  # type: ignore
     assert bar.__name__ == "qux"
     assert bar.__qualname__ == "test_wraps_with_extra_kwargs.<locals>.qux"
     assert bar.__module__ == foo.__module__
@@ -382,7 +382,7 @@ def test_wraps_with_signature():
     def bar(*args, **kwargs):
         pass
 
-    assert bar.__wrapped__ is foo
+    assert bar.__wrapped__ is foo  # type: ignore
     assert bar.__name__ == foo.__name__
     assert bar.__qualname__ == foo.__qualname__
     assert bar.__module__ == foo.__module__
@@ -399,7 +399,7 @@ def test_wraps_with_signature_from_function():
     def bar(*args, **kwargs):
         pass
 
-    assert bar.__wrapped__ is foo
+    assert bar.__wrapped__ is foo  # type: ignore
     assert bar.__name__ == foo.__name__
     assert bar.__qualname__ == foo.__qualname__
     assert bar.__module__ == foo.__module__

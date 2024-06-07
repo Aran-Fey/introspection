@@ -8,13 +8,34 @@ from . import errors
 __all__ = ["CallFrame"]
 
 
+# `inspect.currentframe()` is *much* faster than `inspect.stack()`, but may not be available.
+# Choose the appropriate implementation.
+if inspect.currentframe() is None:
+
+    def get_frame(i: int) -> inspect.FrameInfo:  # type: ignore (override)
+        return inspect.stack()[i]
+
+else:
+
+    def get_frame(i: int) -> types.FrameType:  # type: ignore (override)
+        frame = inspect.currentframe()
+
+        try:
+            for _ in range(i):
+                frame = frame.f_back  # type: ignore
+        except AttributeError:
+            raise IndexError
+
+        if frame is None:
+            raise IndexError
+
+        return frame
+
+
 class CallFrame:
     """
     Represents a call frame - an element of the call stack.
     It keeps track of local and closure variables.
-
-    Although ``CallFrame`` does not inherit from :data:`types.FrameType`,
-    they can be used just like regular frame objects.
 
     Note that storing CallFrames in variables can create reference
     cycles where a frame contains a reference to itself. To avoid
@@ -26,14 +47,18 @@ class CallFrame:
         # At this point, the frame has become unusable
     """
 
-    __slots__ = ("_frame",)
+    __slots__ = ()
 
-    def __init__(self, frame: types.FrameType):
+    def __init__(self, frame: types.FrameType | inspect.FrameInfo):
         """
-        Creates a new ``CallFrame`` from a :data:`types.FrameType` object.
+        Creates a new ``CallFrame`` from a :data:`types.FrameType` or :cls:`inspect.FrameInfo`
+        object.
 
         :param frame: An existing frame object
         """
+        if isinstance(frame, inspect.FrameInfo):
+            frame = frame.frame
+
         self._frame = frame
 
     @classmethod
@@ -41,16 +66,24 @@ class CallFrame:
         """
         Retrieves the current call frame.
         """
-        return cls(inspect.currentframe().f_back)  # type: ignore
+        return cls.up(0)
 
-    def __getattr__(self, attr: str):
-        return getattr(self._frame, attr)
+    @classmethod
+    def up(cls, n: int, /) -> Self:
+        """
+        Retrieves the `n`th frame (from the bottom) from the call stack.
+
+        :raises IndexError: If `n` is larger than the call stack
+        """
+        return cls(get_frame(n + 2))
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, __class__):
             return self._frame == other._frame
         elif isinstance(other, types.FrameType):
             return self._frame == other
+        elif isinstance(other, inspect.FrameInfo):
+            return self._frame == other.frame
         else:
             return NotImplemented
 
@@ -92,6 +125,13 @@ class CallFrame:
         Returns the frame's local variable scope
         """
         return self._frame.f_locals
+
+    @property
+    def current_line_number(self) -> int:
+        """
+        Returns the name of the file in which this frame's code was defined
+        """
+        return self._frame.f_lineno
 
     @property
     def code_object(self) -> types.CodeType:

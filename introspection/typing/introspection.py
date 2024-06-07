@@ -109,7 +109,7 @@ def _resolve_dotted_names(
 
             result.append(value)
 
-        return type(names)(result)
+        return type(names)(result)  # type: ignore
 
 
 # NOTE: The following function implementations work in python 3.5.
@@ -143,7 +143,7 @@ def _is_variadic_generic(type_: Type_):
     return _is_in(type_, VARIADIC_GENERICS)
 
 
-GENERIC_INHERITANCE = {
+_GENERIC_INHERITANCE = {
     "typing.Type": [("Generic", TypeVar("CT_co", covariant=True))],
     "typing.Annotated": [("Generic", T_co)],
     "typing.ClassVar": [("Generic", T_co)],
@@ -231,59 +231,60 @@ GENERIC_INHERITANCE = {
     "typing.MutableSequence": [("Sequence", T)],
 }
 if sys.version_info >= (3, 9):
-    GENERIC_INHERITANCE.update(
+    _GENERIC_INHERITANCE.update(
         {
-            "builtins.tuple": GENERIC_INHERITANCE["typing.Tuple"],
-            "builtins.list": GENERIC_INHERITANCE["typing.List"],
-            "builtins.dict": GENERIC_INHERITANCE["typing.Dict"],
-            "builtins.set": GENERIC_INHERITANCE["typing.Set"],
-            "builtins.frozenset": GENERIC_INHERITANCE["typing.FrozenSet"],
-            "builtins.type": GENERIC_INHERITANCE["typing.Type"],
-            "collections.deque": GENERIC_INHERITANCE["typing.Deque"],
-            "collections.defaultdict": GENERIC_INHERITANCE["typing.DefaultDict"],
-            "collections.OrderedDict": GENERIC_INHERITANCE["typing.OrderedDict"],
-            "collections.Counter": GENERIC_INHERITANCE["typing.Counter"],
-            "collections.ChainMap": GENERIC_INHERITANCE["typing.ChainMap"],
-            "collections.abc.Awaitable": GENERIC_INHERITANCE["typing.Awaitable"],
-            "collections.abc.Coroutine": GENERIC_INHERITANCE["typing.Coroutine"],
-            "collections.abc.AsyncIterable": GENERIC_INHERITANCE["typing.AsyncIterable"],
-            "collections.abc.AsyncIterator": GENERIC_INHERITANCE["typing.AsyncIterator"],
-            "collections.abc.AsyncGenerator": GENERIC_INHERITANCE["typing.AsyncGenerator"],
-            "collections.abc.Iterable": GENERIC_INHERITANCE["typing.Iterable"],
-            "collections.abc.Iterator": GENERIC_INHERITANCE["typing.Iterator"],
-            "collections.abc.Generator": GENERIC_INHERITANCE["typing.Generator"],
-            "collections.abc.Reversible": GENERIC_INHERITANCE["typing.Reversible"],
-            "collections.abc.Container": GENERIC_INHERITANCE["typing.Container"],
-            "collections.abc.Collection": GENERIC_INHERITANCE["typing.Collection"],
-            "collections.abc.Callable": GENERIC_INHERITANCE["typing.Callable"],
-            "collections.abc.Set": GENERIC_INHERITANCE["typing.AbstractSet"],
-            "collections.abc.MutableSet": GENERIC_INHERITANCE["typing.MutableSet"],
-            "collections.abc.Mapping": GENERIC_INHERITANCE["typing.Mapping"],
-            "collections.abc.MutableMapping": GENERIC_INHERITANCE["typing.MutableMapping"],
-            "collections.abc.Sequence": GENERIC_INHERITANCE["typing.Sequence"],
-            "collections.abc.MutableSequence": GENERIC_INHERITANCE["typing.MutableSequence"],
-            "collections.abc.ByteString": GENERIC_INHERITANCE["typing.ByteString"],
-            "collections.abc.MappingView": GENERIC_INHERITANCE["typing.MappingView"],
-            "collections.abc.KeysView": GENERIC_INHERITANCE["typing.KeysView"],
-            "collections.abc.ItemsView": GENERIC_INHERITANCE["typing.ItemsView"],
-            "collections.abc.ValuesView": GENERIC_INHERITANCE["typing.ValuesView"],
-            "contextlib.AbstractContextManager": GENERIC_INHERITANCE["typing.ContextManager"],
-            "contextlib.AbstractAsyncContextManager": GENERIC_INHERITANCE[
+            "builtins.tuple": _GENERIC_INHERITANCE["typing.Tuple"],
+            "builtins.list": _GENERIC_INHERITANCE["typing.List"],
+            "builtins.dict": _GENERIC_INHERITANCE["typing.Dict"],
+            "builtins.set": _GENERIC_INHERITANCE["typing.Set"],
+            "builtins.frozenset": _GENERIC_INHERITANCE["typing.FrozenSet"],
+            "builtins.type": _GENERIC_INHERITANCE["typing.Type"],
+            "collections.deque": _GENERIC_INHERITANCE["typing.Deque"],
+            "collections.defaultdict": _GENERIC_INHERITANCE["typing.DefaultDict"],
+            "collections.OrderedDict": _GENERIC_INHERITANCE["typing.OrderedDict"],
+            "collections.Counter": _GENERIC_INHERITANCE["typing.Counter"],
+            "collections.ChainMap": _GENERIC_INHERITANCE["typing.ChainMap"],
+            "collections.abc.Awaitable": _GENERIC_INHERITANCE["typing.Awaitable"],
+            "collections.abc.Coroutine": _GENERIC_INHERITANCE["typing.Coroutine"],
+            "collections.abc.AsyncIterable": _GENERIC_INHERITANCE["typing.AsyncIterable"],
+            "collections.abc.AsyncIterator": _GENERIC_INHERITANCE["typing.AsyncIterator"],
+            "collections.abc.AsyncGenerator": _GENERIC_INHERITANCE["typing.AsyncGenerator"],
+            "collections.abc.Iterable": _GENERIC_INHERITANCE["typing.Iterable"],
+            "collections.abc.Iterator": _GENERIC_INHERITANCE["typing.Iterator"],
+            "collections.abc.Generator": _GENERIC_INHERITANCE["typing.Generator"],
+            "collections.abc.Reversible": _GENERIC_INHERITANCE["typing.Reversible"],
+            "collections.abc.Container": _GENERIC_INHERITANCE["typing.Container"],
+            "collections.abc.Collection": _GENERIC_INHERITANCE["typing.Collection"],
+            "collections.abc.Callable": _GENERIC_INHERITANCE["typing.Callable"],
+            "collections.abc.Set": _GENERIC_INHERITANCE["typing.AbstractSet"],
+            "collections.abc.MutableSet": _GENERIC_INHERITANCE["typing.MutableSet"],
+            "collections.abc.Mapping": _GENERIC_INHERITANCE["typing.Mapping"],
+            "collections.abc.MutableMapping": _GENERIC_INHERITANCE["typing.MutableMapping"],
+            "collections.abc.Sequence": _GENERIC_INHERITANCE["typing.Sequence"],
+            "collections.abc.MutableSequence": _GENERIC_INHERITANCE["typing.MutableSequence"],
+            "collections.abc.ByteString": _GENERIC_INHERITANCE["typing.ByteString"],
+            "collections.abc.MappingView": _GENERIC_INHERITANCE["typing.MappingView"],
+            "collections.abc.KeysView": _GENERIC_INHERITANCE["typing.KeysView"],
+            "collections.abc.ItemsView": _GENERIC_INHERITANCE["typing.ItemsView"],
+            "collections.abc.ValuesView": _GENERIC_INHERITANCE["typing.ValuesView"],
+            "contextlib.AbstractContextManager": _GENERIC_INHERITANCE["typing.ContextManager"],
+            "contextlib.AbstractAsyncContextManager": _GENERIC_INHERITANCE[
                 "typing.AsyncContextManager"
             ],
             "re.Match": [("Generic", AnyStr)],
             "re.Pattern": [("Generic", AnyStr)],
         }
     )
-GENERIC_INHERITANCE = _resolve_dotted_names(GENERIC_INHERITANCE)
+GENERIC_INHERITANCE = _resolve_dotted_names(_GENERIC_INHERITANCE)
 
 
-PARAMETERIZED_GENERIC_META = (
-    "types.GenericAlias",  # py3.9+
-    "typing._GenericAlias",  # py3.8+
-    "typing.GenericMeta",  # py3.5-3.7
+PARAMETERIZED_GENERIC_META = _resolve_dotted_names(
+    (
+        "types.GenericAlias",  # py3.9+
+        "typing._GenericAlias",  # py3.8+
+        "typing.GenericMeta",  # py3.5-3.7
+    )
 )
-PARAMETERIZED_GENERIC_META = _resolve_dotted_names(PARAMETERIZED_GENERIC_META)
 
 
 def _get_type_parameters(type_):
@@ -707,7 +708,7 @@ def is_generic_base_class(type_: Type_, raising: bool = True) -> bool:
     if not is_generic(type_, raising=raising):
         return False
 
-    if _is_in(type_, GENERIC_INHERITANCE):
+    if _is_in(type_, _GENERIC_INHERITANCE):
         return True
 
     if _is_generic_base_class(type_):
@@ -1132,7 +1133,7 @@ def get_parent_types(type_: Type_) -> Tuple[Type_, ...]:
     if type_ is int:
         return (float,)
 
-    if type_ in GENERIC_INHERITANCE:
+    if type_ in _GENERIC_INHERITANCE:
         base, *type_vars = GENERIC_INHERITANCE[type_]
         return (parameterize(base, type_vars),)
 
