@@ -448,7 +448,7 @@ def annotation_to_string(
 
     try:
         return aliases[annotation]
-    except KeyError:
+    except (KeyError, TypeError):
         pass
 
     if annotation is ...:

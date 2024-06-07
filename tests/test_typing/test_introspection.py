@@ -1009,11 +1009,11 @@ if sys.version_info >= (3, 10):
 
     def test_uniontype_get_type_arguments_error():
         with pytest.raises(errors.NotAParameterizedGeneric):
-            get_type_arguments(types.UnionType)
+            get_type_arguments(types.UnionType)  # type: ignore
 
         # Deprecated exception
         with pytest.raises(ValueError):
-            get_type_arguments(types.UnionType)
+            get_type_arguments(types.UnionType)  # type: ignore
 
     @pytest.mark.parametrize(
         "type_, expected",
@@ -1030,8 +1030,8 @@ if sys.version_info >= (3, 10):
 
     def test_uniontype_get_type_parameters_error():
         with pytest.raises(errors.NotAGeneric):
-            get_type_parameters(types.UnionType)
+            get_type_parameters(types.UnionType)  # type: ignore
 
         # Deprecated exception
         with pytest.raises(ValueError):
-            get_type_parameters(types.UnionType)
+            get_type_parameters(types.UnionType)  # type: ignore

@@ -708,7 +708,7 @@ def is_generic_base_class(type_: Type_, raising: bool = True) -> bool:
     if not is_generic(type_, raising=raising):
         return False
 
-    if _is_in(type_, _GENERIC_INHERITANCE):
+    if _is_in(type_, GENERIC_INHERITANCE):
         return True
 
     if _is_generic_base_class(type_):
@@ -1133,7 +1133,7 @@ def get_parent_types(type_: Type_) -> Tuple[Type_, ...]:
     if type_ is int:
         return (float,)
 
-    if type_ in _GENERIC_INHERITANCE:
+    if type_ in GENERIC_INHERITANCE:
         base, *type_vars = GENERIC_INHERITANCE[type_]
         return (parameterize(base, type_vars),)
 

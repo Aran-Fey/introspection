@@ -7,7 +7,7 @@ from introspection import CallFrame, errors
 
 
 def current_frame() -> types.FrameType:
-    return inspect.currentframe().f_back  # type: ignore
+    return inspect.stack()[1].frame
 
 
 GLOBAL_FRAME = CallFrame.current()
@@ -25,8 +25,17 @@ def test_get_current_frame():
     assert frame._frame == current_frame()
 
 
+def test_get_current_frame_via_up():
+    frame = CallFrame.up(0)
+
+    assert frame._frame == current_frame()
+
+
 def test_parent_type():
-    frame = CallFrame.current()
+    def get_frame():
+        return CallFrame.current()
+
+    frame = get_frame()
 
     assert isinstance(frame.parent, CallFrame)
 

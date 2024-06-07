@@ -47,7 +47,7 @@ class CallFrame:
         # At this point, the frame has become unusable
     """
 
-    __slots__ = ()
+    __slots__ = ("_frame",)
 
     def __init__(self, frame: types.FrameType | inspect.FrameInfo):
         """
@@ -66,7 +66,7 @@ class CallFrame:
         """
         Retrieves the current call frame.
         """
-        return cls.up(0)
+        return cls.up(1)  # up(1) because we need to skip the implementation of `current`
 
     @classmethod
     def up(cls, n: int, /) -> Self:
