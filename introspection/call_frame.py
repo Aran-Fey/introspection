@@ -1,6 +1,6 @@
 import inspect
 import types
-from typing import *
+import typing as t
 from typing_extensions import Self
 
 from . import errors
@@ -49,7 +49,7 @@ class CallFrame:
 
     __slots__ = ("_frame",)
 
-    def __init__(self, frame: Union[types.FrameType, inspect.FrameInfo]):
+    def __init__(self, frame: t.Union[types.FrameType, inspect.FrameInfo]):
         """
         Creates a new ``CallFrame`` from a :data:`types.FrameType` or :cls:`inspect.FrameInfo`
         object.
@@ -77,6 +77,14 @@ class CallFrame:
         """
         return cls(get_frame(n + 2))
 
+    @classmethod
+    def iter(cls) -> t.Iterator[Self]:
+        call_frame = cls.up(1)
+
+        while call_frame is not None:
+            yield call_frame
+            call_frame = call_frame.parent
+
     def __eq__(self, other: object) -> bool:
         if isinstance(other, __class__):
             return self._frame == other._frame
@@ -94,7 +102,7 @@ class CallFrame:
         del self._frame
 
     @property
-    def parent(self) -> Optional[Self]:
+    def parent(self) -> t.Optional[Self]:
         """
         Returns the next frame one level higher on the call stack.
         """
@@ -106,21 +114,21 @@ class CallFrame:
         return cls(parent)
 
     @property
-    def builtins(self) -> Dict[str, Any]:
+    def builtins(self) -> t.Dict[str, t.Any]:
         """
         Returns the builtins seen by this frame
         """
         return self._frame.f_builtins
 
     @property
-    def globals(self) -> Dict[str, Any]:
+    def globals(self) -> t.Dict[str, t.Any]:
         """
         Returns the global scope seen by this frame
         """
         return self._frame.f_globals
 
     @property
-    def locals(self) -> Dict[str, Any]:
+    def locals(self) -> t.Dict[str, t.Any]:
         """
         Returns the frame's local variable scope
         """
@@ -204,7 +212,7 @@ class CallFrame:
         :return: The calling function object
         """
 
-        def iter_candidate_functions() -> Iterator[types.FunctionType]:
+        def iter_candidate_functions() -> t.Iterator[types.FunctionType]:
             funcname = self.scope_name
 
             try:

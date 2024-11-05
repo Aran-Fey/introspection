@@ -8,12 +8,10 @@ import typing
 from typing import *
 from typing_extensions import Self
 
-from renumerate import renumerate
-
 from .bound_arguments import BoundArguments
 from .parameter import Parameter
 from .mark import DOES_NOT_ALTER_SIGNATURE
-from .misc import unwrap, static_mro, static_vars, extract_functions
+from .misc import unwrap, static_mro, static_vars
 from ._utils import SIG_EMPTY
 from .errors import *
 from .types import P, TypeAnnotation, ForwardRefContext
@@ -284,7 +282,7 @@ class Signature(inspect.Signature):
         parameters = self_param + positional_params + keyword_params
 
         max_kind: inspect._ParameterKind = Parameter.VAR_KEYWORD
-        for i, param in renumerate(parameters):
+        for i, param in reversed(list(enumerate(parameters))):
             if param.kind < max_kind:
                 max_kind = param.kind
             elif param.kind > max_kind:

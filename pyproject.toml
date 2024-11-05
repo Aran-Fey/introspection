@@ -5,18 +5,13 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "introspection"
-authors = [{name="Paul Pinterits"}]
+authors = [{ name = "Paul Pinterits" }]
 dynamic = ["version", "description"]
 readme = "README.md"
-license = {file="LICENSE"}
+license = { file = "LICENSE" }
 
 requires-python = ">=3.7"
-dependencies = [
-    "ordered-set",
-    "renumerate",
-    "sentinel",
-    "typing-extensions",
-]
+dependencies = ["ordered-set", "sentinel", "typing-extensions"]
 
 [project.optional-dependencies]
 test = ["pytest", "pytest-raisin", "tox", "coverage"]
