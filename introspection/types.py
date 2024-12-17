@@ -40,7 +40,7 @@ Type_ = typing.Union[type, typing.TypeVar, ParameterizedGeneric, None]
 ForwardReference = typing.Union[str, typing.ForwardRef]
 TypeAnnotation = typing.Union[Type_, ForwardReference]
 ForwardRefContext = typing.Union[
-    type, types.FunctionType, types.ModuleType, str, typing.Mapping[str, object]
+    typing.Callable, types.ModuleType, str, typing.Mapping[str, object]
 ]
 
 

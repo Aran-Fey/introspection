@@ -1,6 +1,6 @@
 import types
-from typing import *
-from typing_extensions import Self
+import typing as t
+import typing_extensions as te
 
 from .call_frame import CallFrame
 
@@ -25,7 +25,7 @@ class CallStack:
 
     __slots__ = ("_frames",)
 
-    def __init__(self, frames: Iterable[types.FrameType]):
+    def __init__(self, frames: t.Iterable[types.FrameType]):
         """
         Creates a new ``CallStack`` from the given frame objects.
 
@@ -34,22 +34,22 @@ class CallStack:
         self._frames = [CallFrame(frame) for frame in frames]
 
     @classmethod
-    def current(cls) -> Self:
+    def current(cls) -> te.Self:
         """
         Get the current call stack.
         """
         with CallFrame.current() as frame:
-            return cls.from_frame(cast(CallFrame, frame.parent))
+            return cls.from_frame(t.cast(CallFrame, frame.parent))
 
     @classmethod
-    def from_frame(cls, frame: Union[types.FrameType, CallFrame]) -> Self:
+    def from_frame(cls, frame: t.Union[types.FrameType, CallFrame]) -> te.Self:
         """
         Creates a ``CallStack`` containing ``frame`` and all its parents.
 
         :param frame: The last frame in the call stack
         :return: A new ``CallStack`` instance
         """
-        frame_: Optional[types.FrameType]
+        frame_: t.Optional[types.FrameType]
         if isinstance(frame, CallFrame):
             frame_ = frame._frame
         else:
@@ -68,16 +68,16 @@ class CallStack:
 
         return cls(frames)
 
-    def __enter__(self) -> Self:
+    def __enter__(self) -> te.Self:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         del self._frames
 
-    def __iter__(self) -> Iterator[CallFrame]:
+    def __iter__(self) -> t.Iterator[CallFrame]:
         return iter(self._frames)
 
-    def __reversed__(self) -> Iterator[CallFrame]:
+    def __reversed__(self) -> t.Iterator[CallFrame]:
         return reversed(self._frames)
 
     def __getitem__(self, index) -> CallFrame:

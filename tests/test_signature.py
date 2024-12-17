@@ -244,6 +244,20 @@ def test_class_signature_with_metaclass():
     assert list(sig.parameters) == ["meta"]
 
 
+def test_skip_metaclass_signature():
+    class Meta(type):
+        @introspection.mark.does_not_alter_signature
+        def __call__(cls, *args, **kwargs):
+            return super().__call__(*args, **kwargs)
+
+    class Cls(metaclass=Meta):
+        def __init__(self, foo):
+            pass
+
+    sig = Signature.from_callable(Cls)
+    assert list(sig.parameters) == ["foo"]
+
+
 def test_builtin_class_signature():
     # Just make sure it doesn't crash
     _ = Signature.from_callable(float, use_signature_db=False)

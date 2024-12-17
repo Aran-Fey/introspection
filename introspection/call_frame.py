@@ -1,7 +1,7 @@
 import inspect
 import types
 import typing as t
-from typing_extensions import Self
+import typing_extensions as te
 
 from . import errors
 
@@ -62,23 +62,24 @@ class CallFrame:
         self._frame = frame
 
     @classmethod
-    def current(cls) -> Self:
+    def current(cls) -> te.Self:
         """
         Retrieves the current call frame.
         """
         return cls.up(1)  # up(1) because we need to skip the implementation of `current`
 
     @classmethod
-    def up(cls, n: int, /) -> Self:
+    def up(cls, n: int, /) -> te.Self:
         """
-        Retrieves the `n`th frame (from the bottom) from the call stack.
+        Retrieves the `n`th frame (from the bottom) from the call stack. In
+        other words, `up(0)` is equivalent to `CallFrame.current()`.
 
         :raises IndexError: If `n` is larger than the call stack
         """
         return cls(get_frame(n + 2))
 
     @classmethod
-    def iter(cls) -> t.Iterator[Self]:
+    def iter(cls) -> t.Iterator[te.Self]:
         call_frame = cls.up(1)
 
         while call_frame is not None:
@@ -95,14 +96,14 @@ class CallFrame:
         else:
             return NotImplemented
 
-    def __enter__(self) -> Self:
+    def __enter__(self) -> te.Self:
         return self
 
     def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
         del self._frame
 
     @property
-    def parent(self) -> t.Optional[Self]:
+    def parent(self) -> t.Optional[te.Self]:
         """
         Returns the next frame one level higher on the call stack.
         """

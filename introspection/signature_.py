@@ -4,9 +4,8 @@ import collections.abc
 import inspect
 import itertools
 import types
-import typing
-from typing import *
-from typing_extensions import Self
+import typing as t
+import typing_extensions as te
 
 from .bound_arguments import BoundArguments
 from .parameter import Parameter
@@ -37,13 +36,13 @@ class Signature(inspect.Signature):
     __slots__ = ("forward_ref_context",)
 
     parameters: types.MappingProxyType[str, Parameter]  # type: ignore
-    forward_ref_context: Optional[ForwardRefContext]
+    forward_ref_context: t.Optional[ForwardRefContext]
 
     def __init__(
         self,
-        parameters: Union[Iterable[Parameter], Mapping[str, Parameter], None] = None,
-        return_annotation: Any = SIG_EMPTY,
-        forward_ref_context: Optional[ForwardRefContext] = None,
+        parameters: t.Union[t.Iterable[Parameter], t.Mapping[str, Parameter], None] = None,
+        return_annotation: t.Any = SIG_EMPTY,
+        forward_ref_context: t.Optional[ForwardRefContext] = None,
         validate_parameters: bool = True,
     ):
         """
@@ -58,7 +57,7 @@ class Signature(inspect.Signature):
             parameters = parameters.values()
 
         # Pyright is dumb and thinks the constructor only accepts Sequences
-        parameters = cast(Sequence[Parameter], parameters)
+        parameters = t.cast(t.Sequence[Parameter], parameters)
 
         super().__init__(
             parameters,
@@ -72,7 +71,7 @@ class Signature(inspect.Signature):
     def from_signature(
         cls,
         signature: inspect.Signature,
-    ) -> Self:
+    ) -> te.Self:
         """
         Creates an ``introspection.Signature`` instance from an :class:`inspect.Signature` instance.
 
@@ -89,11 +88,11 @@ class Signature(inspect.Signature):
     @classmethod
     def from_callable(  # type: ignore[incompatible-override]
         cls,
-        callable_: Callable[P, Any],
+        callable_: t.Callable[P, t.Any],
         *,
         follow_wrapped: bool = True,
         use_signature_db: bool = True,
-    ) -> Self:
+    ) -> te.Self:
         """
         Returns a matching :class:`Signature` instance for the given ``callable_``.
 
@@ -139,7 +138,7 @@ class Signature(inspect.Signature):
         # `forward_ref_context`. We have to find the relevant function (the metaclass's `__call__`,
         # or the `__new__` or the `__init__`) and use *its* `__module__`.
         if isinstance(callable_, type):
-            callable_ = cast(Callable[P, Any], _find_constructor_function(callable_))
+            callable_ = t.cast(t.Callable[P, t.Any], _find_constructor_function(callable_))
 
         ignore_first_parameter = False
 
@@ -151,7 +150,7 @@ class Signature(inspect.Signature):
             callable_ = unwrap(callable_, lambda func: hasattr(func, "__signature__"))  # type: ignore
 
         if not callable(callable_):
-            raise InvalidArgumentType("callable_", callable_, typing.Callable)  # type: ignore
+            raise InvalidArgumentType("callable_", callable_, t.Callable)  # type: ignore
 
         try:
             sig = inspect.signature(callable_, follow_wrapped=False)
@@ -186,9 +185,9 @@ class Signature(inspect.Signature):
     @classmethod
     def for_method(
         cls,
-        class_or_mro: Union[type, Iterable[type]],
+        class_or_mro: t.Union[type, t.Iterable[type]],
         method_name: str,
-    ) -> Self:
+    ) -> te.Self:
         """
         Creates a combined signature for the method in the given class and all
         parent classes, assuming that all `*args` and `**kwargs` are passed to
@@ -216,14 +215,14 @@ class Signature(inspect.Signature):
 
         return_annotation: TypeAnnotation = Signature.empty
 
-        param_lists: List[List[Parameter]] = []
+        param_lists: t.List[t.List[Parameter]] = []
         for class_ in mro:
             class_vars = static_vars(class_)
 
             if method_name not in class_vars:
                 continue
 
-            method = cast(Callable[..., object], class_vars[method_name])
+            method = t.cast(t.Callable[..., object], class_vars[method_name])
             signature = cls.from_callable(method)
 
             param_lists.append(signature.parameter_list)
@@ -242,11 +241,11 @@ class Signature(inspect.Signature):
             if param.kind <= Parameter.POSITIONAL_OR_KEYWORD:
                 self_param = [param]
 
-        positional_params: List[Parameter] = []
-        keyword_params: List[Parameter] = []
-        seen: Set[str] = set()  # Keep track of parameter names to avoid duplicates
-        var_positional: Optional[Parameter] = None
-        var_keyword: Optional[Parameter] = None
+        positional_params: t.List[Parameter] = []
+        keyword_params: t.List[Parameter] = []
+        seen: t.Set[str] = set()  # Keep track of parameter names to avoid duplicates
+        var_positional: t.Optional[Parameter] = None
+        var_keyword: t.Optional[Parameter] = None
 
         for param_list in param_lists:
             var_positional = None
@@ -291,14 +290,14 @@ class Signature(inspect.Signature):
         return cls(parameters, return_annotation=return_annotation)
 
     @property
-    def parameter_list(self) -> List[Parameter]:
+    def parameter_list(self) -> t.List[Parameter]:
         """
         Returns a list of the signature's parameters.
         """
         return list(self.parameters.values())
 
     @property
-    def positional_only_parameters(self) -> List[Parameter]:
+    def positional_only_parameters(self) -> t.List[Parameter]:
         """
         Returns a list of the signature's ``POSITIONAL_ONLY`` parameters.
         """
@@ -307,7 +306,7 @@ class Signature(inspect.Signature):
         ]
 
     @property
-    def positional_and_keyword_parameters(self) -> List[Parameter]:
+    def positional_and_keyword_parameters(self) -> t.List[Parameter]:
         """
         Returns a list of the signature's ``POSITIONAL_OR_KEYWORD`` parameters.
         """
@@ -318,7 +317,7 @@ class Signature(inspect.Signature):
         ]
 
     @property
-    def keyword_only_parameters(self) -> List[Parameter]:
+    def keyword_only_parameters(self) -> t.List[Parameter]:
         """
         Returns a list of the signature's ``KEYWORD_ONLY`` parameters.
         """
@@ -370,7 +369,7 @@ class Signature(inspect.Signature):
         bound_args = super().bind_partial(*args, **kwargs)
         return BoundArguments.from_bound_arguments(bound_args)
 
-    def with_new_parameter(self, index: int, parameter: Parameter) -> Self:
+    def with_new_parameter(self, index: int, parameter: Parameter) -> te.Self:
         """
         Returns a copy of this signature with a new parameter inserted.
 
@@ -384,8 +383,8 @@ class Signature(inspect.Signature):
 
     def without_parameters(
         self,
-        *params_to_remove: Union[int, str, inspect._ParameterKind],
-    ) -> Self:
+        *params_to_remove: t.Union[int, str, inspect._ParameterKind],
+    ) -> te.Self:
         """
         Returns a copy of this signature with some parameters removed.
 
@@ -413,7 +412,7 @@ class Signature(inspect.Signature):
         """
         to_remove = set(params_to_remove)
 
-        parameters: List[Parameter] = []
+        parameters: t.List[Parameter] = []
 
         for i, param in enumerate(self.parameters.values()):
             if i in to_remove or param.name in to_remove or param.kind in to_remove:
@@ -425,13 +424,13 @@ class Signature(inspect.Signature):
 
     def replace_varargs(
         self,
-        parameters: Union[
-            Callable[..., object],
+        parameters: t.Union[
+            t.Callable[..., object],
             inspect.Signature,
-            Iterable[inspect.Parameter],
-            Mapping[str, inspect.Parameter],
+            t.Iterable[inspect.Parameter],
+            t.Mapping[str, inspect.Parameter],
         ],
-    ) -> Self:
+    ) -> te.Self:
         """
         Replaces the ``*args`` and/or ``**kwargs`` parameters in this signature
         with the given parameters.
@@ -458,8 +457,8 @@ class Signature(inspect.Signature):
 
         # Replace *args with POSITIONAL_ONLY, POSITIONAL_OR_KEYWORD, and
         # VAR_POSITIONAL. Replace **kwargs with KEYWORD_ONLY and VAR_KEYWORD.
-        replaces_args: List[inspect.Parameter] = []
-        replaces_kwargs: List[inspect.Parameter] = []
+        replaces_args: t.List[inspect.Parameter] = []
+        replaces_kwargs: t.List[inspect.Parameter] = []
         for parameter in parameters:
             # If we have *args but no **kwargs, we'll make all parameters
             # POSITIONAL_ONLY. Similarly, if we have **kwargs but no *args,
@@ -475,7 +474,7 @@ class Signature(inspect.Signature):
             else:
                 replaces_kwargs.append(parameter)
 
-        merged_parameters: List[Parameter] = []
+        merged_parameters: t.List[Parameter] = []
         for parameter in self.parameters.values():
             if parameter.kind is Parameter.VAR_POSITIONAL:
                 merged_parameters += map(Parameter.from_parameter, replaces_args)
@@ -489,7 +488,7 @@ class Signature(inspect.Signature):
     def to_string(
         self,
         implicit_typing: bool = False,
-        indent: typing.Optional[int] = None,
+        indent: t.Optional[int] = None,
     ) -> str:
         """
         Returns a string representation of this signature.
@@ -521,7 +520,7 @@ class Signature(inspect.Signature):
             )
         }
 
-        text_chunks: List[str] = []  # When not empty, the last item must always be ``sep``
+        text_chunks: t.List[str] = []  # When not empty, the last item must always be ``sep``
 
         # Positional-only parameters with a default value of ``missing`` need
         # special treatment, because they're displayed like [a[, b]]. Even
@@ -592,24 +591,44 @@ class Signature(inspect.Signature):
         return "<{} {}>".format(cls_name, text)
 
 
-def _find_constructor_function(cls: type) -> Callable:
+def _find_constructor_function(cls: type) -> t.Callable:
     # Find the first function that isn't marked with `@does_not_alter_signature`
-    for func in _iter_constructor_functions(cls):
-        if func not in DOES_NOT_ALTER_SIGNATURE:
-            return func
+    #
+    # We don't want the implicit `self` parameter to be included in the signature, so we must return
+    # a bound method. But the `@does_not_alter_signature` decorator is applied to the function, so
+    # we need both the function and the bound method.
+    #
+    # Note: Methods don't actually need to be functions. Any descriptor that returns a callable
+    # works fine as far as python is concerned. I used the terms "function" and "bound method", but
+    # really, we're dealing with a descriptor and whatever that descriptor returned.
+
+    # TODO: Instead of simply returning the first function, the most correct behavior would be to
+    # merge the signatures of `__new__` and `__init__` (and `__call__`?)
+    for func, bound_method in _iter_constructor_functions(cls):
+        if not callable(bound_method):
+            continue
+
+        if func in DOES_NOT_ALTER_SIGNATURE or bound_method in DOES_NOT_ALTER_SIGNATURE:
+            continue
+
+        return bound_method
 
     return cls
 
 
-def _iter_constructor_functions(cls: type) -> Iterator[Callable]:
+def _iter_constructor_functions(cls: type) -> t.Iterator[t.Tuple[object, object]]:
     metacls = type(cls)
 
     for metaclass in static_mro(metacls)[:-2]:  # Skip `type` and `object`
         cls_vars = static_vars(metaclass)
 
-        if "__call__" in cls_vars:
-            func = _invoke_descriptor_or_return(cls_vars["__call__"], cls, metacls)
-            yield func
+        try:
+            func = cls_vars["__call__"]
+        except KeyError:
+            continue
+
+        bound_method = _invoke_descriptor_or_return(func, cls, metacls)
+        yield func, bound_method
 
     # From now on, we need an instance of the class in order to invoke descriptors
     try:
@@ -621,19 +640,27 @@ def _iter_constructor_functions(cls: type) -> Iterator[Callable]:
     mro_vars = [static_vars(cls) for cls in static_mro(cls)[:-1]]  # Skip `object`
 
     for cls_vars in mro_vars:
-        if "__new__" in cls_vars:
-            func = _invoke_descriptor_or_return(cls_vars["__new__"], fake_self, cls)
-            yield func
+        try:
+            func = cls_vars["__new__"]
+        except KeyError:
+            continue
+
+        bound_method = _invoke_descriptor_or_return(func, fake_self, cls)
+        yield func, bound_method
 
     for cls_vars in mro_vars:
-        if "__init__" in cls_vars:
-            func = _invoke_descriptor_or_return(cls_vars["__init__"], fake_self, cls)
-            yield func
+        try:
+            func = cls_vars["__init__"]
+        except KeyError:
+            continue
+
+        bound_method = _invoke_descriptor_or_return(func, fake_self, cls)
+        yield func, bound_method
 
 
 def _invoke_descriptor_or_return(
-    descriptor: object, instance: Optional[type], owner: Optional[type]
-) -> Callable:
+    descriptor: object, instance: t.Optional[type], owner: t.Optional[type]
+) -> t.Callable:
     try:
         get = descriptor.__get__  # type: ignore
     except AttributeError:
