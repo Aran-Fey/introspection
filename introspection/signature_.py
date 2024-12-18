@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import collections.abc
+import functools
 import inspect
 import itertools
 import types
@@ -10,8 +11,8 @@ import typing_extensions as te
 from .bound_arguments import BoundArguments
 from .parameter import Parameter
 from .mark import DOES_NOT_ALTER_SIGNATURE
-from .misc import unwrap, static_mro, static_vars
-from ._utils import SIG_EMPTY
+from .misc import static_mro, static_vars
+from ._utils import SIG_EMPTY, NONE, _Sentinel
 from .errors import *
 from .types import P, TypeAnnotation, ForwardRefContext
 
@@ -40,7 +41,9 @@ class Signature(inspect.Signature):
 
     def __init__(
         self,
-        parameters: t.Union[t.Iterable[Parameter], t.Mapping[str, Parameter], None] = None,
+        parameters: t.Union[
+            t.Iterable[inspect.Parameter], t.Mapping[str, inspect.Parameter], None
+        ] = None,
         return_annotation: t.Any = SIG_EMPTY,
         forward_ref_context: t.Optional[ForwardRefContext] = None,
         validate_parameters: bool = True,
@@ -53,11 +56,15 @@ class Signature(inspect.Signature):
         if return_annotation is SIG_EMPTY:
             return_annotation = inspect.Signature.empty
 
-        if isinstance(parameters, collections.abc.Mapping):
+        if parameters is None:
+            parameters = ()
+        elif isinstance(parameters, collections.abc.Mapping):
+            # Unfortunately the `inspect.Signature` constructor only accepts an iterable of
+            # parameters, not a dict. So if the user passed in a mapping, we have to discard the
+            # keys. At least this ensures that the key and the parameter name are always the same.
             parameters = parameters.values()
 
-        # Pyright is dumb and thinks the constructor only accepts Sequences
-        parameters = t.cast(t.Sequence[Parameter], parameters)
+        parameters = [Parameter.from_parameter(param) for param in parameters]
 
         super().__init__(
             parameters,
@@ -66,6 +73,31 @@ class Signature(inspect.Signature):
         )
 
         self.forward_ref_context = forward_ref_context
+
+    def replace(  # type: ignore (invalid override)
+        self,
+        *,
+        parameters: t.Union[
+            t.Iterable[inspect.Parameter], t.Mapping[str, inspect.Parameter], None, _Sentinel
+        ] = NONE,
+        return_annotation: t.Any = NONE,
+        forward_ref_context: t.Union[ForwardRefContext, None, _Sentinel] = NONE,
+    ) -> te.Self:
+        if parameters is NONE:
+            parameters = self.parameters
+
+        if return_annotation is NONE:
+            return_annotation = self.return_annotation
+
+        if forward_ref_context is NONE:
+            forward_ref_context = self.forward_ref_context
+
+        return type(self)(
+            parameters=parameters,  # type: ignore
+            return_annotation=return_annotation,
+            forward_ref_context=forward_ref_context,  # type: ignore
+            validate_parameters=False,
+        )
 
     @classmethod
     def from_signature(
@@ -120,7 +152,6 @@ class Signature(inspect.Signature):
             ``param_type`` parameter renamed to ``Parameter``.
 
         :param callable_: A function or any other callable object
-        :param Parameter: The class to use for the signature's parameters
         :param follow_wrapped: Whether to unwrap decorated callables
         :param use_signature_db: Whether to look up the signature
         :return: A corresponding ``Signature`` instance
@@ -128,59 +159,144 @@ class Signature(inspect.Signature):
         :raises NoSignatureFound: If the signature can't be determined (can
             happen for functions defined in C extensions)
         """
-        if use_signature_db:
-            from .signature_db import SIGNATURE_DB
+        from .signature_db import SIGNATURE_DB
 
-            if callable_ in SIGNATURE_DB:
-                return cls.from_signature(SIGNATURE_DB[callable_])
-
-        # If the callable_ is a class, it would be incorrect to use its `__module__` as the
-        # `forward_ref_context`. We have to find the relevant function (the metaclass's `__call__`,
-        # or the `__new__` or the `__init__`) and use *its* `__module__`.
-        if isinstance(callable_, type):
-            callable_ = t.cast(t.Callable[P, t.Any], _find_constructor_function(callable_))
-
-        ignore_first_parameter = False
-
-        if inspect.ismethod(callable_):
-            callable_ = callable_.__func__  # type: ignore
-            ignore_first_parameter = True
-
-        if follow_wrapped:
-            callable_ = unwrap(callable_, lambda func: hasattr(func, "__signature__"))  # type: ignore
-
-        if not callable(callable_):
-            raise InvalidArgumentType("callable_", callable_, t.Callable)  # type: ignore
-
-        try:
-            sig = inspect.signature(callable_, follow_wrapped=False)
-        except ValueError as error:
-            # Callables written in C don't have an accessible signature.
-            #
-            # However, a ValueError can also be raised if `functools.partial` is
-            # used to pass invalid arguments to a function, for example:
-            #
-            # partial(open, hello_kitty=True)
-            if not str(error).startswith("no signature found"):
-                raise
-        else:
-            parameters = [Parameter.from_parameter(param) for param in sig.parameters.values()]
-
-            if ignore_first_parameter:
-                del parameters[0]
-
-            return cls(parameters, sig.return_annotation, forward_ref_context=callable_.__module__)
-
-        # Builtin exceptions also need special handling, but we don't want to
-        # hard-code all of them in BUILTIN_SIGNATURES
-        if isinstance(callable_, type) and issubclass(callable_, BaseException):
-            return cls(
-                [
-                    Parameter("args", Parameter.VAR_POSITIONAL),
-                ]
+        def recurse(callable_: t.Callable) -> te.Self:
+            return cls.from_callable(
+                callable_,
+                follow_wrapped=follow_wrapped,
+                use_signature_db=use_signature_db,
             )
 
-        raise NoSignatureFound(callable_)
+        # Bound methods are annoying pieces of crap that proxy a lot of stuff to the wrapped
+        # function. If we carelessly access the `__signature__` or `__wrapped__` attribute, we'll
+        # produce incorrect output. So the very first thing we have to do is find out if we're
+        # dealing with a bound method.
+        if inspect.ismethod(callable_):
+            signature = recurse(callable_.__func__)
+            return signature.without_parameters(0)  # Remove the first parameter
+
+        # Unwrap the given callable and look it up in the signature database. The signature database
+        # often has more accurate signatures than we'd get from `inspect.signature`.
+        while True:
+            # While we're at it, also look up every callable in the signature database.
+            if use_signature_db:
+                try:
+                    signature = SIGNATURE_DB[callable_]
+                except (KeyError, TypeError):
+                    pass
+                else:
+                    return cls.from_signature(SIGNATURE_DB[callable_])
+
+            # If this callable has a cached signature, use that. No need to unwrap further.
+            try:
+                sig: inspect.Signature = callable_.__signature__  # type: ignore
+            except AttributeError:
+                pass
+            else:
+                return cls.from_signature(sig)
+
+            # Are we even supposed to unwrap? If not, abort
+            if not follow_wrapped:
+                break
+
+            try:
+                callable_ = callable_.__wrapped__  # type: ignore
+            except AttributeError:
+                break
+
+        # Next, find out what kind of callable we're dealing with. There are many that need special
+        # handling.
+
+        # First, check if it's a built-in callable. We can't really work with stuff that's written
+        # in C, so these need special handling.
+
+        # Is it a class?
+        if isinstance(callable_, type):
+            # Is it a built-in class?
+            if callable_.__module__ == "builtins":
+                # Builtin exceptions don't have an accessible signature, but we don't want to
+                # hard-code all of them in BUILTIN_SIGNATURES
+                if issubclass(callable_, BaseException):  # Note: This includes `Warning`s
+                    return cls(
+                        [
+                            Parameter("args", Parameter.VAR_POSITIONAL),
+                        ]
+                    )
+
+                return cls._from_builtin_callable(callable_)
+
+            # If the callable_ is a class (one that's written in python, not a builtin class), we
+            # must find the function that acts as the constructor. We can't just pass the class
+            # itself to `inspect.signature` because
+            # 1. We have to ignore methods decorated with `@does_not_alter_signature`
+            # 2. In order to resolve the type annotations correctly, we need to know where the
+            #    *function* was defined
+
+            # TODO: Instead of simply returning the first function, the most correct behavior would
+            # be to merge the signatures of `__new__` and `__init__` (and `__call__`?)
+            callable_ = _find_constructor_function(callable_)
+            return recurse(callable_)
+
+        # Is it some other kind of built-in callable, i.e. a function, async function, bound method,
+        # etc.?
+        callable_cls = type(callable_)
+        if callable_cls.__module__ == "builtins":
+            return cls._from_builtin_callable(callable_)
+
+        # If it's a `functools.partial`, remove the positional parameters and make the keyword
+        # parameters optional
+        if isinstance(callable_, functools.partial):
+            signature = recurse(callable_.func)
+
+            parameters = signature.parameter_list
+            for _ in callable_.args:
+                if parameters[0].kind >= Parameter.VAR_POSITIONAL:
+                    break
+
+                del parameters[0]
+
+            for i, parameter in enumerate(parameters):
+                try:
+                    default_value = callable_.keywords[parameter.name]
+                except KeyError:
+                    continue
+
+                parameters[i] = parameter.replace(default=default_value)
+
+            return signature.replace(parameters=parameters)
+
+        # At this point, it must be an object with a `__call__` method.
+        fake_self = object.__new__(callable_cls)
+
+        for cls_ in static_mro(callable_cls):
+            cls_vars = static_vars(cls_)
+
+            try:
+                call = cls_vars["__call__"]
+            except KeyError:
+                continue
+
+            call = _invoke_descriptor_or_return(call, fake_self, callable_cls)
+
+            if not callable(call):
+                break
+
+            return recurse(call)
+
+        raise InvalidArgumentType("callable_", callable_, t.Callable)  # type: ignore
+
+    @classmethod
+    def _from_builtin_callable(cls, callable_: t.Callable) -> te.Self:
+        try:
+            sig = inspect.signature(callable_, follow_wrapped=False)
+        except ValueError:
+            # Some builtin callables don't have an accessible signature. Nothing we can do about
+            # that, so just throw an error.
+            raise NoSignatureFound(callable_) from None
+
+        parameters = [Parameter.from_parameter(param) for param in sig.parameters.values()]
+        return cls(parameters, sig.return_annotation, forward_ref_context=callable_.__module__)
 
     @classmethod
     def for_method(
@@ -601,9 +717,6 @@ def _find_constructor_function(cls: type) -> t.Callable:
     # Note: Methods don't actually need to be functions. Any descriptor that returns a callable
     # works fine as far as python is concerned. I used the terms "function" and "bound method", but
     # really, we're dealing with a descriptor and whatever that descriptor returned.
-
-    # TODO: Instead of simply returning the first function, the most correct behavior would be to
-    # merge the signatures of `__new__` and `__init__` (and `__call__`?)
     for func, bound_method in _iter_constructor_functions(cls):
         if not callable(bound_method):
             continue
@@ -613,10 +726,15 @@ def _find_constructor_function(cls: type) -> t.Callable:
 
         return bound_method
 
-    return cls
+    # If we couldn't find a single constructor function, that means this class doesn't take any
+    # arguments.
+    return lambda: None
 
 
 def _iter_constructor_functions(cls: type) -> t.Iterator[t.Tuple[object, object]]:
+    # Note: The implicit `self`/`cls` parameter shouldn't show up in the signature, which means we
+    # have to return bound methods and not functions.
+
     metacls = type(cls)
 
     for metaclass in static_mro(metacls)[:-2]:  # Skip `type` and `object`
@@ -658,8 +776,11 @@ def _iter_constructor_functions(cls: type) -> t.Iterator[t.Tuple[object, object]
         yield func, bound_method
 
 
+T = t.TypeVar("T")
+
+
 def _invoke_descriptor_or_return(
-    descriptor: object, instance: t.Optional[type], owner: t.Optional[type]
+    descriptor: object, instance: t.Optional[T], owner: t.Optional[t.Type[T]]
 ) -> t.Callable:
     try:
         get = descriptor.__get__  # type: ignore

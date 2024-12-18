@@ -32,12 +32,10 @@ class cached_property(Generic[S, T]):
         self._getter = getter
 
     @overload
-    def __get__(self, instance: S, owner: Optional[type] = None) -> T:
-        ...
+    def __get__(self, instance: S, owner: Optional[type] = None) -> T: ...
 
     @overload
-    def __get__(self, instance: None, owner: Optional[type] = None) -> Self:
-        ...
+    def __get__(self, instance: None, owner: Optional[type] = None) -> Self: ...
 
     def __get__(self, instance: Optional[S], owner: Optional[type] = None) -> Union[T, Self]:
         if instance is None:
@@ -62,3 +60,4 @@ class _Sentinel:
 
 SIG_EMPTY = _Sentinel("inspect.Signature.empty")
 PARAM_EMPTY = _Sentinel("inspect.Parameter.empty")
+NONE = _Sentinel("...")

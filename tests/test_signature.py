@@ -1,31 +1,12 @@
 import pytest
 
+import builtins
 import functools
 import inspect
-import sys
-import typing
+import typing as t
 
 import introspection
 from introspection import Signature, Parameter, errors
-
-
-def make_fake_c_function(doc, monkeypatch):
-    # Functions written in C don't have signatures; we'll fake one by creating
-    # an object with a __doc__ attribute
-    def fake_sig(*a, **kw):
-        raise ValueError("no signature found")
-
-    monkeypatch.setattr(inspect, "signature", fake_sig)
-    monkeypatch.setattr(
-        sys.modules["introspection.signature_"], "callable", lambda _: True, raising=False
-    )
-
-    class FakeFunction:
-        pass
-
-    fake_func = FakeFunction()
-    fake_func.__doc__ = doc
-    return fake_func
 
 
 def test_get_signature():
@@ -71,15 +52,25 @@ def test_get_bool_signature():
     assert sig.parameters["x"].default is Parameter.missing
 
 
-def test_get_signature_undoc_c_function(monkeypatch):
-    fake_func = make_fake_c_function(None, monkeypatch)
+def test_get_signature_undoc_c_function():
+    c_function = iter
+
+    try:
+        inspect.signature(c_function)
+    except ValueError:
+        pass
+    else:
+        pytest.fail(
+            f"{c_function} is no longer suitable for this test."
+            f" We need `inspect.signature` to throw a `ValueError`"
+        )
 
     with pytest.raises(errors.NoSignatureFound):
-        Signature.from_callable(fake_func)  # type: ignore
+        Signature.from_callable(c_function, use_signature_db=False)
 
     # Deprecated exception
     with pytest.raises(ValueError):
-        Signature.from_callable(fake_func)  # type: ignore
+        Signature.from_callable(c_function, use_signature_db=False)
 
 
 def test_get_signature_noncallable():
@@ -92,7 +83,7 @@ def test_signature_with_optional_parameter():
 
     assert sig.return_annotation is dict
     assert len(sig.parameters) == 1
-    assert sig.parameters["object"].annotation is typing.Any
+    assert sig.parameters["object"].annotation is t.Any
     assert sig.parameters["object"].default is Parameter.missing
 
 
@@ -107,18 +98,26 @@ def test_store_signature():
     assert s is sig
 
 
-def test_builtin_signatures():
-    import builtins
+BUILTIN_CALLABLES = {
+    name: obj
+    for name, obj in vars(builtins).items()
+    if callable(obj) and obj.__module__ == "builtins"
+}
 
-    for thing in vars(builtins).values():
-        if not callable(thing):
-            continue
 
-        try:
-            _ = Signature.from_callable(thing)
-        except Exception as e:
-            msg = "Couldn't obtain signature of {!r}: {!r}"
-            pytest.fail(msg.format(thing, e))
+@pytest.mark.parametrize(
+    "callable_",
+    BUILTIN_CALLABLES.values(),
+    ids=BUILTIN_CALLABLES.keys(),
+)
+def test_builtin_signatures(callable_: t.Callable):
+    try:
+        _ = Signature.from_callable(callable_)
+    except Exception as e:
+        pytest.fail(
+            f"Couldn't obtain signature of {callable_.__name__!r}: {e!r}."
+            f" It must be added to the signature database."
+        )
 
 
 def test_follow_wrapped():
@@ -228,6 +227,14 @@ def test_class_signature():
     assert list(sig.parameters) == ["init"]
 
 
+def test_class_signature_with_no_constructor():
+    class Cls:
+        pass
+
+    sig = Signature.from_callable(Cls)
+    assert list(sig.parameters) == []
+
+
 def test_class_signature_with_metaclass():
     class Meta(type):
         def __call__(self, meta):  # type: ignore (invalid override)
@@ -258,9 +265,60 @@ def test_skip_metaclass_signature():
     assert list(sig.parameters) == ["foo"]
 
 
+def test_partial():
+    def func(x, *y, z):
+        pass
+
+    part = functools.partial(func, 1, 2, 3, z=4)
+    sig = Signature.from_callable(part)
+    assert list(sig.parameters) == ["y", "z"]
+    assert sig.parameters["y"].kind is Parameter.VAR_POSITIONAL
+    assert sig.parameters["z"].default == 4
+
+
+def test_partial_and_skip_metaclass_signature():
+    class Meta(type):
+        @introspection.mark.does_not_alter_signature
+        def __call__(cls, *args, **kwargs):
+            return super().__call__(*args, **kwargs)
+
+    class Cls(metaclass=Meta):
+        def __init__(self, foo, bar: "int"):
+            pass
+
+    sig = Signature.from_callable(functools.partial(Cls, 3))
+    assert list(sig.parameters) == ["bar"]
+
+
 def test_builtin_class_signature():
     # Just make sure it doesn't crash
     _ = Signature.from_callable(float, use_signature_db=False)
+
+
+def test_custom_callable():
+    class CustomCallable:
+        def __call__(self, param: str):
+            pass
+
+    sig = Signature.from_callable(CustomCallable())
+    assert list(sig.parameters) == ["param"]
+    assert sig.parameters["param"].annotation is str
+
+
+def test_custom_callable_with_different_modules():
+    from collections import UserString
+
+    class CustomCallable:
+        def __call__(self, param: "UserString"):
+            pass
+
+    # Pretend the `__call__` was inherited from a base class that was defined somewhere else
+    CustomCallable.__module__ = "sys"
+    CustomCallable.__call__.__module__ = "collections"
+
+    sig = Signature.from_callable(CustomCallable())
+    assert list(sig.parameters) == ["param"]
+    assert sig.forward_ref_context == "collections"
 
 
 def test_doesnt_alter_signature_mark():
@@ -460,11 +518,11 @@ def test_bind_partial(func, args, kwargs, expected_result):
         (Signature([Parameter("x", annotation=int)], return_annotation=str), "(x: int) -> str"),
         (Signature([Parameter("x", annotation=bool, default=False)]), "(x: bool = False)"),
         (
-            Signature([Parameter("x", annotation=tuple)], return_annotation=typing.Tuple),
+            Signature([Parameter("x", annotation=tuple)], return_annotation=t.Tuple),
             "(x: tuple) -> typing.Tuple",
         ),
         (
-            Signature(return_annotation=typing.Tuple[int, typing.List]),
+            Signature(return_annotation=t.Tuple[int, t.List]),
             "() -> typing.Tuple[int, typing.List]",
         ),
     ],
