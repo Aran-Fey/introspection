@@ -110,7 +110,7 @@ def test_constructor_descriptors():
     class NewDescriptor:
         def __get__(self, *args):
             new_args.append(args)
-            return object.__new__
+            return object.__new__  # No `.__get__` here, that crashes for some reason...
 
     class InitDescriptor:
         # `Signature.from_callable` calls `__init__` with a dummy instance, so it makes no sense to

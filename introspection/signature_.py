@@ -267,8 +267,6 @@ class Signature(inspect.Signature):
             return signature.replace(parameters=parameters)
 
         # At this point, it must be an object with a `__call__` method.
-        fake_self = object.__new__(callable_cls)
-
         for cls_ in static_mro(callable_cls):
             cls_vars = static_vars(cls_)
 
@@ -277,7 +275,7 @@ class Signature(inspect.Signature):
             except KeyError:
                 continue
 
-            call = _bind_method(call, fake_self, callable_cls)
+            call = _bind_method(call, callable_, callable_cls)
 
             if not callable(call):
                 break

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import Optional, List, Tuple
-from typing_extensions import Annotated
+import typing as t
+import typing_extensions as te
 
 from ._utils import resolve_at_least_1_level_of_forward_refs
 from .introspection import (
@@ -24,7 +24,7 @@ class TypeInfo:
         self,
         type_: TypeAnnotation,
         *,
-        forward_ref_context: Optional[ForwardRefContext] = None,
+        forward_ref_context: t.Optional[ForwardRefContext] = None,
         treat_name_errors_as_imports: bool = False,
     ):
         self.raw = type_
@@ -33,14 +33,15 @@ class TypeInfo:
             type_, forward_ref_context, treat_name_errors_as_imports
         )
 
-        annotations: List[object] = []
+        annotations: t.List[object] = []
 
+        # Unpack `Annotated`s
         args = None
         while is_parameterized_generic(resolved_type):
             args = get_type_arguments(resolved_type)
             resolved_type = get_generic_base_class(resolved_type)
 
-            if resolved_type is Annotated:
+            if resolved_type is te.Annotated:
                 annotations += args[1:]
                 resolved_type = resolve_at_least_1_level_of_forward_refs(
                     args[0],  # type: ignore
@@ -55,14 +56,14 @@ class TypeInfo:
         self._context = forward_ref_context
 
     @cached_property
-    def parameters(self) -> Optional[Tuple[TypeParameter, ...]]:
+    def parameters(self) -> t.Optional[t.Tuple[TypeParameter, ...]]:
         try:
             return get_type_parameters(self.type)
         except NotAGeneric:
             return None
 
     @property
-    def arguments(self) -> Optional[Tuple[object, ...]]:
+    def arguments(self) -> t.Optional[t.Tuple[object, ...]]:
         return self._arguments
 
     @property
