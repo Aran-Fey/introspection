@@ -97,6 +97,46 @@ def test_get_abstract_class_signature():
     assert list(sig.parameters) == ["foo"]
 
 
+def test_constructor_descriptors():
+    call_args = []
+    new_args = []
+    init_args = []
+
+    class CallDescriptor:
+        def __get__(self, *args):
+            call_args.append(args)
+            return type.__call__.__get__(*args)
+
+    class NewDescriptor:
+        def __get__(self, *args):
+            new_args.append(args)
+            return object.__new__
+
+    class InitDescriptor:
+        # `Signature.from_callable` calls `__init__` with a dummy instance, so it makes no sense to
+        # record it.
+        def __get__(self, instance, *args):
+            init_args.append(args)
+            return object.__init__.__get__(instance, *args)
+
+    class Meta(type):
+        __call__ = introspection.mark.does_not_alter_signature(CallDescriptor())  # type: ignore
+
+    class Class(metaclass=Meta):
+        __new__ = introspection.mark.does_not_alter_signature(NewDescriptor())  # type: ignore
+        __init__ = introspection.mark.does_not_alter_signature(InitDescriptor())  # type: ignore
+
+    # First, see how python itself invokes the descriptors
+    Class()
+
+    # Then obtain the class's signature and compare
+    Signature.from_callable(Class)
+
+    assert call_args[0] == call_args[1]
+    assert new_args[0] == new_args[1]
+    assert init_args[0] == init_args[1]
+
+
 def test_get_signature_noncallable():
     with pytest.raises(TypeError):
         Signature.from_callable(123)  # type: ignore

@@ -296,7 +296,13 @@ class Signature(inspect.Signature):
             raise NoSignatureFound(callable_) from None
 
         parameters = [Parameter.from_parameter(param) for param in sig.parameters.values()]
-        return cls(parameters, sig.return_annotation, forward_ref_context=callable_.__module__)
+
+        try:
+            forward_ref_context = callable_.__module__
+        except AttributeError:  # This can happen in case of some built-in methods
+            forward_ref_context = None
+
+        return cls(parameters, sig.return_annotation, forward_ref_context=forward_ref_context)
 
     @classmethod
     def for_method(
@@ -748,6 +754,16 @@ def _iter_constructor_functions(cls: type) -> t.Iterator[t.Tuple[object, object]
         bound_method = _bind_method(func, cls, metacls)
         yield func, bound_method
 
+    mro_vars = [static_vars(cls) for cls in static_mro(cls)[:-1]]  # Skip `object`
+
+    for cls_vars in mro_vars:
+        try:
+            func = cls_vars["__new__"]
+        except KeyError:
+            continue
+
+        yield func, _bind_method(func, None, cls)
+
     # From now on, we need an instance of the class in order to invoke descriptors
     try:
         fake_self = object.__new__(cls)
@@ -764,16 +780,6 @@ def _iter_constructor_functions(cls: type) -> t.Iterator[t.Tuple[object, object]
         # without an instance of the class, so we'll simply operate on the assumption that there is
         # an implicit first parameter.
         fake_self = ...  # `None` doesn't work, the `MethodType` constructor complains about it
-
-    mro_vars = [static_vars(cls) for cls in static_mro(cls)[:-1]]  # Skip `object`
-
-    for cls_vars in mro_vars:
-        try:
-            func = cls_vars["__new__"]
-        except KeyError:
-            continue
-
-        yield func, _bind_method(func, fake_self, cls)
 
     for cls_vars in mro_vars:
         try:
