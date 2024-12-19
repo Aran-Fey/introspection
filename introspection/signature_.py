@@ -277,7 +277,7 @@ class Signature(inspect.Signature):
             except KeyError:
                 continue
 
-            call = _invoke_descriptor_or_return(call, fake_self, callable_cls)
+            call = _bind_method(call, fake_self, callable_cls)
 
             if not callable(call):
                 break
@@ -745,15 +745,25 @@ def _iter_constructor_functions(cls: type) -> t.Iterator[t.Tuple[object, object]
         except KeyError:
             continue
 
-        bound_method = _invoke_descriptor_or_return(func, cls, metacls)
+        bound_method = _bind_method(func, cls, metacls)
         yield func, bound_method
 
     # From now on, we need an instance of the class in order to invoke descriptors
     try:
-        fake_self = object.__new__(cls)  # type: ignore[wtf]
+        fake_self = object.__new__(cls)
     except TypeError:
-        # This can happen for builtin classes. Just return the class in that case.
-        return cls
+        # This can happen for builtin classes and abstract classes.
+
+        # If it's a builtin class, we can simply yield it and be done
+        if cls.__module__ == "builtins":
+            yield cls, cls
+            return
+
+        # If it's an abstract class, calling it will definitely throw an error... but it IS
+        # callable, so we'll do our job as best as we can. We aren't able to invoke descriptors
+        # without an instance of the class, so we'll simply operate on the assumption that there is
+        # an implicit first parameter.
+        fake_self = ...  # `None` doesn't work, the `MethodType` constructor complains about it
 
     mro_vars = [static_vars(cls) for cls in static_mro(cls)[:-1]]  # Skip `object`
 
@@ -763,8 +773,7 @@ def _iter_constructor_functions(cls: type) -> t.Iterator[t.Tuple[object, object]
         except KeyError:
             continue
 
-        bound_method = _invoke_descriptor_or_return(func, fake_self, cls)
-        yield func, bound_method
+        yield func, _bind_method(func, fake_self, cls)
 
     for cls_vars in mro_vars:
         try:
@@ -772,19 +781,33 @@ def _iter_constructor_functions(cls: type) -> t.Iterator[t.Tuple[object, object]
         except KeyError:
             continue
 
-        bound_method = _invoke_descriptor_or_return(func, fake_self, cls)
-        yield func, bound_method
+        yield func, _bind_method(func, fake_self, cls)
 
 
 T = t.TypeVar("T")
 
 
-def _invoke_descriptor_or_return(
-    descriptor: object, instance: t.Optional[T], owner: t.Optional[t.Type[T]]
+def _bind_method(
+    descriptor: object, instance: t.Union[T, None, ellipsis], owner: t.Optional[t.Type[T]]
 ) -> t.Callable:
+    # If we don't have an instance to work with, we can't invoke the descriptor. In that case we'll
+    # assume that there is an implicit first parameter and manually create a bound method.
+    if instance is ...:
+        # We can't invoke the descriptor, but we can at least check if it's a `@staticmethod`.
+        if isinstance(descriptor, staticmethod):
+            return descriptor.__func__
+
+        return types.MethodType(descriptor, ...)  # type: ignore
+
     try:
         get = descriptor.__get__  # type: ignore
     except AttributeError:
         return descriptor  # type: ignore
 
-    return get(instance, owner)
+    # It's quite likely that the descriptor will crash, considering that we're giving it a fake
+    # `self` to work with. If it does, we'll fall back to our default assumption: It'll return a
+    # bound method.
+    try:
+        return get(instance, owner)
+    except Exception:
+        return types.MethodType(descriptor, ...)  # type: ignore

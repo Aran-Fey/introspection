@@ -1,6 +1,8 @@
 import pytest
 
+import abc
 import builtins
+import dataclasses
 import functools
 import inspect
 import typing as t
@@ -71,6 +73,28 @@ def test_get_signature_undoc_c_function():
     # Deprecated exception
     with pytest.raises(ValueError):
         Signature.from_callable(c_function, use_signature_db=False)
+
+
+def test_get_dataclass_signature():
+    @dataclasses.dataclass
+    class MyDataClass:
+        foo: int
+
+    sig = Signature.from_callable(MyDataClass)
+    assert list(sig.parameters) == ["foo"]
+
+
+def test_get_abstract_class_signature():
+    class MyAbstractClass(abc.ABC):
+        def __init__(self, foo: str):
+            pass
+
+        @abc.abstractmethod
+        def func(self):
+            pass
+
+    sig = Signature.from_callable(MyAbstractClass)
+    assert list(sig.parameters) == ["foo"]
 
 
 def test_get_signature_noncallable():
