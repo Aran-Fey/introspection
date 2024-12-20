@@ -1,22 +1,31 @@
 import weakref
-from typing import Callable, MutableSet, TypeVar
+import typing as t
+
+from .misc import iter_wrapped
 
 
 __all__ = ["does_not_alter_signature", "forwards_arguments"]
 
 
-C = TypeVar("C", bound=Callable)
+C = t.TypeVar("C", bound=t.Callable)
 
 
-DOES_NOT_ALTER_SIGNATURE: MutableSet[Callable] = weakref.WeakSet()
-FORWARDS_ARGUMENTS: MutableSet[Callable] = weakref.WeakSet()
+MARKS = weakref.WeakKeyDictionary[t.Callable, t.MutableSet[t.Callable]]()
 
 
 def does_not_alter_signature(func: C) -> C:
-    DOES_NOT_ALTER_SIGNATURE.add(func)
+    MARKS.setdefault(func, set()).add(does_not_alter_signature)
     return func
 
 
 def forwards_arguments(func: C) -> C:
-    FORWARDS_ARGUMENTS.add(func)
+    MARKS.setdefault(func, set()).add(forwards_arguments)
     return func
+
+
+def has_mark(func: t.Callable, mark: t.Callable) -> bool:
+    for func in iter_wrapped(func):
+        if mark in MARKS.get(func, ()):
+            return True
+
+    return False

@@ -498,6 +498,20 @@ def test_wrap_method_with_multiple_new():
     assert new1_kwargs == {"what": "are these doing here"}
 
 
+def test_wrap_method_does_not_alter_signature():
+    class Foo:
+        def func(self, foo: int):
+            pass
+
+    def wrapper(wrapped_func, *args, **kwargs):
+        return wrapped_func(*args, **kwargs)
+
+    wrap_method(Foo, wrapper, "func")
+
+    signature = introspection.signature(Foo.func)
+    assert list(signature.parameters) == ["self", "foo"]
+
+
 def test_wrap_method_typeerror():
     with pytest.raises(TypeError):
         # 2nd argument must be a class

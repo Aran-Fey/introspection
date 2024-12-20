@@ -6,7 +6,7 @@ from typing_extensions import *
 
 import sentinel
 
-from .mark import FORWARDS_ARGUMENTS, forwards_arguments, does_not_alter_signature
+from .mark import forwards_arguments, has_mark
 from .misc import static_vars, is_abstract, static_mro
 from .errors import *
 from .types import Slot, Function, Class
@@ -483,10 +483,10 @@ def wrap_method(  # type: ignore (wtf?)
     if method_type is auto:
         method_type = get_implicit_method_type(name)
 
-    original_method, wrap_original = _get_original_method(cls, name, method_type)
+    original_method, decorator_for_replacement_method = _get_original_method(cls, name, method_type)
 
-    @does_not_alter_signature
-    @wrap_original
+    @functools.wraps(original_method)  # type: ignore (wtf?)
+    @decorator_for_replacement_method
     def replacement_method(*args, **kwargs):
         return method(original_method, *args, **kwargs)
 
@@ -497,13 +497,18 @@ def _get_original_method(cls: type, method_name: str, method_type):
     cls_vars = static_vars(cls)
 
     original_method: Callable[..., Any]
+    decorator_for_replacement_method = lambda func: func
 
     try:
         original_method = cls_vars[method_name]  # type: ignore
     except KeyError:
         # === SPECIAL METHOD: __new__ ===
         if method_name == "__new__":
-            original_method, wrap_original = _make_original_new_method(cls)
+            original_method = _make_original_new_method(cls)
+
+            # We're just gonna assume that the user is going to properly call our original_method,
+            # because if not, they should've just used `add_method_to_class` instead.
+            decorator_for_replacement_method = forwards_arguments
 
         # === STATICMETHODS ===
         elif method_type is staticmethod:
@@ -513,7 +518,6 @@ def _get_original_method(cls: type, method_name: str, method_type):
                 return super_method(*args, **kwargs)
 
             original_method = _original_method1
-            wrap_original = lambda func: func
 
         # === INSTANCE- AND CLASSMETHODS ===
         else:
@@ -523,14 +527,11 @@ def _get_original_method(cls: type, method_name: str, method_type):
                 return super_method(*args, **kwargs)
 
             original_method = _original_method2
-            wrap_original = lambda func: func
     else:
         if isinstance(original_method, (staticmethod, classmethod)):
             original_method = original_method.__func__
 
-        wrap_original = functools.wraps(original_method)
-
-    return original_method, wrap_original
+    return original_method, decorator_for_replacement_method
 
 
 def _make_original_new_method(cls: type):
@@ -563,7 +564,7 @@ def _make_original_new_method(cls: type):
                 except KeyError:
                     continue
 
-                if new in FORWARDS_ARGUMENTS:
+                if has_mark(new, forwards_arguments):
                     continue
 
                 if getattr(new, "_forwards_args", False):  # Legacy version of `@forwards_arguments`
@@ -578,8 +579,4 @@ def _make_original_new_method(cls: type):
 
         return super_new(class_, *args, **kwargs)  # type: ignore
 
-    # We're just gonna assume that the user is going to properly call our original_method, because
-    # if not, they should've just used `add_method_to_class` instead.
-    wrap_original = forwards_arguments
-
-    return original_method, wrap_original
+    return original_method

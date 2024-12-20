@@ -329,6 +329,29 @@ def test_skip_metaclass_signature():
     assert list(sig.parameters) == ["foo"]
 
 
+def test_mark_on_decorated_function():
+    def wrap_in_unnecessary_decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    class Meta(type):
+        # Make sure the mark still takes effect if the function is decorated
+        @wrap_in_unnecessary_decorator
+        @introspection.mark.does_not_alter_signature
+        def __call__(cls, *args, **kwargs):
+            return super().__call__(*args, **kwargs)
+
+    class Cls(metaclass=Meta):
+        def __init__(self, foo):
+            pass
+
+    sig = Signature.from_callable(Cls)
+    assert list(sig.parameters) == ["foo"]
+
+
 def test_partial():
     def func(x, *y, z):
         pass

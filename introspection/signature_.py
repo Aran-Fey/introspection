@@ -10,7 +10,7 @@ import typing_extensions as te
 
 from .bound_arguments import BoundArguments
 from .parameter import Parameter
-from .mark import DOES_NOT_ALTER_SIGNATURE
+from .mark import has_mark, does_not_alter_signature
 from .misc import static_mro, static_vars
 from ._utils import SIG_EMPTY, NONE, _Sentinel
 from .errors import *
@@ -168,7 +168,7 @@ class Signature(inspect.Signature):
         # Cache the result, if possible
         try:
             callable_.__signature__ = signature  # type: ignore
-        except AttributeError:
+        except (AttributeError, TypeError):
             pass
 
         return signature
@@ -743,7 +743,10 @@ def _find_constructor_function(cls: type) -> t.Callable:
         if not callable(bound_method):
             continue
 
-        if func in DOES_NOT_ALTER_SIGNATURE or bound_method in DOES_NOT_ALTER_SIGNATURE:
+        if (
+            has_mark(func, does_not_alter_signature)  # type: ignore
+            or has_mark(bound_method, does_not_alter_signature)
+        ):
             continue
 
         return bound_method
