@@ -159,10 +159,28 @@ class Signature(inspect.Signature):
         :raises NoSignatureFound: If the signature can't be determined (can
             happen for functions defined in C extensions)
         """
+        signature = cls._from_callable(
+            callable_,
+            follow_wrapped=follow_wrapped,
+            use_signature_db=use_signature_db,
+        )
+
+        # Cache the result, if possible
+        try:
+            callable_.__signature__ = signature  # type: ignore
+        except AttributeError:
+            pass
+
+        return signature
+
+    @classmethod
+    def _from_callable(
+        cls, callable_: t.Callable, follow_wrapped: bool, use_signature_db: bool
+    ) -> te.Self:
         from .signature_db import SIGNATURE_DB
 
         def recurse(callable_: t.Callable) -> te.Self:
-            return cls.from_callable(
+            return cls._from_callable(
                 callable_,
                 follow_wrapped=follow_wrapped,
                 use_signature_db=use_signature_db,
