@@ -16,6 +16,7 @@ def test_get_signature():
         return ""
 
     sig = Signature.from_callable(foo)
+    assert sig.forward_ref_context == __name__
     assert sig.return_annotation is str
     assert len(sig.parameters) == 2
     assert list(sig.parameters) == ["a", "b"]
@@ -27,6 +28,7 @@ def test_get_signature():
 
 def test_get_int_signature():
     sig = Signature.from_callable(int)
+    assert sig.forward_ref_context in (None, "builtins")
     assert sig.return_annotation is int
     assert len(sig.parameters) == 2
     assert list(sig.parameters) == ["x", "base"]
@@ -38,6 +40,7 @@ def test_get_int_signature():
 
 def test_get_float_signature():
     sig = Signature.from_callable(float)
+    assert sig.forward_ref_context in (None, "builtins")
     assert sig.return_annotation is float
     assert len(sig.parameters) == 1
     assert list(sig.parameters) == ["x"]
@@ -47,6 +50,7 @@ def test_get_float_signature():
 
 def test_get_bool_signature():
     sig = Signature.from_callable(bool)
+    assert sig.forward_ref_context in (None, "builtins")
     assert sig.return_annotation is bool
     assert len(sig.parameters) == 1
     assert list(sig.parameters) == ["x"]
@@ -82,6 +86,7 @@ def test_get_dataclass_signature():
 
     sig = Signature.from_callable(MyDataClass)
     assert list(sig.parameters) == ["foo"]
+    assert sig.forward_ref_context == __name__
 
 
 def test_get_abstract_class_signature():
@@ -95,6 +100,7 @@ def test_get_abstract_class_signature():
 
     sig = Signature.from_callable(MyAbstractClass)
     assert list(sig.parameters) == ["foo"]
+    assert sig.forward_ref_context == __name__
 
 
 def test_constructor_descriptors():
@@ -160,6 +166,20 @@ def test_store_signature():
 
     s = inspect.signature(foo)
     assert s is sig
+
+
+def test_cached_signature():
+    def foo(a=5) -> str:
+        return "bar"
+
+    # Create and cache an `inspect.Signature`
+    foo.__signature__ = inspect.signature(foo)  # type: ignore
+
+    # Now, when we create a `Signature` object, make sure that metadata such as
+    # `forward_ref_context` is still available
+    sig = Signature.from_callable(foo)
+    assert sig.forward_ref_context == __name__
+    assert sig.parameters["a"].forward_ref_context == __name__
 
 
 BUILTIN_CALLABLES = {
@@ -289,6 +309,7 @@ def test_class_signature():
 
     sig = Signature.from_callable(Cls)
     assert list(sig.parameters) == ["init"]
+    assert sig.forward_ref_context == __name__
 
 
 def test_class_signature_with_no_constructor():
@@ -313,6 +334,7 @@ def test_class_signature_with_metaclass():
 
     sig = Signature.from_callable(Cls)
     assert list(sig.parameters) == ["meta"]
+    assert sig.forward_ref_context == __name__
 
 
 def test_skip_metaclass_signature():
@@ -327,6 +349,7 @@ def test_skip_metaclass_signature():
 
     sig = Signature.from_callable(Cls)
     assert list(sig.parameters) == ["foo"]
+    assert sig.forward_ref_context == __name__
 
 
 def test_mark_on_decorated_function():
@@ -350,6 +373,7 @@ def test_mark_on_decorated_function():
 
     sig = Signature.from_callable(Cls)
     assert list(sig.parameters) == ["foo"]
+    assert sig.forward_ref_context == __name__
 
 
 def test_partial():

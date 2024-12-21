@@ -113,9 +113,25 @@ class Signature(inspect.Signature):
         """
         if isinstance(signature, cls):
             return signature
+        else:
+            return cls._from_inspect_signature(signature)
 
-        params = [Parameter.from_parameter(param) for param in signature.parameters.values()]
-        return cls(params, return_annotation=signature.return_annotation)
+    @classmethod
+    def _from_inspect_signature(
+        cls,
+        signature: inspect.Signature,
+        *,
+        forward_ref_context: t.Optional[ForwardRefContext] = None,
+    ) -> te.Self:
+        params = [
+            Parameter._from_inspect_parameter(param, forward_ref_context=forward_ref_context)
+            for param in signature.parameters.values()
+        ]
+        return cls(
+            params,
+            return_annotation=signature.return_annotation,
+            forward_ref_context=forward_ref_context,
+        )
 
     @classmethod
     def from_callable(  # type: ignore[incompatible-override]
@@ -212,7 +228,10 @@ class Signature(inspect.Signature):
             except AttributeError:
                 pass
             else:
-                return cls.from_signature(sig)
+                if isinstance(sig, cls):
+                    return sig
+
+                return cls._from_inspect_signature(sig, forward_ref_context=callable_.__module__)
 
             # Are we even supposed to unwrap? If not, abort
             if not follow_wrapped:

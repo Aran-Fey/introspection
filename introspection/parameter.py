@@ -1,6 +1,6 @@
 import inspect
-from typing import *
-from typing_extensions import Self
+import typing as t
+import typing_extensions as te
 
 from ._utils import PARAM_EMPTY
 from .types import ForwardRefContext
@@ -45,9 +45,9 @@ class Parameter(inspect.Parameter):
         self,
         name: str,
         kind: inspect._ParameterKind = inspect.Parameter.POSITIONAL_OR_KEYWORD,
-        default: Any = PARAM_EMPTY,
-        annotation: Any = PARAM_EMPTY,
-        forward_ref_context: Optional[ForwardRefContext] = None,
+        default: t.Any = PARAM_EMPTY,
+        annotation: t.Any = PARAM_EMPTY,
+        forward_ref_context: t.Optional[ForwardRefContext] = None,
     ):
         """
         :param name: The parameter's name
@@ -66,7 +66,7 @@ class Parameter(inspect.Parameter):
         self.forward_ref_context = forward_ref_context
 
     @classmethod
-    def from_parameter(cls, parameter: inspect.Parameter) -> Self:
+    def from_parameter(cls, parameter: inspect.Parameter) -> te.Self:
         """
         Creates a new :class:`Parameter` instance from an :class:`inspect.Parameter` instance.
 
@@ -75,12 +75,22 @@ class Parameter(inspect.Parameter):
         """
         if isinstance(parameter, cls):
             return parameter
+        else:
+            return cls._from_inspect_parameter(parameter)
 
+    @classmethod
+    def _from_inspect_parameter(
+        cls,
+        parameter: inspect.Parameter,
+        *,
+        forward_ref_context: t.Optional[ForwardRefContext] = None,
+    ) -> te.Self:
         return cls(
             parameter.name,
             kind=parameter.kind,
             default=parameter.default,
             annotation=parameter.annotation,
+            forward_ref_context=forward_ref_context,
         )
 
     @property

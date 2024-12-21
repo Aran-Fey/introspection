@@ -52,8 +52,8 @@ class TypeInfo:
 
         self.annotations = tuple(annotations)
         self.type: Type_ = to_python(resolved_type, strict=False)
+        self.forward_ref_context = forward_ref_context
         self._arguments = args
-        self._context = forward_ref_context
 
     @cached_property
     def parameters(self) -> t.Optional[t.Tuple[TypeParameter, ...]]:
