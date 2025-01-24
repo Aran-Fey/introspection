@@ -1,3 +1,4 @@
+from .forward_ref import *
 from .type_info import *
 from .introspection import *
 from .instance_check import *

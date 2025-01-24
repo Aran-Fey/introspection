@@ -9,6 +9,7 @@ import typing
 import typing_extensions
 from typing import *
 
+from . import _compat
 from .i_hate_circular_imports import parameterize
 from ..classes import safe_is_subclass
 from ..types import Type_, GenericAliases, TypeParameter
@@ -73,7 +74,7 @@ def _resolve_dotted_names(names: Iterable[str]) -> Iterable[object]: ...
 
 
 def _resolve_dotted_names(
-    names: Union[Dict[str, T], Iterable[str]]
+    names: Union[Dict[str, T], Iterable[str]],
 ) -> Union[Dict[object, T], Iterable[object]]:
     """
     ::
@@ -507,6 +508,11 @@ def _is_regular_type(type_):
     if type_ is None:
         return True
 
+    # It's a bit weird for this to be here because it's hardly "regular", but all that really
+    # matters is that it's not from `typing`. (Because then it would belong in `is_typing_type()`.)
+    if type_ is _compat.DATACLASSES_KW_ONLY:
+        return True
+
     return False
 
 
@@ -516,7 +522,7 @@ GENERICS_THAT_DONT_INHERIT_FROM_GENERIC = cast(
 )
 
 
-def is_forwardref(type_: Type_, raising: bool = True) -> bool:
+def is_forwardref(type_: Type_, raising: bool = True) -> typing_extensions.TypeGuard[ForwardRef]:
     """
     Returns whether ``type_`` is a forward reference.
 

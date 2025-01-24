@@ -9,6 +9,7 @@ from typing import *
 from typing_extensions import ParamSpec
 
 from introspection.typing.misc import *
+from introspection.typing.misc2 import *
 
 
 T = TypeVar("T")
@@ -347,3 +348,25 @@ def t_args__t(foo: T, *args) -> T:
 def test_annotation_for_callable(callable_, expected):
     ann = annotation_for_callable(callable_)
     assert ann == expected
+
+
+if hasattr(dataclasses, "KW_ONLY"):
+
+    def test_kw_only():
+        @dataclasses.dataclass
+        class Foo:
+            foo: int
+            _: dataclasses.KW_ONLY
+            bar: str
+
+        assert get_type_annotations(Foo)["_"].type is dataclasses.KW_ONLY
+
+
+if hasattr(dataclasses, "InitVar"):
+
+    def test_initvar():
+        @dataclasses.dataclass
+        class Foo:
+            foo: dataclasses.InitVar[int]
+
+        assert get_type_annotations(Foo)["foo"].type is dataclasses.InitVar

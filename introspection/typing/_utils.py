@@ -6,7 +6,8 @@ import types
 import typing
 import typing_extensions
 
-from .misc import resolve_forward_refs, is_forward_ref
+from .introspection import is_forwardref
+from .misc import resolve_forward_refs
 from ..errors import CannotResolveForwardref
 from ..types import Type_, TypeAnnotation, ForwardRefContext
 
@@ -25,7 +26,7 @@ def resolve_name_in_all_typing_modules(name: str) -> typing.Iterable[Type_]:
 
 
 def resolve_names_in_all_typing_modules(
-    mapping: typing.Mapping[str, T]
+    mapping: typing.Mapping[str, T],
 ) -> typing.Mapping[Type_, T]:
     return {
         obj: value
@@ -67,7 +68,7 @@ def resolve_at_least_1_level_of_forward_refs(
         treat_name_errors_as_imports=treat_name_errors_as_imports,
     )
 
-    if is_forward_ref(result):
+    if is_forwardref(result):
         raise CannotResolveForwardref(annotation, context)
 
     return result  # type: ignore

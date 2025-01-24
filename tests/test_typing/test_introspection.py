@@ -1,10 +1,12 @@
 import pytest
 
 import collections.abc
+import dataclasses
 import re
 import sys
 import types
 import typing
+import typing as t
 import typing_extensions
 from typing import *
 
@@ -44,7 +46,7 @@ class UnhashableClass(metaclass=UnhashableMeta):
         (UnhashableClass, False),
         (List, False),
         ("Foo", True),
-        (ForwardRef("Foo"), True),
+        (t.ForwardRef("Foo"), True),
     ],
 )
 def test_is_forwardref(type_, expected):
@@ -124,7 +126,7 @@ def test_is_type(type_, expected):
     "type_, expected",
     [
         ("Foo", False),
-        (ForwardRef("Foo"), False),
+        (t.ForwardRef("Foo"), False),
     ],
 )
 def test_is_type_no_forwardref(type_, expected):
@@ -139,7 +141,7 @@ def test_is_type_no_forwardref(type_, expected):
         (UnhashableClass, False),
         (None, False),
         ("List", False),
-        (ForwardRef("List"), False),
+        (t.ForwardRef("List"), False),
         (T_co, True),
         (E, True),
         (Any, True),
@@ -1035,3 +1037,15 @@ if sys.version_info >= (3, 10):
         # Deprecated exception
         with pytest.raises(ValueError):
             get_type_parameters(types.UnionType)  # type: ignore
+
+
+if hasattr(dataclasses, "KW_ONLY"):
+
+    def test_kw_only():
+        @dataclasses.dataclass
+        class Foo:
+            foo: int
+            _: dataclasses.KW_ONLY
+            bar: str
+
+        assert is_type(dataclasses.KW_ONLY)

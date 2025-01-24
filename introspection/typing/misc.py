@@ -23,11 +23,10 @@ from .introspection import (
 from .i_hate_circular_imports import parameterize
 from ..parameter import Parameter
 from ..signature_ import Signature
-from ..types import Type_, TypeAnnotation, ForwardReference, ForwardRefContext
+from ..types import Type_, TypeAnnotation, ForwardRefContext
 from ..errors import *
 
 __all__ = [
-    "is_forward_ref",
     "resolve_forward_refs",
     "annotation_to_string",
     "annotation_for_callable",
@@ -35,13 +34,6 @@ __all__ = [
 
 
 KW_ONLY = getattr(dataclasses, "KW_ONLY", object())
-
-
-def is_forward_ref(
-    annotation: TypeAnnotation,
-) -> typing_extensions.TypeGuard[ForwardReference]:
-    """ """
-    return isinstance(annotation, (str, ForwardRef))
 
 
 @overload
