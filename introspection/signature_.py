@@ -181,11 +181,13 @@ class Signature(inspect.Signature):
             use_signature_db=use_signature_db,
         )
 
-        # Cache the result, if possible
-        try:
-            callable_.__signature__ = signature  # type: ignore
-        except (AttributeError, TypeError):
-            pass
+        # Cache the result, if possible - but not for classes, since subclasses would inherit the
+        # parent class's signature
+        if not isinstance(callable_, type):
+            try:
+                callable_.__signature__ = signature  # type: ignore
+            except (AttributeError, TypeError):
+                pass
 
         return signature
 

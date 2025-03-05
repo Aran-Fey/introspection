@@ -182,6 +182,22 @@ def test_cached_signature():
     assert sig.parameters["a"].forward_ref_context == __name__
 
 
+def test_class_signature_cache():
+    # Make sure classes don't inherit the cached signature of their parent
+    class Parent:
+        def __init__(self, parent_param):
+            pass
+
+    class Child(Parent):
+        def __init__(self, child_param):
+            pass
+
+    _ = Signature.from_callable(Parent)
+    sig = Signature.from_callable(Child)
+
+    assert list(sig.parameters) == ["child_param"]
+
+
 BUILTIN_CALLABLES = {
     name: obj
     for name, obj in vars(builtins).items()
