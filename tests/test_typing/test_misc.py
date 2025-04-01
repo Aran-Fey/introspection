@@ -373,16 +373,27 @@ if hasattr(dataclasses, "InitVar"):
         assert get_type_annotations(Foo)["foo"].type is dataclasses.InitVar
 
 
+# The parent class has an attribute annotated with a forward reference. That forward reference will
+# be copied to the constructor of the child class. Check if it can be resolved.
+from . import utils
+
+
+@dataclasses.dataclass
+class Child(utils.Parent):
+    bar: str
+
+
 def test_resolve_forward_ref_from_parent_class():
-    # The parent class has an attribute annotated with a forward reference. That forward reference
-    # will be copied to the constructor of the child class. Check if it can be resolved.
-    from . import utils
-
-    @dataclasses.dataclass
-    class Child(utils.Parent):
-        bar: str
-
     signature = introspection.Signature.from_callable(Child)
+    parameter = signature.parameters["foo"]
+    annotation = resolve_forward_refs(
+        parameter.annotation,
+        parameter.forward_ref_context,
+    )
+    assert annotation is utils.SomeTypeDefinedInParentsFile
+
+    # Make sure it also works when we ask for the signature of `__init__` directly
+    signature = introspection.Signature.from_callable(Child.__init__)
     parameter = signature.parameters["foo"]
     annotation = resolve_forward_refs(
         parameter.annotation,

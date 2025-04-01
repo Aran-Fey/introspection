@@ -23,6 +23,9 @@ from .types import P, TypeAnnotation, ForwardRefContext
 __all__ = ["Signature"]
 
 
+DATACLASS_FUNCTIONS_WITH_FORWARD_REFS = ("__init__",)
+
+
 class Signature(inspect.Signature):
     """
     An :class:`inspect.Signature` subclass that represents a function's parameter signature and
@@ -285,20 +288,11 @@ class Signature(inspect.Signature):
             # classes into functions of a child class. This often makes it impossible to resolve the
             # forward reference. To work around this problem, we'll include all the relevant modules
             # in the forward_ref_context.
-            if dataclasses.is_dataclass(callable_) and constructor_function.__name__ == "__init__":
-                module_names = ordered_set.OrderedSet(
-                    cls.__module__ for cls in static_mro(callable_)
-                )
-                forward_ref_context = collections.ChainMap(
-                    *[vars(sys.modules[module]) for module in module_names]
-                )
-
-                signature = signature.replace(
-                    parameters=[
-                        param.replace(forward_ref_context=forward_ref_context)
-                        for param in signature.parameters.values()
-                    ],
-                )
+            if (
+                dataclasses.is_dataclass(callable_)
+                and constructor_function.__name__ in DATACLASS_FUNCTIONS_WITH_FORWARD_REFS
+            ):
+                signature = _postprocess_dataclass_forward_ref_context(signature, callable_)
 
             return signature
 
@@ -306,7 +300,25 @@ class Signature(inspect.Signature):
         # etc.?
         callable_cls = type(callable_)
         if callable_cls.__module__ == "builtins":
-            return cls._from_builtin_callable(callable_)
+            signature = cls._from_builtin_callable(callable_)
+
+            # Dataclasses create the unique problem that they copy forward references from parent
+            # classes into functions of a child class. This often makes it impossible to resolve the
+            # forward reference. To work around this problem, we'll include all the relevant modules
+            # in the forward_ref_context.
+            if callable_.__name__ in DATACLASS_FUNCTIONS_WITH_FORWARD_REFS:
+                cls_name, _, _ = callable_.__qualname__.partition(".")
+                module = sys.modules[callable_.__module__]
+
+                try:
+                    owner_cls: type = getattr(module, cls_name)
+                except AttributeError:
+                    pass
+                else:
+                    if dataclasses.is_dataclass(owner_cls):
+                        signature = _postprocess_dataclass_forward_ref_context(signature, owner_cls)
+
+            return signature
 
         # If it's a `functools.partial`, remove the positional parameters and make the keyword
         # parameters optional
@@ -891,3 +903,20 @@ def _bind_method(
         return get(instance, owner)
     except Exception:
         return types.MethodType(descriptor, ...)  # type: ignore
+
+
+S = t.TypeVar("S", bound=Signature)
+
+
+def _postprocess_dataclass_forward_ref_context(signature: S, cls: type) -> S:
+    module_names = ordered_set.OrderedSet(cls.__module__ for cls in static_mro(cls))
+    forward_ref_context = collections.ChainMap(
+        *[vars(sys.modules[module]) for module in module_names]
+    )
+
+    return signature.replace(
+        parameters=[
+            param.replace(forward_ref_context=forward_ref_context)
+            for param in signature.parameters.values()
+        ],
+    )

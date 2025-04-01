@@ -45,7 +45,7 @@ M_co = TypeVar("M_co", covariant=True, bound=Union[type, Iterable[type]])
 @typing_extensions.dataclass_transform()
 class Error(Exception):
     def __init_subclass__(cls):
-        dataclasses.dataclass(eq=False, frozen=True)(cls)
+        dataclasses.dataclass(eq=False)(cls)
 
 
 class FunctionCallError(Error):

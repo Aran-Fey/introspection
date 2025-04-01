@@ -491,7 +491,7 @@ def annotation_to_string(
             sub_strs.extend(repr(ann) for ann in annotations)
 
             prefix = recurse(base)  # type: ignore[wtf]
-            return f'{prefix}[{", ".join(sub_strs)}]'
+            return f"{prefix}[{', '.join(sub_strs)}]"
 
         prefix = recurse(base)  # type: ignore[wtf]
         return process_nested(prefix, subtypes)  # type: ignore
@@ -549,7 +549,7 @@ def annotation_for_callable(callable_: typing.Callable[..., object]) -> Type_:
     .. versionadded:: 1.5
     """
     signature = Signature.from_callable(callable_)
-    parameters = signature.parameters.values()
+    parameters = list(signature.parameters.values())
 
     if signature.return_annotation is Signature.empty:
         return_type = typing.Any
