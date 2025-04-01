@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import collections.abc
+import dataclasses
 import functools
 import inspect
 import itertools
+import sys
 import types
 import typing as t
 import typing_extensions as te
+
+import ordered_set
 
 from .bound_arguments import BoundArguments
 from .parameter import Parameter
@@ -274,8 +278,29 @@ class Signature(inspect.Signature):
 
             # TODO: Instead of simply returning the first function, the most correct behavior would
             # be to merge the signatures of `__new__` and `__init__` (and `__call__`?)
-            callable_ = _find_constructor_function(callable_)
-            return recurse(callable_)
+            constructor_function = _find_constructor_function(callable_)
+            signature = recurse(constructor_function)
+
+            # Dataclasses create the unique problem that they copy forward references from parent
+            # classes into functions of a child class. This often makes it impossible to resolve the
+            # forward reference. To work around this problem, we'll include all the relevant modules
+            # in the forward_ref_context.
+            if dataclasses.is_dataclass(callable_) and constructor_function.__name__ == "__init__":
+                module_names = ordered_set.OrderedSet(
+                    cls.__module__ for cls in static_mro(callable_)
+                )
+                forward_ref_context = collections.ChainMap(
+                    *[vars(sys.modules[module]) for module in module_names]
+                )
+
+                signature = signature.replace(
+                    parameters=[
+                        param.replace(forward_ref_context=forward_ref_context)
+                        for param in signature.parameters.values()
+                    ],
+                )
+
+            return signature
 
         # Is it some other kind of built-in callable, i.e. a function, async function, bound method,
         # etc.?
@@ -332,12 +357,21 @@ class Signature(inspect.Signature):
             # that, so just throw an error.
             raise NoSignatureFound(callable_) from None
 
-        parameters = [Parameter.from_parameter(param) for param in sig.parameters.values()]
-
         try:
             forward_ref_context = callable_.__module__
         except AttributeError:  # This can happen in case of some built-in methods
             forward_ref_context = None
+
+        parameters = [
+            Parameter(
+                name=param.name,
+                kind=param.kind,
+                default=param.default,
+                annotation=param.annotation,
+                forward_ref_context=forward_ref_context,
+            )
+            for param in sig.parameters.values()
+        ]
 
         return cls(parameters, sig.return_annotation, forward_ref_context=forward_ref_context)
 

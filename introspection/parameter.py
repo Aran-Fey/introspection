@@ -3,7 +3,7 @@ import typing as t
 import typing_extensions as te
 
 from ._utils import PARAM_EMPTY
-from .types import ForwardRefContext
+from .types import ForwardRefContext, TypeAnnotation, NONE
 
 __all__ = ["Parameter"]
 
@@ -128,6 +128,38 @@ class Parameter(inspect.Parameter):
         (Unlike ``is_optional``, this returns ``False`` for varargs.)
         """
         return self.default is not Parameter.empty
+
+    def replace(  # type: ignore (invalid override)
+        self,
+        *,
+        name: str = NONE,  # type: ignore
+        kind: inspect._ParameterKind = NONE,  # type: ignore
+        default: object = NONE,
+        annotation: TypeAnnotation = NONE,
+        forward_ref_context: t.Optional[ForwardRefContext] = NONE,  # type: ignore
+    ) -> te.Self:
+        if name is NONE:
+            name = self.name
+
+        if kind is NONE:
+            kind = self.kind
+
+        if default is NONE:
+            default = self.default
+
+        if annotation is NONE:
+            annotation = self.annotation
+
+        if forward_ref_context is NONE:
+            forward_ref_context = self.forward_ref_context
+
+        return type(self)(
+            name=name,
+            kind=kind,
+            default=default,
+            annotation=annotation,
+            forward_ref_context=forward_ref_context,
+        )
 
     def _to_string(
         self,

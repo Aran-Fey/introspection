@@ -8,6 +8,7 @@ import typing
 from typing import *
 from typing_extensions import ParamSpec
 
+import introspection
 from introspection.typing.misc import *
 from introspection.typing.misc2 import *
 
@@ -370,3 +371,21 @@ if hasattr(dataclasses, "InitVar"):
             foo: dataclasses.InitVar[int]
 
         assert get_type_annotations(Foo)["foo"].type is dataclasses.InitVar
+
+
+def test_resolve_forward_ref_from_parent_class():
+    # The parent class has an attribute annotated with a forward reference. That forward reference
+    # will be copied to the constructor of the child class. Check if it can be resolved.
+    from . import utils
+
+    @dataclasses.dataclass
+    class Child(utils.Parent):
+        bar: str
+
+    signature = introspection.Signature.from_callable(Child)
+    parameter = signature.parameters["foo"]
+    annotation = resolve_forward_refs(
+        parameter.annotation,
+        parameter.forward_ref_context,
+    )
+    assert annotation is utils.SomeTypeDefinedInParentsFile
