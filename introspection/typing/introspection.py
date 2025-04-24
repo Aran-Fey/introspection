@@ -293,7 +293,7 @@ def _get_type_parameters(type_):
         if isinstance(type_, types.UnionType):
             return type_.__parameters__
 
-        if sys.version_info >= (3, 12) and isinstance(type_, typing.TypeAliasType):
+        if isinstance(type_, _compat.TYPE_ALIAS_TYPES):
             return type_.__parameters__
 
     if safe_is_subclass(type_, Generic):  # type: ignore (wtf?)
@@ -388,6 +388,12 @@ def _is_generic_base_class(cls):
 
 def _is_typing_type(cls):
     if isinstance(cls, GenericAliases):
+        return True
+
+    if is_forwardref(cls, raising=False):
+        return False
+
+    if isinstance(cls, TypeVar):
         return True
 
     if sys.version_info >= (3, 10):
@@ -505,6 +511,9 @@ def _get_forward_ref_code(ref):
 
 
 def _is_regular_type(type_):
+    if _is_forwardref(type_):
+        return True
+
     if isinstance(type_, type):
         return True
 
@@ -516,7 +525,23 @@ def _is_regular_type(type_):
     if type_ is _compat.DATACLASSES_KW_ONLY:
         return True
 
+    if isinstance(type_, GenericAliases):
+        return True
+
+    if type_ in GENERICS_THAT_DONT_INHERIT_FROM_GENERIC:
+        return True
+
+    if isinstance(type_, GENERICS_THAT_DONT_INHERIT_FROM_GENERIC):
+        return True
+
+    if isinstance(type_, _compat.TYPE_ALIAS_TYPES):
+        return True
+
     return False
+
+
+def _is_forwardref(type_):
+    return isinstance(type_, (str, ForwardRef))
 
 
 GENERICS_THAT_DONT_INHERIT_FROM_GENERIC = cast(
@@ -544,7 +569,7 @@ def is_forwardref(type_: Type_, raising: bool = True) -> typing_extensions.TypeG
     :param raising: Whether to throw a :exc:`NotAType` exception if ``type_`` is not a type
     :return: Whether the object is a class or type (or forward reference)
     """
-    if isinstance(type_, (str, ForwardRef)):
+    if _is_forwardref(type_):
         return True
 
     if raising and not is_type(type_):
@@ -579,26 +604,10 @@ def is_type(type_: Any, allow_forwardref: bool = True) -> bool:
     :param allow_forwardref: Controls whether strings and ForwardRefs are considered types
     :return: Whether the object is a class or type (or forward reference)
     """
-    # strings are forward references
-    if isinstance(type_, (str, ForwardRef)):
+    if _is_forwardref(type_):
         return allow_forwardref
 
-    if isinstance(type_, GenericAliases):
-        return True
-
-    if _is_regular_type(type_):
-        return True
-
-    if type_ in GENERICS_THAT_DONT_INHERIT_FROM_GENERIC:
-        return True
-
-    if isinstance(type_, GENERICS_THAT_DONT_INHERIT_FROM_GENERIC):
-        return True
-
-    if isinstance(type_, getattr(typing, "TypeAliasType", ())):
-        return True
-
-    return is_typing_type(type_, raising=False)
+    return _is_typing_type(type_) or _is_regular_type(type_)
 
 
 def is_typing_type(type_: Type_, raising: bool = True) -> bool:
@@ -617,13 +626,7 @@ def is_typing_type(type_: Type_, raising: bool = True) -> bool:
     :return: Whether the object is a ``typing`` type
     :raises NotAType: If ``type_`` is not a type and ``raising`` is ``True``
     """
-    if is_forwardref(type_, raising=False):
-        return False
-
     if _is_typing_type(type_):
-        return True
-
-    if isinstance(type_, TypeVar):
         return True
 
     if not raising or _is_regular_type(type_):

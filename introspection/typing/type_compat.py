@@ -3,7 +3,7 @@ import contextlib  # NOT an unused import, your IDE is lying
 import re  # NOT an unused import, your IDE is lying
 import typing
 
-from ._compat import LITERAL_TYPES
+from ._compat import LITERAL_TYPES, TYPE_ALIAS_TYPES
 from .introspection import *
 from . import introspection as typing_introspection
 from ..types import Type_
@@ -120,6 +120,10 @@ def to_python(type_: Type_, strict: bool = False) -> Type_:
         return type_
 
     if not is_parameterized_generic(type_):
+        if isinstance(type_, TYPE_ALIAS_TYPES):
+            type_ = type_.__value__  # type: ignore
+            return to_python(type_, strict=strict)
+
         if not is_typing_type(type_):
             return type_
 

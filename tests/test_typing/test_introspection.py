@@ -91,6 +91,8 @@ def test_is_forwardref_non_raising(obj):
         (3, False),
         ([], False),
         ("Foo", True),  # this is a forward reference
+        ("List", True),
+        (t.ForwardRef("List"), True),
         (T_co, True),
         (E, True),
         (Any, True),
@@ -1052,6 +1054,7 @@ if sys.version_info >= (3, 12):
 
     def test_new_style_type_alias():
         assert is_type(NewStyleTypeAlias)
+        assert not is_typing_type(NewStyleTypeAlias)
         assert is_generic(NewStyleTypeAlias)
         assert not is_generic_base_class(NewStyleTypeAlias)
         assert not is_parameterized_generic(NewStyleTypeAlias)
