@@ -10,6 +10,7 @@ from .introspection import (
     get_generic_base_class,
     get_type_parameters,
 )
+from .i_hate_circular_imports import parameterize
 from .type_compat import to_python
 from ..errors import NotAGeneric
 from ..types import Type_, TypeAnnotation, ForwardRefContext, TypeParameter
@@ -54,6 +55,13 @@ class TypeInfo:
         self.type: Type_ = to_python(resolved_type, strict=False)
         self.forward_ref_context = forward_ref_context
         self._arguments = args
+
+    @property
+    def parameterized_type(self) -> Type_:
+        if self._arguments is None:
+            return self.type
+
+        return parameterize(self.type, self._arguments)
 
     @cached_property
     def parameters(self) -> t.Optional[t.Tuple[TypeParameter, ...]]:

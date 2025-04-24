@@ -291,17 +291,20 @@ PARAMETERIZED_GENERIC_META = _resolve_dotted_names(
 def _get_type_parameters(type_):
     if sys.version_info >= (3, 10):
         if isinstance(type_, types.UnionType):
-            return type_.__parameters__  # type: ignore
+            return type_.__parameters__
 
-    if safe_is_subclass(type_, Generic):  # type: ignore[wtf]
+        if sys.version_info >= (3, 12) and isinstance(type_, typing.TypeAliasType):
+            return type_.__parameters__
+
+    if safe_is_subclass(type_, Generic):  # type: ignore (wtf?)
         # Classes that inherit from Generic directly (like
-        # ``class Protocol(Generic):``) and Generic itself don't
+        # `class Protocol(Generic):`) and Generic itself don't
         # have __orig_bases__, while classes that have type
         # parameters do.
         if not hasattr(type_, "__orig_bases__"):
             return None
 
-        return type_.__parameters__  # type: ignore
+        return type_.__parameters__
 
     if isinstance(type_, PARAMETERIZED_GENERIC_META):  # type: ignore
         return type_.__parameters__
@@ -590,6 +593,9 @@ def is_type(type_: Any, allow_forwardref: bool = True) -> bool:
         return True
 
     if isinstance(type_, GENERICS_THAT_DONT_INHERIT_FROM_GENERIC):
+        return True
+
+    if isinstance(type_, getattr(typing, "TypeAliasType", ())):
         return True
 
     return is_typing_type(type_, raising=False)
@@ -940,7 +946,7 @@ def get_type_parameters(type_: Type_) -> Tuple[TypeParameter, ...]:
     else:
         params = ordered_set.OrderedSet(())
 
-        for base, *typevars in bases:
+        for _, *typevars in bases:
             params.update(typevars)
 
         return tuple(param for param in params if isinstance(param, TypeVar))

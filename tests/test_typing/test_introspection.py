@@ -1042,10 +1042,17 @@ if sys.version_info >= (3, 10):
 if hasattr(dataclasses, "KW_ONLY"):
 
     def test_kw_only():
-        @dataclasses.dataclass
-        class Foo:
-            foo: int
-            _: dataclasses.KW_ONLY
-            bar: str
-
         assert is_type(dataclasses.KW_ONLY)
+
+
+if sys.version_info >= (3, 12):
+    NewStyleTypeAlias = tuple  # Shut up the type checker
+    # Use exec to prevent a syntax error in older versions
+    exec("type NewStyleTypeAlias[A, B] = list[A] | tuple[B]")
+
+    def test_new_style_type_alias():
+        assert is_type(NewStyleTypeAlias)
+        assert is_generic(NewStyleTypeAlias)
+        assert not is_generic_base_class(NewStyleTypeAlias)
+        assert not is_parameterized_generic(NewStyleTypeAlias)
+        assert is_parameterized_generic(NewStyleTypeAlias[int, str])
