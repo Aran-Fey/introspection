@@ -245,9 +245,22 @@ def test_dont_follow_wrapped():
     assert list(sig.parameters) == ["args", "kwargs"]
 
 
-def test_bound_method_signature():
+def test_unbound_method_signature():
     class A:
         def method(self, foo: int) -> str:
+            return "hi"
+
+    sig = introspection.signature(A.method)
+
+    assert list(sig.parameters) == ["self", "foo"]
+    assert sig.return_annotation is str
+    assert sig.parameters["foo"].annotation is int
+    assert sig.parameters["foo"].kind is Parameter.POSITIONAL_OR_KEYWORD
+
+
+def test_bound_method_signature():
+    class A:
+        def method(self, foo: int, /) -> str:
             return "hi"
 
     obj = A()
@@ -256,7 +269,7 @@ def test_bound_method_signature():
     assert list(sig.parameters) == ["foo"]
     assert sig.return_annotation is str
     assert sig.parameters["foo"].annotation is int
-    assert sig.parameters["foo"].kind is Parameter.POSITIONAL_OR_KEYWORD
+    assert sig.parameters["foo"].kind is Parameter.POSITIONAL_ONLY
 
 
 def test_decorated_bound_method_signature():
@@ -478,6 +491,26 @@ def test_without_parameters():
 
     result = sig.without_parameters(0, "baz")
     assert result == expected
+
+
+def test_without_parameters_by_kind():
+    sig = Signature(
+        [
+            Parameter("foo", Parameter.VAR_POSITIONAL),
+            Parameter("bar", Parameter.KEYWORD_ONLY),
+            Parameter("baz", Parameter.VAR_KEYWORD),
+        ]
+    )
+
+    # For some inexplicable reason, `ParameterKind` is an `IntEnum`. Make sure it doesn't get
+    # confused with indices.
+    assert Parameter.POSITIONAL_ONLY == 0
+    assert Parameter.VAR_KEYWORD == 4
+    result = sig.without_parameters(Parameter.POSITIONAL_ONLY, 4)
+
+    # Since there is no positional-only parameter and also no parameter with index 4, the signature
+    # should remain unchanged.
+    assert result == sig
 
 
 def test_num_required_arguments():

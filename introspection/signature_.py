@@ -615,12 +615,18 @@ class Signature(inspect.Signature):
         :param parameters: Names or indices of the parameters to remove
         :return: A copy of this signature without the given parameters
         """
-        to_remove = set(params_to_remove)
+        # Since `ParameterKind` is an `IntEnum`, we must be careful not to mistake them for regular
+        # ints.
+        to_remove = {(type(param), param) for param in params_to_remove}
 
         parameters: t.List[Parameter] = []
 
         for i, param in enumerate(self.parameters.values()):
-            if i in to_remove or param.name in to_remove or param.kind in to_remove:
+            if (
+                (int, i) in to_remove
+                or (str, param.name) in to_remove
+                or (inspect._ParameterKind, param.kind) in to_remove
+            ):
                 continue
 
             parameters.append(param)
