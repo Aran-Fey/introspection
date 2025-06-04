@@ -485,11 +485,18 @@ def test_replace():
 
 
 def test_without_parameters():
-    sig = Signature([Parameter("foo"), Parameter("bar"), Parameter("baz")])
+    sig = Signature(
+        [
+            Parameter("foo"),
+            Parameter("bar"),
+            Parameter("baz", Parameter.KEYWORD_ONLY),
+            Parameter("qux", Parameter.VAR_KEYWORD),
+        ]
+    )
 
-    expected = Signature([Parameter("bar")])
+    expected = Signature([Parameter("qux", Parameter.VAR_KEYWORD)])
 
-    result = sig.without_parameters(0, "baz")
+    result = sig.without_parameters(0, "bar", Parameter.KEYWORD_ONLY)
     assert result == expected
 
 
