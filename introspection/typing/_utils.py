@@ -99,6 +99,7 @@ NOT_INSTANCE_OR_SUBTYPE_CHECKED: typing.Container[Type_] = {
         "Optional",
         "Union",
         "Any",
+        "Annotated",
     )
     for obj in resolve_name_in_all_typing_modules(name)
 }

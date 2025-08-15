@@ -1,8 +1,7 @@
 import collections
 import functools
 import inspect
-from typing import *
-from typing_extensions import Self, Concatenate
+import typing_extensions as t
 
 from .argument_bundle import ArgumentBundle
 from .misc import rename
@@ -22,100 +21,113 @@ __all__ = [
 
 
 # Unchanged signature
-@overload
+@t.overload
 def set_signature(
-    signature: Union[Callable[P, T], inspect.Signature],
+    signature: t.Union[t.Callable[P, T], inspect.Signature],
     *,
     remove_parameters: None = None,
-    add_self: Literal[False] = False,
-) -> Callable[[Callable[..., object]], Callable[P, T]]: ...
+    add_self: t.Literal[False] = False,
+) -> t.Callable[[t.Callable[..., object]], t.Callable[P, T]]: ...
 
 
 # Self parameter added
-@overload
+@t.overload
 def set_signature(
-    signature: Union[Callable[P, T], inspect.Signature],
+    signature: t.Union[t.Callable[P, T], inspect.Signature],
     *,
     remove_parameters: None = None,
-    add_self: Literal[True],
-) -> Callable[[Callable[..., object]], Callable[Concatenate[Any, P], T]]: ...
+    add_self: t.Literal[True],
+) -> t.Callable[[t.Callable[..., object]], t.Callable[t.Concatenate[t.Any, P], T]]: ...
 
 
 # Return annotation changed
-@overload
+@t.overload
 def set_signature(
-    signature: Union[Callable[P, object], inspect.Signature],
+    signature: t.Union[t.Callable[P, object], inspect.Signature],
     *,
     remove_parameters: None = None,
-    add_self: Literal[False] = False,
-    return_annotation: Type[T],
-) -> Callable[[Callable[..., object]], Callable[P, T]]: ...
+    add_self: t.Literal[False] = False,
+    return_annotation: t.Type[T],
+) -> t.Callable[[t.Callable[..., object]], t.Callable[P, T]]: ...
 
 
 # Self parameter added and return annotation changed
-@overload
+@t.overload
 def set_signature(
-    signature: Union[Callable[P, object], inspect.Signature],
+    signature: t.Union[t.Callable[P, object], inspect.Signature],
     *,
     remove_parameters: None = None,
-    add_self: Literal[True],
-    return_annotation: Type[T],
-) -> Callable[[Callable[..., object]], Callable[Concatenate[Any, P], T]]: ...
+    add_self: t.Literal[True],
+    return_annotation: t.Type[T],
+) -> t.Callable[[t.Callable[..., object]], t.Callable[t.Concatenate[t.Any, P], T]]: ...
 
 
 # Parameters removed
-@overload
+@t.overload
 def set_signature(
-    signature: Union[Callable[..., T], inspect.Signature],
+    signature: t.Union[t.Callable[..., T], inspect.Signature],
     *,
-    remove_parameters: Iterable[Union[str, int, inspect._ParameterKind]],
-    add_self: Literal[False] = False,
-) -> Callable[[Callable[..., object]], Callable[..., T]]: ...
+    remove_parameters: t.Iterable[t.Union[str, int, inspect._ParameterKind]],
+    add_self: t.Literal[False] = False,
+) -> t.Callable[[t.Callable[..., object]], t.Callable[..., T]]: ...
 
 
 # Parameters removed and Self added
-@overload
+@t.overload
 def set_signature(
-    signature: Union[Callable[..., T], inspect.Signature],
+    signature: t.Union[t.Callable[..., T], inspect.Signature],
     *,
-    remove_parameters: Iterable[Union[str, int, inspect._ParameterKind]],
-    add_self: Literal[True],
-    # The return type should ideally be Callable[Concatenate[Self, ...], T], but
+    remove_parameters: t.Iterable[t.Union[str, int, inspect._ParameterKind]],
+    add_self: t.Literal[True],
+    # The return t.type should ideally be t.Callable[t.Concatenate[Self, ...], T], but
     # that crashes in 3.10
-) -> Callable[[Callable[..., object]], Callable[..., T]]: ...
+) -> t.Callable[[t.Callable[..., object]], t.Callable[..., T]]: ...
 
 
 # Parameters removed and return annotation changed
-@overload
+@t.overload
 def set_signature(
-    signature: Union[Callable[..., object], inspect.Signature],
+    signature: t.Union[t.Callable[..., object], inspect.Signature],
     *,
-    remove_parameters: Iterable[Union[str, int, inspect._ParameterKind]],
-    add_self: Literal[False] = False,
-    return_annotation: Type[T],
-) -> Callable[[Callable[..., object]], Callable[..., T]]: ...
+    remove_parameters: t.Iterable[t.Union[str, int, inspect._ParameterKind]],
+    add_self: t.Literal[False] = False,
+    return_annotation: t.Type[T],
+) -> t.Callable[[t.Callable[..., object]], t.Callable[..., T]]: ...
 
 
 # Parameters removed, return annotation changed and Self added
-@overload
+@t.overload
 def set_signature(
-    signature: Union[Callable[..., object], inspect.Signature],
+    signature: t.Union[t.Callable[..., object], inspect.Signature],
     *,
-    remove_parameters: Iterable[Union[str, int, inspect._ParameterKind]],
-    add_self: Literal[True],
-    return_annotation: Type[T],
-    # The return type should ideally be Callable[Concatenate[Self, ...], T], but
+    remove_parameters: t.Iterable[t.Union[str, int, inspect._ParameterKind]],
+    add_self: t.Literal[True],
+    return_annotation: t.Type[T],
+    # The return t.type should ideally be t.Callable[t.Concatenate[Self, ...], T], but
     # that crashes in 3.10
-) -> Callable[[Callable[..., object]], Callable[..., T]]: ...
+) -> t.Callable[[t.Callable[..., object]], t.Callable[..., T]]: ...
 
 
 def set_signature(  # type: ignore[wtf]
-    signature: Union[Callable[P, T], inspect.Signature],
+    signature: t.Union[t.Callable[P, T], inspect.Signature],
     *,
-    remove_parameters: Optional[Iterable[Union[str, int, inspect._ParameterKind]]] = None,
+    remove_parameters: t.Optional[t.Iterable[t.Union[str, int, inspect._ParameterKind]]] = None,
     return_annotation: Type_ = NONE,  # type: ignore
     add_self: bool = False,
-) -> Callable[[Callable[..., object]], Callable[P, T]]:
+) -> t.Callable[[t.Callable[..., object]], t.Callable[P, T]]:
+    """
+    This is a function decorator that overwrites the decorated function's signature.
+
+    Example::
+
+        @set_signature(round)
+        def round_and_increment(*args, **kwargs):
+            return round(*args, **kwargs) + 1
+
+        print(introspection.signature(round_and_increment))
+        # Output: <Signature (number: numbers.Number[, ndigits: int], /) -> numbers.Number>
+    """
+
     if not isinstance(signature, inspect.Signature):
         signature = Signature.from_callable(signature)
     elif not isinstance(signature, Signature):
@@ -127,14 +139,64 @@ def set_signature(  # type: ignore[wtf]
     if add_self:
         # TODO: Find an unused name
         signature = signature.with_new_parameter(
-            0, Parameter("self", Parameter.POSITIONAL_ONLY, annotation=Self)
+            0, Parameter("self", Parameter.POSITIONAL_ONLY, annotation=t.Self)
         )
 
     if return_annotation is not NONE:
         signature = signature.replace(return_annotation=return_annotation)
 
-    def decorator(func: Callable) -> Callable[P, T]:
+    def decorator(func: t.Callable) -> t.Callable[P, T]:
         func.__signature__ = signature  # type: ignore
+        return func  # type: ignore
+
+    return decorator
+
+
+def set_parameters(
+    signature: t.Union[t.Callable[P, t.Any], inspect.Signature],
+) -> t.Callable[[t.Callable[..., T]], t.Callable[P, T]]:
+    """
+    This is a function decorator similar to :func:`set_signature`, except that it only changes the
+    parameters and not the return type.
+
+    .. versionadded:: 1.11
+    """
+    if not isinstance(signature, inspect.Signature):
+        signature = Signature.from_callable(signature)
+    elif not isinstance(signature, Signature):
+        signature = Signature.from_signature(signature)
+
+    def decorator(func: t.Callable) -> t.Callable[P, T]:
+        func_signature = Signature.from_callable(func)
+
+        combined_signature = signature.replace(return_annotation=func_signature.return_annotation)
+
+        func.__signature__ = combined_signature  # type: ignore
+        return func  # type: ignore
+
+    return decorator
+
+
+def set_return_annotation(
+    signature: t.Union[t.Callable[P, t.Any], inspect.Signature],
+) -> t.Callable[[t.Callable[..., T]], t.Callable[P, T]]:
+    """
+    This is a function decorator similar to :func:`set_signature`, except that it only changes the
+    return type and not the parameters.
+
+    .. versionadded:: 1.11
+    """
+    if not isinstance(signature, inspect.Signature):
+        signature = Signature.from_callable(signature)
+    elif not isinstance(signature, Signature):
+        signature = Signature.from_signature(signature)
+
+    def decorator(func: t.Callable) -> t.Callable[P, T]:
+        func_signature = Signature.from_callable(func)
+
+        combined_signature = func_signature.replace(return_annotation=signature.return_annotation)
+
+        func.__signature__ = combined_signature  # type: ignore
         return func  # type: ignore
 
     return decorator
@@ -148,7 +210,7 @@ def signature(*args, **kwargs) -> Signature:
     return Signature.from_callable(*args, **kwargs)
 
 
-def get_parameters(callable_: Callable[..., object]) -> List[Parameter]:
+def get_parameters(callable_: t.Callable[..., object]) -> t.List[Parameter]:
     """
     Returns a list of parameters accepted by ``callable_``.
 
@@ -159,10 +221,10 @@ def get_parameters(callable_: Callable[..., object]) -> List[Parameter]:
 
 
 def replace_varargs(
-    signature: Union[Callable[..., T], inspect.Signature],
-    remove_parameters: Optional[Iterable[Union[str, int, inspect._ParameterKind]]] = None,
-) -> Callable[[Callable[..., object]], Callable[..., T]]:
-    def decorator(func: Callable[..., T]) -> Callable[..., T]:
+    signature: t.Union[t.Callable[..., T], inspect.Signature],
+    remove_parameters: t.Optional[t.Iterable[t.Union[str, int, inspect._ParameterKind]]] = None,
+) -> t.Callable[[t.Callable[..., object]], t.Callable[..., T]]:
+    def decorator(func: t.Callable[..., T]) -> t.Callable[..., T]:
         merged_signature = Signature.from_callable(func).replace_varargs(signature)
 
         if remove_parameters:
@@ -175,59 +237,59 @@ def replace_varargs(
 
 
 # Case 1: No parameters removed, return annotation unchanged
-@overload
+@t.overload
 def wraps(
-    wrapped_func: Callable[P, T],
+    wrapped_func: t.Callable[P, T],
     *,
-    name: Optional[str] = None,
-    signature: Union[None, inspect.Signature, Callable] = None,
+    name: t.Optional[str] = None,
+    signature: t.Union[None, inspect.Signature, t.Callable] = None,
     remove_parameters: None = None,
-) -> Callable[[Callable[P, T]], Callable[P, T]]: ...
+) -> t.Callable[[t.Callable[P, T]], t.Callable[P, T]]: ...
 
 
 # Case 2: No parameters removed, return annotation changed
-@overload
+@t.overload
 def wraps(
-    wrapped_func: Callable[P, Any],
+    wrapped_func: t.Callable[P, t.Any],
     *,
-    name: Optional[str] = None,
-    signature: Union[None, inspect.Signature, Callable[..., object]] = None,
+    name: t.Optional[str] = None,
+    signature: t.Union[None, inspect.Signature, t.Callable[..., object]] = None,
     remove_parameters: None = None,
-    return_annotation: Type[T],
-) -> Callable[[Callable[P, T]], Callable[P, T]]: ...
+    return_annotation: t.Type[T],
+) -> t.Callable[[t.Callable[P, T]], t.Callable[P, T]]: ...
 
 
 # Case 3: Parameters removed, return annotation unchanged
-@overload
+@t.overload
 def wraps(
-    wrapped_func: Callable[..., T],
+    wrapped_func: t.Callable[..., T],
     *,
-    name: Optional[str] = None,
-    signature: Union[None, inspect.Signature, Callable[..., object]] = None,
-    remove_parameters: Iterable[Union[str, int, inspect._ParameterKind]],
-) -> Callable[[Callable[P, T]], Callable[P, T]]: ...
+    name: t.Optional[str] = None,
+    signature: t.Union[None, inspect.Signature, t.Callable[..., object]] = None,
+    remove_parameters: t.Iterable[t.Union[str, int, inspect._ParameterKind]],
+) -> t.Callable[[t.Callable[P, T]], t.Callable[P, T]]: ...
 
 
 # Case 4: Parameters removed, return annotation changed
-@overload
+@t.overload
 def wraps(
-    wrapped_func: Callable[..., Any],
+    wrapped_func: t.Callable[..., t.Any],
     *,
-    name: Optional[str] = None,
-    signature: Union[None, inspect.Signature, Callable[..., object]] = None,
-    remove_parameters: Iterable[Union[str, int, inspect._ParameterKind]],
-    return_annotation: Type[T],
-) -> Callable[[Callable[P, T]], Callable[P, T]]: ...
+    name: t.Optional[str] = None,
+    signature: t.Union[None, inspect.Signature, t.Callable[..., object]] = None,
+    remove_parameters: t.Iterable[t.Union[str, int, inspect._ParameterKind]],
+    return_annotation: t.Type[T],
+) -> t.Callable[[t.Callable[P, T]], t.Callable[P, T]]: ...
 
 
 def wraps(  # type: ignore
-    wrapped_func: Callable,
+    wrapped_func: t.Callable,
     *,
-    name: Optional[str] = None,
-    signature: Union[None, inspect.Signature, Callable[..., object]] = None,
-    remove_parameters: Optional[Iterable[Union[str, int, inspect._ParameterKind]]] = None,
+    name: t.Optional[str] = None,
+    signature: t.Union[None, inspect.Signature, t.Callable[..., object]] = None,
+    remove_parameters: t.Optional[t.Iterable[t.Union[str, int, inspect._ParameterKind]]] = None,
     return_annotation: Type_ = NONE,  # type: ignore
-) -> Callable[[Callable[P, T]], Callable[P, T]]:
+) -> t.Callable[[t.Callable[P, T]], t.Callable[P, T]]:
     """
     Similar to :func:`functools.wraps`, but allows you to modify the function's
     metadata.
@@ -241,7 +303,7 @@ def wraps(  # type: ignore
         wrapper function's signature
     """
 
-    def wrapper(wrapper_func: Callable[P, T]) -> Callable[P, T]:
+    def wrapper(wrapper_func: t.Callable[P, T]) -> t.Callable[P, T]:
         functools.update_wrapper(wrapper_func, wrapped_func)
 
         if name is not None:
@@ -269,10 +331,10 @@ def wraps(  # type: ignore
 
 
 def split_arguments(
-    signature: Union[Callable[P, Any], Signature, inspect.Signature],
+    signature: t.Union[t.Callable[P, t.Any], Signature, inspect.Signature],
     *args: object,
     **kwargs: object,
-) -> Tuple[ArgumentBundle[P], ArgumentBundle]:
+) -> t.Tuple[ArgumentBundle[P], ArgumentBundle]:
     """
     Given a signature (or callable) and arguments, splits the arguments into
     two pairs: Those that match the given signature, and those that don't.

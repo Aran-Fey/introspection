@@ -208,7 +208,7 @@ def get_abstract_method_names(cls: type) -> Set[str]:
     return result
 
 
-def safe_is_subclass(subclass: object, superclass: Class) -> TypeGuard[Type[Class]]:
+def safe_is_subclass(subclass: object, superclass: Class) -> TypeGuard[Class]:
     """
     A clone of :func:`issubclass` that returns ``False`` instead of throwing a
     :exc:`TypeError`.

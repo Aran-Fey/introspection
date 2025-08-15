@@ -1,16 +1,16 @@
 import pytest
 
 import sys
-from typing import *
+import typing as t
 
 from introspection.typing import is_instance, is_subtype
 
 
-T = TypeVar("T")
+T = t.TypeVar("T")
 
 
 class AwaitableObject:
-    def __await__(self) -> Iterator[None]: ...
+    def __await__(self) -> t.Iterator[None]: ...
 
 
 def func_with_forwardrefs(arg: "int") -> "str": ...
@@ -26,38 +26,39 @@ def func_with_forwardrefs(arg: "int") -> "str": ...
         (b"", float, False),
         (1.5, int, False),
         ("hi", str, True),
-        ("hi", AnyStr, True),
+        ("hi", t.AnyStr, True),
         ("hi", T, True),
         (b"", str, False),
         ([], tuple, False),
         ([], list, True),
-        ([], List[int], True),
-        ([1], List[int], True),
-        ([True], List[float], True),
-        ([1], List[str], False),
-        (1, Union[int, str], True),
-        ("hi", Union[int, str], True),
-        (b"", Union[int, str], False),
-        (None, Optional[int], True),
-        (1, Optional[int], True),
-        (b"", Optional[int], False),
+        ([], t.List[int], True),
+        ([1], t.List[int], True),
+        ([True], t.List[float], True),
+        ([1], t.List[str], False),
+        (1, t.Union[int, str], True),
+        ("hi", t.Union[int, str], True),
+        (b"", t.Union[int, str], False),
+        (None, t.Optional[int], True),
+        (1, t.Optional[int], True),
+        (b"", t.Optional[int], False),
+        (1, t.Annotated[int, "hi"], True),
         ((), tuple, True),
-        ((), Tuple, True),
-        ((), Tuple[int], False),
-        ((1, "str"), Tuple[int, str], True),
-        ((), Tuple[int, ...], True),
-        ((1, 2), Tuple[int, ...], True),
-        ((1, b""), Tuple[int, ...], False),
-        (dict, Callable[[], Any], True),
+        ((), t.Tuple, True),
+        ((), t.Tuple[int], False),
+        ((1, "str"), t.Tuple[int, str], True),
+        ((), t.Tuple[int, ...], True),
+        ((1, 2), t.Tuple[int, ...], True),
+        ((1, b""), t.Tuple[int, ...], False),
+        (dict, t.Callable[[], t.Any], True),
         # (list, Callable[[str], list], True),
         # (list, Callable[[str], List[str]], True),
-        (AwaitableObject(), Awaitable, True),
-        (AwaitableObject(), Awaitable[Any], True),
-        (AwaitableObject(), Awaitable[object], True),
+        (AwaitableObject(), t.Awaitable, True),
+        (AwaitableObject(), t.Awaitable[t.Any], True),
+        (AwaitableObject(), t.Awaitable[object], True),
         # (AwaitableObject(), Awaitable[int], False),
-        (func_with_forwardrefs, Callable[[int], str], True),
-        (func_with_forwardrefs, Callable[[float], str], False),
-        (func_with_forwardrefs, Callable[[int], bytes], False),
+        (func_with_forwardrefs, t.Callable[[int], str], True),
+        (func_with_forwardrefs, t.Callable[[float], str], False),
+        (func_with_forwardrefs, t.Callable[[int], bytes], False),
     ],
 )
 def test_is_instance(obj, type_, expected):
@@ -78,16 +79,16 @@ def test_is_instance(obj, type_, expected):
 @pytest.mark.parametrize(
     "subtype, supertype, expected",
     [
-        (dict, Any, True),
-        (Any, dict, True),
-        (dict, Callable, False),
-        (tuple, Iterable, True),
+        (dict, t.Any, True),
+        (t.Any, dict, True),
+        (dict, t.Callable, False),
+        (tuple, t.Iterable, True),
         # (List[bool], Sequence[int], True),
-        (tuple, Union[list, tuple], True),
-        (tuple, Union[list, Iterable], True),
-        (Iterable, Union[list, str], False),
-        (tuple, Optional[tuple], True),
-        (tuple, Optional[list], False),
+        (tuple, t.Union[list, tuple], True),
+        (tuple, t.Union[list, t.Iterable], True),
+        (t.Iterable, t.Union[list, str], False),
+        (tuple, t.Optional[tuple], True),
+        (tuple, t.Optional[list], False),
     ],
 )
 def test_is_subtype(subtype, supertype, expected):
@@ -100,8 +101,8 @@ if sys.version_info >= (3, 10):
         "subtype, supertype, expected",
         [
             (tuple, list | tuple, True),
-            (tuple, list | Iterable, True),
-            (Iterable, list | str, False),
+            (tuple, list | t.Iterable, True),
+            (t.Iterable, list | str, False),
             (tuple, tuple | None, True),
             (tuple, list | None, False),
         ],
