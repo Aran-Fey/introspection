@@ -14,6 +14,8 @@ __all__ = [
     "signature",
     "get_parameters",
     "set_signature",
+    "set_parameters",
+    "set_return_annotation",
     "replace_varargs",
     "wraps",
     "split_arguments",
@@ -159,7 +161,7 @@ def set_parameters(
     This is a function decorator similar to :func:`set_signature`, except that it only changes the
     parameters and not the return type.
 
-    .. versionadded:: 1.11
+    .. versionadded:: 1.11.1
     """
     if not isinstance(signature, inspect.Signature):
         signature = Signature.from_callable(signature)
@@ -184,7 +186,7 @@ def set_return_annotation(
     This is a function decorator similar to :func:`set_signature`, except that it only changes the
     return type and not the parameters.
 
-    .. versionadded:: 1.11
+    .. versionadded:: 1.11.1
     """
     if not isinstance(signature, inspect.Signature):
         signature = Signature.from_callable(signature)

@@ -3,7 +3,7 @@ import pytest
 import abc
 import collections
 import sys
-import typing
+import typing_extensions as t
 
 from introspection import *
 from introspection import errors
@@ -182,7 +182,7 @@ def test_resolve_bases():
 def test_create_class(metaclass):
     cls = create_class(
         "MyClass",
-        (typing.List,),
+        (t.List,),
         {"x": 5},
         metaclass=metaclass,
     )
@@ -518,3 +518,33 @@ def test_is_sub_qualname(sub_name: str, super_name: str, expected: bool):
 )
 def test_convert_case(original: str, case: Case, expected: str):
     assert convert_case(original, case) == expected
+
+
+def test_set_signature():
+    @introspection.set_signature(round)
+    def round_and_increment(*args, **kwargs):
+        return round(*args, **kwargs) + 1
+
+    t.assert_type(round_and_increment(1.3), int)
+    # t.assert_type(round_and_increment(1.3, 2), float)
+
+    assert introspection.signature(round_and_increment) == introspection.signature(round)
+
+
+def test_set_parameters():
+    @introspection.set_parameters(round)
+    def round_and_halve(*args, **kwargs) -> float:
+        return round(*args, **kwargs) / 2
+
+    signature = introspection.signature(round_and_halve)
+    assert signature.parameters == introspection.signature(round).parameters
+    assert signature.return_annotation is float
+
+
+def test_set_return_annotation():
+    @introspection.set_return_annotation(int)
+    def bad_round(number: float):
+        return round(number)
+
+    signature = introspection.signature(bad_round)
+    assert signature.return_annotation is int
