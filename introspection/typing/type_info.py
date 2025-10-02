@@ -42,7 +42,7 @@ class TypeInfo:
             args = get_type_arguments(resolved_type)
             resolved_type = get_generic_base_class(resolved_type)
 
-            if resolved_type is te.Annotated:
+            if resolved_type in (t.Annotated, te.Annotated):
                 annotations += args[1:]
                 resolved_type = resolve_at_least_1_level_of_forward_refs(
                     args[0],  # type: ignore

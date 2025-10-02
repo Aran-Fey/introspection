@@ -4,6 +4,8 @@ import re  # NOT an unused import, your IDE is lying
 import typing
 import typing_extensions as te
 
+from anne import Literal
+
 from ._compat import LITERAL_TYPES, TYPE_ALIAS_TYPES, ANYS
 from .introspection import *
 from . import introspection as typing_introspection
@@ -59,9 +61,16 @@ PYTHON_TO_TYPING = {}
 for key, value in FORWARDREF_TO_TYPING.items():
     try:
         key = eval(key)
-        value = getattr(typing, value)
     except AttributeError:
         continue
+
+    try:
+        value = getattr(typing, value)
+    except AttributeError:
+        try:
+            value = getattr(te, value)
+        except AttributeError:
+            continue
 
     PYTHON_TO_TYPING[key] = value
 
@@ -144,9 +153,9 @@ def to_python(type_: Type_, strict: bool = False) -> Type_:
 
     if not is_variadic_generic(base) and all(arg in ANYS for arg in args):
         return to_python(base, strict)
-    elif base in (type, typing.Type) and args[0] is object:
+    elif base in (type, typing.Type, te.Type) and args[0] is object:
         return type
-    elif base in (collections.abc.Callable, typing.Callable) and args in (
+    elif base in (collections.abc.Callable, typing.Callable, te.Callable) and args in (
         (..., typing.Any),
         (..., te.Any),
     ):
@@ -164,7 +173,7 @@ def to_python(type_: Type_, strict: bool = False) -> Type_:
     elif strict:  # pragma: no cover
         raise NoGenericPythonEquivalent(type_)
 
-    if base in (collections.abc.Callable, typing.Callable):
+    if base in (collections.abc.Callable, typing.Callable, te.Callable):
         if args[0] is ...:
             args = (..., to_python(args[1], strict))  # type: ignore
         else:
@@ -172,7 +181,7 @@ def to_python(type_: Type_, strict: bool = False) -> Type_:
                 [to_python(arg, strict) for arg in args[0]],  # type: ignore
                 to_python(args[1], strict),  # type: ignore
             )
-    elif hasattr(typing, "Literal") and base is typing.Literal:
+    elif hasattr(typing, "Literal") and base in (typing.Literal, te.Literal):
         return type_
     else:
         args = tuple(to_python(arg, strict) for arg in args)  # type: ignore
