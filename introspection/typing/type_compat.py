@@ -2,8 +2,9 @@ import collections.abc
 import contextlib  # NOT an unused import, your IDE is lying
 import re  # NOT an unused import, your IDE is lying
 import typing
+import typing_extensions as te
 
-from ._compat import LITERAL_TYPES, TYPE_ALIAS_TYPES
+from ._compat import LITERAL_TYPES, TYPE_ALIAS_TYPES, ANYS
 from .introspection import *
 from . import introspection as typing_introspection
 from ..types import Type_
@@ -141,13 +142,13 @@ def to_python(type_: Type_, strict: bool = False) -> Type_:
     base = get_generic_base_class(type_)
     args = get_type_arguments(type_)
 
-    if not is_variadic_generic(base) and all(arg is typing.Any for arg in args):
+    if not is_variadic_generic(base) and all(arg in ANYS for arg in args):
         return to_python(base, strict)
     elif base in (type, typing.Type) and args[0] is object:
         return type
-    elif base in (collections.abc.Callable, typing.Callable) and args == (
-        ...,
-        typing.Any,
+    elif base in (collections.abc.Callable, typing.Callable) and args in (
+        (..., typing.Any),
+        (..., te.Any),
     ):
         return collections.abc.Callable  # type: ignore[wtf]
 

@@ -2,16 +2,16 @@ from __future__ import annotations
 
 import collections.abc
 import re
-import sys
 import types
-from typing import *
-import typing_extensions
+import typing as t
+import typing_extensions as te
 
 from .introspection import (
     get_type_arguments,
     is_parameterized_generic,
     get_generic_base_class,
 )
+from ._compat import ANYS
 from ._utils import (
     NOT_INSTANCE_OR_SUBTYPE_CHECKED,
     TypeCheckingConfig,
@@ -27,16 +27,17 @@ from ..types import Type_, TypeAnnotation, ForwardRefContext
 __all__ = ["is_instance"]
 
 
-T = TypeVar("T")
+T = te.TypeVar("T")
+OBJECT_OR_ANY = (object, *ANYS)
 
 
 def is_instance(
     obj: object,
-    type_: Union[Type[T], TypeAnnotation],
+    type_: te.Union[te.Type[T], TypeAnnotation],
     *,
-    forward_ref_context: Optional[ForwardRefContext] = None,
+    forward_ref_context: te.Optional[ForwardRefContext] = None,
     treat_name_errors_as_imports: bool = False,
-) -> typing_extensions.TypeGuard[T]:
+) -> te.TypeGuard[T]:
     """
     Returns whether ``obj`` is an instance of ``type_``. Unlike the builtin
     ``isinstance``, this function supports generics.
@@ -66,7 +67,7 @@ def _is_instance(
             test = TESTS[type_]
             return test(obj)
 
-        if isinstance(type_, TypeVar):
+        if isinstance(type_, te.TypeVar):
             return _test_typevar(config, obj, type_)
 
         return _safe_instancecheck(obj, type_)
@@ -97,14 +98,14 @@ def _is_instance(
     return test(config, obj, *subtypes)
 
 
-def _safe_instancecheck(obj: object, type_: Any) -> bool:
+def _safe_instancecheck(obj: object, type_: te.Any) -> bool:
     try:
         return isinstance(obj, type_)
     except TypeError:
         raise NotImplementedError(f"`is_instance` currently doesn't support the type {type_!r}")
 
 
-def _test_typevar(config: TypeCheckingConfig, obj: object, var: TypeVar) -> bool:
+def _test_typevar(config: TypeCheckingConfig, obj: object, var: te.TypeVar) -> bool:
     if var.__bound__ is not None:
         return _is_instance(config, obj, var.__bound__)
 
@@ -117,7 +118,7 @@ def _test_typevar(config: TypeCheckingConfig, obj: object, var: TypeVar) -> bool
 def _test_mapping_subtypes(
     config: TypeCheckingConfig, obj: dict, key_type: Type_, value_type: Type_
 ) -> bool:
-    if key_type in (object, Any) and value_type in (object, Any):
+    if key_type in OBJECT_OR_ANY and value_type in OBJECT_OR_ANY:
         return True
 
     for key, value in obj.items():
@@ -147,8 +148,8 @@ def _test_type_subtypes(config: TypeCheckingConfig, obj: type, type_: Type_) -> 
         raise NotImplementedError(f"`is_instance` currently doesn't support the type {type_!r}")
 
 
-def _test_iterable_subtypes(config: TypeCheckingConfig, obj: Iterable, item_type: Type_) -> bool:
-    if item_type in (object, Any):
+def _test_iterable_subtypes(config: TypeCheckingConfig, obj: te.Iterable, item_type: Type_) -> bool:
+    if item_type in OBJECT_OR_ANY:
         return True
 
     # If the object is an iterator, looping over it would exhaust it. We don't want that.
@@ -159,22 +160,22 @@ def _test_iterable_subtypes(config: TypeCheckingConfig, obj: Iterable, item_type
 
 
 def _test_awaitable_subtypes(
-    config: TypeCheckingConfig, obj: Awaitable, result_type: Type_
+    config: TypeCheckingConfig, obj: te.Awaitable, result_type: Type_
 ) -> bool:
-    if result_type in (object, Any):
+    if result_type in OBJECT_OR_ANY:
         return True
 
     raise NotImplementedError("Can't type check the result of an Awaitable")
 
 
-def _test_annotated_subtypes(config: TypeCheckingConfig, obj: Annotated, typ: Type_, *_) -> bool:
+def _test_annotated_subtypes(config: TypeCheckingConfig, obj: te.Annotated, typ: Type_, *_) -> bool:
     return is_instance(obj, typ)
 
 
 def _test_callable_subtypes(
     config: TypeCheckingConfig,
-    obj: Callable,
-    param_types: Union[List[Type_], types.EllipsisType],
+    obj: te.Callable,
+    param_types: te.Union[te.List[Type_], types.EllipsisType],
     return_type: Type_,
 ) -> bool:
     signature = Signature.from_callable(obj)
@@ -229,13 +230,13 @@ def _test_union_subtypes(config: TypeCheckingConfig, obj: object, *types: Type_)
 
 
 def _test_regex_pattern_subtypes(
-    config: TypeCheckingConfig, pattern: re.Pattern, subtype: Type[AnyStr]
+    config: TypeCheckingConfig, pattern: re.Pattern, subtype: te.Type[te.AnyStr]
 ) -> bool:
     return _is_instance(config, pattern.pattern, subtype)
 
 
 def _test_regex_match_subtypes(
-    config: TypeCheckingConfig, match: re.Match, subtype: Type[AnyStr]
+    config: TypeCheckingConfig, match: re.Match, subtype: te.Type[te.AnyStr]
 ) -> bool:
     return _is_instance(config, match.string, subtype)
 
@@ -249,7 +250,8 @@ def _test_literal(value: object) -> bool:
 
 
 TESTS = {
-    Any: _return_true,
+    t.Any: _return_true,
+    te.Any: _return_true,
     float: lambda value: isinstance(value, (int, float)),
 }
 
@@ -264,7 +266,7 @@ GENERIC_BASE_TESTS = resolve_names_in_all_typing_modules(
 )
 
 
-SUBTYPE_TESTS: Mapping[object, Callable[..., bool]] = eval_or_discard(
+SUBTYPE_TESTS: te.Mapping[object, te.Callable[..., bool]] = eval_or_discard(
     {
         "dict": _test_mapping_subtypes,
         "frozenset": _test_iterable_subtypes,
