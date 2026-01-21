@@ -4,8 +4,6 @@ import re  # NOT an unused import, your IDE is lying
 import typing
 import typing_extensions as te
 
-from anne import Literal
-
 from ._compat import LITERAL_TYPES, TYPE_ALIAS_TYPES, ANYS
 from .introspection import *
 from . import introspection as typing_introspection

@@ -930,7 +930,7 @@ if sys.version_info >= (3, 10):
     @pytest.mark.parametrize(
         "type_, expected",
         [
-            (types.UnionType, False),
+            (types.UnionType, sys.version_info >= (3, 14)),
             (str | None, False),
             (str | int, False),
             (str | T, True),  # type: ignore
@@ -944,7 +944,7 @@ if sys.version_info >= (3, 10):
     @pytest.mark.parametrize(
         "type_, expected",
         [
-            (types.UnionType, False),
+            (types.UnionType, sys.version_info >= (3, 14)),
             (str | None, False),
             (str | int, False),
             (str | T, False),  # type: ignore
@@ -1032,13 +1032,19 @@ if sys.version_info >= (3, 10):
     def test_uniontype_get_type_parameters(type_: Type_, expected: Tuple[TypeVar]):
         assert get_type_parameters(type_) == expected
 
-    def test_uniontype_get_type_parameters_error():
-        with pytest.raises(errors.NotAGeneric):
-            get_type_parameters(types.UnionType)  # type: ignore
+    if sys.version_info < (3, 14):
 
-        # Deprecated exception
-        with pytest.raises(ValueError):
-            get_type_parameters(types.UnionType)  # type: ignore
+        def test_uniontype_get_type_parameters_error():
+            with pytest.raises(errors.NotAGeneric):
+                get_type_parameters(types.UnionType)  # type: ignore
+
+            # Deprecated exception
+            with pytest.raises(ValueError):
+                get_type_parameters(types.UnionType)  # type: ignore
+    else:
+
+        def test_uniontype_get_type_parameters_314_plus():
+            assert get_type_parameters(types.UnionType)
 
 
 if hasattr(dataclasses, "KW_ONLY"):

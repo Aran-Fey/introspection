@@ -93,7 +93,7 @@ class ImporterDict(collections.abc.Mapping[str, types.ModuleType]):
         return 0
 
 
-NOT_INSTANCE_OR_SUBTYPE_CHECKED: typing.Container[Type_] = {
+NOT_INSTANCE_OR_SUBTYPE_CHECKED = {
     obj
     for name in (
         "Optional",
@@ -103,3 +103,5 @@ NOT_INSTANCE_OR_SUBTYPE_CHECKED: typing.Container[Type_] = {
     )
     for obj in resolve_name_in_all_typing_modules(name)
 }
+if sys.version_info >= (3, 10):
+    NOT_INSTANCE_OR_SUBTYPE_CHECKED.add(types.UnionType)

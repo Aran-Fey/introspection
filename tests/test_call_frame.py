@@ -56,8 +56,8 @@ def test_attrs():
     frame2 = CallFrame(frame1)
 
     assert frame2.parent == frame1.f_back
-    assert frame2.locals is frame1.f_locals
-    assert frame2.globals is frame1.f_globals
+    assert frame2.locals == frame1.f_locals
+    assert frame2.globals == frame1.f_globals
     assert frame2.builtins is frame1.f_builtins
     assert frame2.code_object is frame1.f_code
 

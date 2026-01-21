@@ -258,10 +258,10 @@ TESTS = {
 
 GENERIC_BASE_TESTS = resolve_names_in_all_typing_modules(
     {
-        "Literal": _test_literal,
-        "typing_extensions.Literal": _test_literal,
-        "Optional": _return_true,
-        "Union": _return_true,
+        "t.Literal": _test_literal,
+        "te.Literal": _test_literal,
+        "t.Optional": _return_true,
+        "t.Union": _return_true,
     }
 )
 
@@ -274,8 +274,9 @@ SUBTYPE_TESTS: te.Mapping[object, te.Callable[..., bool]] = eval_or_discard(
         "set": _test_iterable_subtypes,
         "tuple": _test_tuple_subtypes,
         "type": _test_type_subtypes,
-        "Optional": _test_optional_subtypes,
-        "Union": _test_union_subtypes,
+        "t.Optional": _test_optional_subtypes,
+        "t.Union": _test_union_subtypes,
+        "types.UnionType": _test_union_subtypes,
         "re.Pattern": _test_regex_pattern_subtypes,
         "re.Match": _test_regex_match_subtypes,
     },

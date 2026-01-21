@@ -3,6 +3,7 @@ import pytest
 import collections.abc
 import re
 import sys
+import types
 import typing
 
 from introspection.typing.type_compat import *
@@ -14,9 +15,6 @@ T = typing.TypeVar("T")
 
 class MyGeneric(typing.Generic[T]):
     pass
-
-
-is_py39_plus = sys.version_info >= (3, 9)
 
 
 @pytest.mark.parametrize(
@@ -68,7 +66,7 @@ def test_to_python_strict_error(type_):
         to_python(type_, strict=True)
 
 
-if is_py39_plus:
+if sys.version_info >= (3, 9):
 
     @pytest.mark.parametrize(
         "type_, expected",
@@ -113,6 +111,12 @@ else:
             to_python(type_, strict=True)
 
 
+if sys.version_info >= (3, 10):
+
+    def test_union_to_uniontype():
+        assert to_python(typing.Union) is types.UnionType
+
+
 @pytest.mark.parametrize(
     "type_",
     [
@@ -152,7 +156,7 @@ def test_to_typing(type_, expected):
     assert to_typing(type_) == expected
 
 
-if is_py39_plus:
+if sys.version_info >= (3, 9):
 
     @pytest.mark.parametrize(
         "type_, expected",

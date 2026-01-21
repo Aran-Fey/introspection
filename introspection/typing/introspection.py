@@ -415,8 +415,17 @@ def _get_generic_base_class(cls):  # type: ignore
     return cls.__origin__
 
 
-def _to_python(cls):  # NOT an unused function! IDE is wrong!
-    return getattr(cls, "__origin__", None)
+if sys.version_info >= (3, 10):
+
+    def _to_python(cls):  # NOT an unused function! IDE is wrong!
+        if cls is Union:
+            return types.UnionType
+
+        return getattr(cls, "__origin__", None)
+else:
+
+    def _to_python(cls):  # NOT an unused function! IDE is wrong!
+        return getattr(cls, "__origin__", None)
 
 
 def _get_name(cls):
