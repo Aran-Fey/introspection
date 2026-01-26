@@ -415,7 +415,9 @@ def _get_generic_base_class(cls):  # type: ignore
     return cls.__origin__
 
 
-if sys.version_info >= (3, 10):
+# Special case for `t.Union` -> `types.UnionType`, but only upwards of 3.14 because that's where it
+# became subscriptable. If it's not subscriptable, we can't consider it equivalent.
+if sys.version_info >= (3, 14):
 
     def _to_python(cls):  # NOT an unused function! IDE is wrong!
         if cls is Union:

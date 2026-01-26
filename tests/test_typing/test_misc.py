@@ -1,12 +1,15 @@
-import pytest
+from __future__ import annotations
 
 import builtins
 import dataclasses
 import io
 import sys
 import typing
+import types
 from typing import *
 from typing_extensions import ParamSpec
+
+import pytest
 
 import introspection
 from introspection.typing.misc import *
@@ -400,3 +403,13 @@ def test_resolve_forward_ref_from_parent_class():
         parameter.forward_ref_context,
     )
     assert annotation is utils.SomeTypeDefinedInParentsFile
+
+
+def test_get_type_annotations():
+    class Foo:
+        foo: int | str
+
+    annotations = get_type_annotations(Foo)
+    assert list(annotations) == ["foo"]
+    assert annotations["foo"].type in (typing.Union, types.UnionType)
+    assert annotations["foo"].arguments == (int, str)
