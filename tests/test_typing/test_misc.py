@@ -7,7 +7,7 @@ import sys
 import typing
 import types
 from typing import *
-from typing_extensions import ParamSpec
+from typing_extensions import ParamSpec, Annotated
 
 import pytest
 
@@ -305,6 +305,11 @@ def test_resolve_forward_refs_non_strict(annotation, kwargs, expected):
 def test_partially_resolve_forward_refs(annotation: str, expected):
     ann = resolve_forward_refs(annotation, globals(), mode="ast", strict=False)
     assert ann == expected
+
+
+def test_resolve_annotated():
+    ann = resolve_forward_refs('Annotated[int, "hi"]', globals(), mode="ast", strict=False)
+    assert ann == Annotated[int, "hi"]
 
 
 def no_args():

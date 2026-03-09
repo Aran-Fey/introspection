@@ -2,7 +2,7 @@
 New and improved introspection functions
 """
 
-__version__ = "1.12.1"
+__version__ = "1.12.2"
 
 from .parameter import *
 from .signature_ import *
@@ -18,10 +18,10 @@ from .misc import *
 from .misc2 import *
 from .hazmat import *
 
-from . import dunder
-from . import errors
-from . import mark
-from . import types
+from . import dunder as dunder
+from . import errors as errors
+from . import mark as mark
+from . import types as types
 
 # Make sure a ``from introspection import *`` doesn't import the ``typing``
 # submodule

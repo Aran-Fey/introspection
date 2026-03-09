@@ -6,9 +6,9 @@ import collections.abc
 import dataclasses
 import importlib
 import types
-import typing
+import typing  # For runtime
+import typing as t  # For annotations
 import warnings
-from typing import *
 
 import typing_extensions
 
@@ -36,23 +36,23 @@ __all__ = [
 KW_ONLY = getattr(dataclasses, "KW_ONLY", object())
 
 
-@overload
+@t.overload
 def resolve_forward_refs(
     annotation: TypeAnnotation,
-    context: Optional[ForwardRefContext] = None,
+    context: t.Optional[ForwardRefContext] = None,
     *,
-    mode: Literal["eval", "getattr", "ast"] = "eval",
+    mode: t.Literal["eval", "getattr", "ast"] = "eval",
     strict: bool = True,
-    max_depth: Optional[int] = None,
-    extra_globals: Mapping[str, object] = {},
+    max_depth: t.Optional[int] = None,
+    extra_globals: t.Mapping[str, object] = {},
     treat_name_errors_as_imports: bool = False,
 ) -> TypeAnnotation: ...
 
 
-@overload
+@t.overload
 def resolve_forward_refs(
     annotation: TypeAnnotation,
-    module: typing.Optional[types.ModuleType] = None,
+    module: t.Optional[types.ModuleType] = None,
     eval_: bool = True,
     strict: bool = True,
 ) -> TypeAnnotation: ...
@@ -60,16 +60,16 @@ def resolve_forward_refs(
 
 def resolve_forward_refs(  # type: ignore
     annotation: TypeAnnotation,
-    context: Optional[ForwardRefContext] = None,
-    eval_: Optional[bool] = None,
+    context: t.Optional[ForwardRefContext] = None,
+    eval_: t.Optional[bool] = None,
     strict: bool = True,
     *,
-    module: typing.Optional[types.ModuleType] = None,
-    mode: Literal["eval", "getattr", "ast"] = "eval",
-    max_depth: Optional[int] = None,
-    extra_globals: Mapping[str, object] = {},
+    module: t.Optional[types.ModuleType] = None,
+    mode: t.Literal["eval", "getattr", "ast"] = "eval",
+    max_depth: t.Optional[int] = None,
+    extra_globals: t.Mapping[str, object] = {},
     treat_name_errors_as_imports: bool = False,
-    _currently_evaluating: AbstractSet[Tuple[str, int]] = set(),
+    _currently_evaluating: t.AbstractSet[t.Tuple[str, int]] = set(),
 ) -> TypeAnnotation:
     """
     Resolves forward references in a type annotation.
@@ -116,7 +116,7 @@ def resolve_forward_refs(  # type: ignore
         )
 
     if max_depth is None:
-        max_depth = cast(int, float("inf"))
+        max_depth = t.cast(int, float("inf"))
     elif max_depth <= 0:
         return annotation
 
@@ -131,7 +131,7 @@ def resolve_forward_refs(  # type: ignore
             _currently_evaluating=_currently_evaluating,  # type: ignore
         )
 
-    if isinstance(annotation, ForwardRef):
+    if isinstance(annotation, t.ForwardRef):
         if context is None:
             context = annotation.__forward_module__
 
@@ -235,7 +235,7 @@ def resolve_forward_refs(  # type: ignore
     ):
         return annotation
 
-    if isinstance(annotation, TypeVar):
+    if isinstance(annotation, t.TypeVar):
         if annotation.__constraints__:
             constraints = [recurse(constraint) for constraint in annotation.__constraints__]
             bound = None
@@ -243,7 +243,7 @@ def resolve_forward_refs(  # type: ignore
             constraints = ()
             bound = recurse(annotation.__bound__)
 
-        return TypeVar(
+        return t.TypeVar(
             annotation.__name__,  # type: ignore
             *constraints,  # type: ignore
             bound=bound,  # type: ignore
@@ -349,21 +349,6 @@ def _eval_ast(
     elif type(node) is ast.Subscript:
         generic_type = recurse(node.value)
         subtype = safe_recurse(node.slice)
-
-        # If we're dealing with `typing.Literal` or `typing.Annotated`, we must leave strings as
-        # strings. But for any other type, we must treat them as forward references.
-        if generic_type in LITERAL_TYPES:
-            pass
-        elif generic_type is typing_extensions.Annotated:
-            assert isinstance(subtype, tuple)
-            typ, *annotations = subtype
-            subtype = (safe_recurse(typ), *annotations)
-        else:
-            if isinstance(subtype, tuple):
-                subtype = tuple(safe_recurse_if_forwardref(t) for t in subtype)
-            else:
-                subtype = safe_recurse_if_forwardref(subtype)
-
         return generic_type[subtype]  # type: ignore
     elif type(node) is ast.Constant:
         return node.value
@@ -379,7 +364,7 @@ def _eval_ast(
             # 1. It works in older python versions
             # 2. It works even if `left` and `right` are strings because they
             #    couldn't be resolved
-            return Union[left, right]  # type: ignore
+            return typing.Union[left, right]  # type: ignore
 
     raise NotImplementedError(f"Can't evaluate AST node {node}")
 
@@ -392,7 +377,7 @@ def annotation_to_string(
     new_style_unions: bool = True,
     optional_as_union: bool = True,
     variance_prefixes: bool = False,
-    aliases: Mapping[object, str] = {},
+    aliases: t.Mapping[object, str] = {},
 ) -> str:
     """
     Converts a type annotation to string. The result is valid python code
@@ -428,11 +413,11 @@ def annotation_to_string(
             aliases=aliases,
         )
 
-    def process_nested(prefix: str, elems: Iterable[TypeAnnotation]):
+    def process_nested(prefix: str, elems: t.Iterable[TypeAnnotation]):
         elems = ", ".join(recurse(ann) for ann in elems)
         return "{}[{}]".format(prefix, elems)
 
-    if isinstance(annotation, ForwardRef):
+    if isinstance(annotation, typing.ForwardRef):
         return _get_forward_ref_code(annotation)
 
     if isinstance(annotation, str):
