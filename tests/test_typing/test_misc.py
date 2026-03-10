@@ -12,6 +12,8 @@ from typing_extensions import ParamSpec, Annotated
 import pytest
 
 import introspection
+from introspection.errors import CannotResolveForwardref
+from introspection.typing import ForwardRef, TypeInfo
 from introspection.typing.misc import *
 from introspection.typing.misc2 import *
 
@@ -418,3 +420,63 @@ def test_get_type_annotations():
     assert list(annotations) == ["foo"]
     assert annotations["foo"].type in (typing.Union, types.UnionType)
     assert annotations["foo"].arguments == (int, str)
+
+
+def test_get_instance_attribute_annotations():
+    class Foo:
+        a: int
+        b: ClassVar[int]
+        c: ClassVar[str] = "hi"
+        d: int = 5
+
+    annotations = get_instance_attribute_annotations(Foo)
+    assert list(annotations) == ["a", "d"]
+    assert annotations["a"].type is int
+    assert annotations["d"].type is int
+
+
+if hasattr(dataclasses, "KW_ONLY"):
+
+    def test_get_instance_attribute_annotations_kw_only():
+        @dataclasses.dataclass
+        class Foo:
+            a: int
+            _: dataclasses.KW_ONLY
+            b: str
+
+        annotations = get_instance_attribute_annotations(Foo)
+        assert list(annotations) == ["a", "b"]
+        assert annotations["a"].type is int
+        assert annotations["b"].type is str
+
+
+def test_get_instance_attribute_annotations_forward_refs():
+    class Foo:
+        a: "Undefined"  # type: ignore
+        b: "ClassVar[Undefined]"  # type: ignore
+
+    with pytest.raises(CannotResolveForwardref):
+        get_instance_attribute_annotations(Foo)
+
+    annotations = get_instance_attribute_annotations(Foo, allow_forwardrefs=True)
+    assert list(annotations) == ["a"]
+    assert isinstance(annotations["a"], ForwardRef)
+
+
+def test_get_instance_attribute_annotations_explicit_false():
+    class Foo:
+        a: int
+
+    annotations = get_instance_attribute_annotations(Foo, allow_forwardrefs=False)
+    assert list(annotations) == ["a"]
+    assert annotations["a"].type is int
+
+
+def test_get_instance_attribute_annotations_explicit_true_no_forward_refs():
+    class Foo:
+        a: int
+
+    annotations = get_instance_attribute_annotations(Foo, allow_forwardrefs=True)
+    assert list(annotations) == ["a"]
+    assert isinstance(annotations["a"], TypeInfo)
+    assert annotations["a"].type is int

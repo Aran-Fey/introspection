@@ -111,8 +111,8 @@ else:
             to_python(type_, strict=True)
 
 
-if sys.version_info >= (3, 10):
-
+if sys.version_info >= (3, 14):
+    # `types.UnionType`` was added in 3.10, but didn't become subscriptable until 3.14.
     def test_union_to_uniontype():
         assert to_python(typing.Union) is types.UnionType
 

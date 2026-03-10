@@ -518,7 +518,10 @@ else:
 
 
 def _get_forward_ref_code(ref):
-    return ref.__forward_arg__
+    try:
+        return ref.__forward_arg__
+    except AttributeError:
+        return ref.code
 
 
 def _is_regular_type(type_):

@@ -2,7 +2,14 @@ import typing
 import typing_extensions as te
 
 
-__all__ = ["DATACLASSES_KW_ONLY", "LITERAL_TYPES", "ANNOTATED_TYPES", "TYPE_ALIAS_TYPES", "ANYS"]
+__all__ = [
+    "DATACLASSES_KW_ONLY",
+    "LITERAL_TYPES",
+    "ANNOTATED_TYPES",
+    "CLASS_VAR_TYPES",
+    "TYPE_ALIAS_TYPES",
+    "ANYS",
+]
 
 
 try:
@@ -18,6 +25,10 @@ if hasattr(typing, "Literal"):
 ANNOTATED_TYPES = (te.Annotated,)
 if hasattr(typing, "Annotated"):
     ANNOTATED_TYPES += (typing.Annotated,)
+
+CLASS_VAR_TYPES = (te.ClassVar,)
+if hasattr(typing, "ClassVar"):
+    CLASS_VAR_TYPES += (typing.ClassVar,)
 
 TYPE_ALIAS_TYPES = ()
 if hasattr(typing, "TypeAliasType"):

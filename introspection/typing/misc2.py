@@ -1,11 +1,15 @@
+import dataclasses
 import sys
 import typing as t
+
+from .introspection import _get_forward_ref_code
 
 if sys.version_info >= (3, 14):
     import annotationlib
 else:
     annotationlib = None
 
+from ._compat import CLASS_VAR_TYPES, DATACLASSES_KW_ONLY
 from .forward_ref import ForwardRef
 from .type_info import TypeInfo
 from ..errors import CannotResolveForwardref
@@ -13,7 +17,7 @@ from ..misc import static_mro, static_vars
 from ..types import TypeAnnotation
 
 
-__all__ = ["get_type_annotations"]
+__all__ = ["get_type_annotations", "get_instance_attribute_annotations"]
 
 
 @t.overload
@@ -69,3 +73,51 @@ def _get_local_annotations_dict(
             return annotationlib.call_annotate_function(annotate, annotationlib.Format.FORWARDREF)
 
     return cls_dict.get("__annotations__", {})
+
+
+@t.overload
+def get_instance_attribute_annotations(
+    cls: type, *, allow_forwardrefs: t.Literal[False] = False
+) -> t.Dict[str, TypeInfo]: ...
+
+
+@t.overload
+def get_instance_attribute_annotations(
+    cls: type, *, allow_forwardrefs: bool
+) -> t.Dict[str, t.Union[TypeInfo, ForwardRef]]: ...
+
+
+def get_instance_attribute_annotations(  # type: ignore (wtf? Some variance nonsense?)
+    cls: type, *, allow_forwardrefs: bool = False
+) -> t.Dict[str, t.Union[TypeInfo, ForwardRef]]:
+    """
+    Similar to `get_type_annotations`, but it automatically removes `_: dataclasses.KW_ONLY`
+    and `typing.ClassVar` annotations.
+
+    .. versionadded:: 1.13
+    """
+    result: t.Dict[str, t.Union[TypeInfo, ForwardRef]] = {}
+
+    for name, info in get_type_annotations(cls, allow_forwardrefs=allow_forwardrefs).items():
+        if isinstance(info, TypeInfo):
+            if info.type is DATACLASSES_KW_ONLY or info.type in CLASS_VAR_TYPES:
+                continue
+        else:
+            forward_ref_code = _get_forward_ref_code(info)
+            if forward_ref_code in (
+                "KW_ONLY",
+                "dataclasses.KW_ONLY",
+            ) or forward_ref_code.startswith(
+                (
+                    "ClassVar",
+                    "typing.ClassVar",
+                    "typing_extensions.ClassVar",
+                    "t.ClassVar",
+                    "te.ClassVar",
+                )
+            ):
+                continue
+
+        result[name] = info
+
+    return result
