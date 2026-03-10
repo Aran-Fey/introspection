@@ -21,6 +21,8 @@ is_py39_plus = sys.version_info >= (3, 9)
 
 
 T = TypeVar("T")
+K = TypeVar("K")
+V = TypeVar("V")
 T_co = TypeVar("T_co", covariant=True)
 E = TypeVar("E", bound=Exception)
 
@@ -1065,3 +1067,90 @@ if sys.version_info >= (3, 12):
         assert not is_generic_base_class(NewStyleTypeAlias)
         assert not is_parameterized_generic(NewStyleTypeAlias)
         assert is_parameterized_generic(NewStyleTypeAlias[int, str])
+
+
+class MyList(Generic[T]):
+    pass
+
+
+class MyDict(Generic[K, V]):
+    pass
+
+
+class StrList(MyList[str]):
+    pass
+
+
+class IntStrDict(MyDict[int, str]):
+    pass
+
+
+def test_get_type_arguments_for_simple():
+    assert get_type_arguments_for(List[int], list) == (int,)
+    assert get_type_arguments_for(MyList[str], MyList) == (str,)
+    assert get_type_arguments_for(StrList, MyList) == (str,)
+    assert get_type_arguments_for(Dict[str, int], dict) == (str, int)
+    assert get_type_arguments_for(MyDict[int, str], MyDict) == (int, str)
+    assert get_type_arguments_for(IntStrDict, MyDict) == (int, str)
+
+    assert get_type_arguments_for(typing.TextIO, typing.IO) == (str,)
+
+
+def test_get_type_arguments_for_inheritance():
+    class Foo(Generic[T]):
+        pass
+
+    class Bar(Foo[int]):
+        pass
+
+    assert get_type_arguments_for(Bar, Foo) == (int,)
+    assert get_type_arguments_for(Bar, Bar) == ()
+
+
+def test_get_type_arguments_for_nested_inheritance():
+    class A(Generic[T]):
+        pass
+
+    class B(A[V], Generic[V]):
+        pass
+
+    class C(B[int]):
+        pass
+
+    assert get_type_arguments_for(C, A) == (int,)
+    assert get_type_arguments_for(C, B) == (int,)
+    assert get_type_arguments_for(B[str], A) == (str,)
+
+
+def test_get_type_arguments_for_assume_any():
+    # When not provided, type arguments should default to Any if assume_any=True
+    assert get_type_arguments_for(list, list, assume_any=True) == (Any,)
+    assert get_type_arguments_for(MyList, MyList, assume_any=True) == (Any,)
+
+    with pytest.raises(errors.TypeVarNotSet):
+        get_type_arguments_for(list, list, assume_any=False)
+
+
+def test_get_type_arguments_for_allow_typevars():
+    assert get_type_arguments_for(List[T], list, allow_typevars=True) == (T,)
+    assert get_type_arguments_for(MyList[T], MyList, allow_typevars=True) == (T,)
+
+    with pytest.raises(errors.NoConcreteTypeForTypeVar):
+        get_type_arguments_for(List[T], list, allow_typevars=False, assume_any=False)
+
+
+def test_get_type_arguments_for_not_a_subclass():
+    with pytest.raises(errors.SubTypeRequired):
+        get_type_arguments_for(list, dict)
+
+
+def test_get_type_argument_for():
+    assert get_type_argument_for(List[int], list) is int
+    assert get_type_argument_for(Dict[str, int], dict, K) is str
+    assert get_type_argument_for(Dict[str, int], dict, V) is int
+
+
+def test_get_type_argument_for_errors():
+    # Multiple TypeVars, but none specified
+    with pytest.raises(errors.ArgumentRequired):
+        get_type_argument_for(Dict[str, int], dict)

@@ -11,6 +11,7 @@ from typing import *
 
 from . import _compat
 from .i_hate_circular_imports import parameterize
+from .type_compat import to_python
 from ..classes import safe_is_subclass
 from ..types import Type_, GenericAliases, TypeParameter
 from ..errors import *
@@ -28,6 +29,7 @@ __all__ = [
     "get_type_arguments",
     "get_type_parameters",
     "get_type_argument_for",
+    "get_type_arguments_for",
     "get_type_name",
     "get_parent_types",
 ]
@@ -979,7 +981,7 @@ def get_type_parameters(type_: Type_) -> Tuple[TypeParameter, ...]:
 def get_type_argument_for(
     type_: Type_,
     base_type: Type_,
-    type_var: Optional[TypeVar] = None,
+    type_var: Optional[TypeParameter] = None,
     *,
     assume_any: bool = True,
     allow_typevar: bool = False,
@@ -1047,7 +1049,8 @@ def get_type_argument_for(
     #    type_var=T and continue.
     # 2. The argument for type_var=T is str. Since this isn't a TypeVar, we
     #    return str.
-    stack = []
+    target_base = to_python(base_type, strict=False)
+    stack: list[tuple[tuple[TypeParameter, ...], tuple[object, ...]]] = []
 
     if is_parameterized_generic(type_):
         cls = get_generic_base_class(type_)
@@ -1059,29 +1062,43 @@ def get_type_argument_for(
     else:
         cls = type_
 
-    while cls is not base_type:
+    while to_python(cls, strict=False) is not target_base:
         # Find a parent class that inherits from base_type. (If there's more
         # than one such class, it shouldn't matter which one we pick.)
         for base in get_parent_types(cls):
             if is_parameterized_generic(base):
-                cls = get_generic_base_class(base)
-                if not safe_is_subclass(cls, base_type):  # type: ignore
+                new_cls = get_generic_base_class(base)
+                normalized_new_cls = to_python(new_cls, strict=False)
+
+                if normalized_new_cls is not target_base and not safe_is_subclass(
+                    normalized_new_cls, target_base
+                ):
                     continue
 
+                params = get_type_parameters(new_cls)
                 args = get_type_arguments(base)
+                stack.append((params, args))
+
+                cls = new_cls
                 break
-            elif safe_is_subclass(base, base_type):  # type: ignore
+            else:
+                normalized_base = to_python(base, strict=False)
+
+                if normalized_base is not target_base and not safe_is_subclass(
+                    normalized_base, target_base
+                ):
+                    continue
+
                 cls = base
-                args = ()
                 break
         else:
             raise SubTypeRequired(type_, base_type)
 
-        params = get_type_parameters(cls)
-        stack.append((params, args))
-
     if type_var is None:
         params, _ = stack[-1]
+
+        if not params:
+            raise NotAGeneric("base_type", base_type)
 
         if len(params) > 1:
             raise ArgumentRequired("type_var", reason=f"{base_type!r} has more than 1 TypeVar")
@@ -1091,7 +1108,18 @@ def get_type_argument_for(
     current_var = type_var
 
     for params, args in reversed(stack):
-        i = params.index(current_var)
+        try:
+            i = params.index(current_var)
+        except ValueError:
+            # Try matching by name
+            if isinstance(current_var, TypeVar):
+                for i, p in enumerate(params):
+                    if isinstance(p, TypeVar) and p.__name__ == current_var.__name__:
+                        break
+                else:
+                    raise
+            else:
+                raise
 
         try:
             arg = args[i]
@@ -1106,10 +1134,55 @@ def get_type_argument_for(
 
         current_var = arg
 
-    if not allow_typevar:
+    if isinstance(current_var, TypeVar) and not allow_typevar:
+        if assume_any:
+            return Any  # type: ignore
+
+        if not stack:
+            raise TypeVarNotSet(type_var, base_type, type_)
+
         raise NoConcreteTypeForTypeVar(type_var, base_type, type_, current_var)  # type: ignore
 
     return current_var
+
+
+def get_type_arguments_for(
+    type_: Type,
+    base: type,
+    *,
+    assume_any: bool = True,
+    allow_typevars: bool = False,
+) -> tuple[Type_, ...]:
+    """
+    Returns ``type_``'s type arguments in relation to ``base``.
+
+    Examples::
+
+        >>> get_type_arguments_for(dict[str, int], collections.abc.Mapping)
+        (<class 'str'>, <class 'int'>)
+        >>> get_type_arguments_for(typing.TextIO, typing.IO)
+        (<class 'str'>,)
+
+    If ``assume_any`` is ``True``, missing type arguments are replaced with ``Any``. If
+    ``assume_any`` is ``False``, a :exc:`ValueError` is raised instead. Example::
+
+        >>> get_type_arguments_for(list, collections.abc.Iterable)
+        (typing.Any,)
+
+    If a type argument is a TypeVar and ``allow_typevars`` is ``False``, a :exc:`ValueError` is
+    raised. If ``allow_typevars`` is ``True``, the TypeVar is returned instead. Example::
+
+        >>> get_type_arguments_for(list[T], list, allow_typevars=True)
+        (T,)
+
+    .. versionadded: 1.14
+    """
+    return tuple(
+        get_type_argument_for(
+            type_, base, type_var, assume_any=assume_any, allow_typevar=allow_typevars
+        )
+        for type_var in get_type_parameters(base)
+    )
 
 
 def get_type_name(type_: Type_) -> str:
@@ -1163,8 +1236,13 @@ def get_parent_types(type_: Type_) -> Tuple[Type_, ...]:
         return (float,)
 
     if type_ in GENERIC_INHERITANCE:
-        base, *type_vars = GENERIC_INHERITANCE[type_]
-        return (parameterize(base, type_vars),)
+        return tuple(
+            parameterize(
+                getattr(typing, base) if isinstance(base, str) else base,
+                type_vars,
+            )
+            for base, *type_vars in GENERIC_INHERITANCE[type_]
+        )
 
     # When inheriting from a parameterized type, like
     #
@@ -1179,22 +1257,42 @@ def get_parent_types(type_: Type_) -> Tuple[Type_, ...]:
     except AttributeError:
         return type_.__bases__  # type: ignore[wtf]
 
+    # Map each class in `__bases__` to its corresponding parameterized type in
+    # `__orig_bases__`.
+    from .type_compat import to_python
+
+    orig_bases_by_base = {}
+    for orig_base in orig_bases:
+        try:
+            base = get_generic_base_class(orig_base)
+        except NotAParameterizedGeneric:
+            base = orig_base
+
+        orig_bases_by_base[to_python(base, strict=False)] = orig_base
+
     parent_types = []
 
-    for base, orig_base in zip(type_.__bases__, orig_bases):  # type: ignore[wtf]
-        # Non-generic types show up as-is in both tuples
-        if base is orig_base:
-            parent_types.append(base)
-        else:
-            generic_base = get_generic_base_class(orig_base)
-            if base is generic_base:
-                parent_types.append(orig_base)
-            else:
-                # If they're different, that means it's a generic class with no
-                # type arguments provided. Which means the arguments are all
-                # Any.
+    for base in type_.__bases__:  # type: ignore[wtf]
+        normalized_base = to_python(base, strict=False)
+
+        try:
+            orig_base = orig_bases_by_base[normalized_base]
+        except KeyError:
+            # This happens for `Generic` or other internal types that don't
+            # show up in `__orig_bases__` the way we expect.
+            if base is Generic:
+                continue
+
+            # If it's a generic class with no type arguments provided, the
+            # arguments are all Any.
+            try:
                 params = get_type_parameters(base)
+            except NotAGeneric:
+                parent_types.append(base)
+            else:
                 parameterized_base = parameterize(base, [Any] * len(params))
                 parent_types.append(parameterized_base)
+        else:
+            parent_types.append(orig_base)
 
     return tuple(parent_types)

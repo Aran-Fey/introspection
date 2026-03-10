@@ -5,7 +5,6 @@ import typing
 import typing_extensions as te
 
 from ._compat import LITERAL_TYPES, TYPE_ALIAS_TYPES, ANYS
-from .introspection import *
 from . import introspection as typing_introspection
 from ..types import Type_
 from ..errors import *
@@ -127,12 +126,12 @@ def to_python(type_: Type_, strict: bool = False) -> Type_:
     if type_ is None:
         return type_
 
-    if not is_parameterized_generic(type_):
+    if not typing_introspection.is_parameterized_generic(type_):
         if isinstance(type_, TYPE_ALIAS_TYPES):
             type_ = type_.__value__  # type: ignore
             return to_python(type_, strict=strict)
 
-        if not is_typing_type(type_):
+        if not typing_introspection.is_typing_type(type_):
             return type_
 
         typ = typing_introspection._to_python(type_)
@@ -146,10 +145,10 @@ def to_python(type_: Type_, strict: bool = False) -> Type_:
         raise NoPythonEquivalent(type_)
 
     # At this point we know it's a parameterized generic type
-    base = get_generic_base_class(type_)
-    args = get_type_arguments(type_)
+    base = typing_introspection.get_generic_base_class(type_)
+    args = typing_introspection.get_type_arguments(type_)
 
-    if not is_variadic_generic(base) and all(arg in ANYS for arg in args):
+    if not typing_introspection.is_variadic_generic(base) and all(arg in ANYS for arg in args):
         return to_python(base, strict)
     elif base in (type, typing.Type, te.Type) and args[0] is object:
         return type
@@ -166,7 +165,7 @@ def to_python(type_: Type_, strict: bool = False) -> Type_:
 
     # I don't think there is a single class that would fail this is_generic
     # check, so I'll just disable coverage for this
-    if is_generic(py_base):  # pragma: no branch
+    if typing_introspection.is_generic(py_base):  # pragma: no branch
         base = py_base
     elif strict:  # pragma: no cover
         raise NoGenericPythonEquivalent(type_)
@@ -221,9 +220,9 @@ def to_typing(type_: Type_, strict: bool = False) -> Type_:
 
         if hasattr(typing, type_):  # type: ignore
             return getattr(typing, type_)  # type: ignore
-    elif is_parameterized_generic(type_):
-        base = to_typing(get_generic_base_class(type_), strict)
-        args = get_type_arguments(type_)
+    elif typing_introspection.is_parameterized_generic(type_):
+        base = to_typing(typing_introspection.get_generic_base_class(type_), strict)
+        args = typing_introspection.get_type_arguments(type_)
 
         if base is typing.Callable:
             if args[0] is ...:
@@ -239,7 +238,7 @@ def to_typing(type_: Type_, strict: bool = False) -> Type_:
             args = tuple(to_typing(arg, strict) for arg in args)  # type: ignore
 
         return base[args]  # type: ignore
-    elif is_typing_type(type_):
+    elif typing_introspection.is_typing_type(type_):
         return type_
     else:
         try:

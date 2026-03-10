@@ -6,7 +6,7 @@ import types
 import typing
 import typing_extensions
 
-from .introspection import is_forwardref
+from . import introspection
 from .misc import resolve_forward_refs
 from ..errors import CannotResolveForwardref
 from ..types import Type_, TypeAnnotation, ForwardRefContext
@@ -68,7 +68,7 @@ def resolve_at_least_1_level_of_forward_refs(
         treat_name_errors_as_imports=treat_name_errors_as_imports,
     )
 
-    if is_forwardref(result):
+    if introspection.is_forwardref(result):
         raise CannotResolveForwardref(annotation, context)
 
     return result  # type: ignore

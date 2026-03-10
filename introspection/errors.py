@@ -90,32 +90,32 @@ class InvalidOption(InvalidArgumentError[V_co], Generic[V_co, T_co], ValueError)
 
 class NotAType(InvalidArgumentError[V_co], TypeError):
     def __str__(self) -> str:
-        return super().__str__() + f". A class or type is required."
+        return super().__str__() + ". A class or type is required."
 
 
 class NotAGeneric(InvalidArgumentError[V_co], ValueError):
     def __str__(self) -> str:
-        return super().__str__() + f". A generic type is required."
+        return super().__str__() + ". A generic type is required."
 
 
 class NotAParameterizedGeneric(InvalidArgumentError[V_co], ValueError):
     def __str__(self) -> str:
-        return super().__str__() + f". A parameterized generic is required."
+        return super().__str__() + ". A parameterized generic is required."
 
 
 class ForwardRefsDontHaveNames(InvalidArgumentError[V_co], TypeError):
     def __str__(self) -> str:
-        return super().__str__() + f". ForwardRefs don't have names."
+        return super().__str__() + ". ForwardRefs don't have names."
 
 
 class GenericMustNotBeParameterized(InvalidArgumentError[V_co], ValueError):
     def __str__(self) -> str:
-        return super().__str__() + f". Only unparameterized generics are allowed."
+        return super().__str__() + ". Only unparameterized generics are allowed."
 
 
 class ObjectHasNoDict(InvalidArgumentError[V_co], TypeError):
     def __str__(self) -> str:
-        return super().__str__() + f". It doesn't have a __dict__."
+        return super().__str__() + ". It doesn't have a __dict__."
 
 
 class ConflictingArguments(FunctionCallError, TypeError):
@@ -154,7 +154,7 @@ class CannotUnwrapBoundMethod(Error, TypeError):
     method: types.MethodType
 
     def __str__(self) -> str:
-        return f"Cannot unwrap a bound method"
+        return "Cannot unwrap a bound method"
 
 
 class InvalidIdentifier(Error, NameError):
