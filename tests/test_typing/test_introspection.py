@@ -13,6 +13,7 @@ from typing import *
 from introspection.typing import *
 from introspection import errors
 from introspection.types import Type_
+from introspection.typing.introspection import T, K, V, T_co
 
 from typing import Type  # overwrite the `Type` imported from `introspection.typing`
 
@@ -20,10 +21,6 @@ from typing import Type  # overwrite the `Type` imported from `introspection.typ
 is_py39_plus = sys.version_info >= (3, 9)
 
 
-T = TypeVar("T")
-K = TypeVar("K")
-V = TypeVar("V")
-T_co = TypeVar("T_co", covariant=True)
 E = TypeVar("E", bound=Exception)
 
 
@@ -1126,6 +1123,7 @@ def test_get_type_arguments_for_assume_any():
     # When not provided, type arguments should default to Any if assume_any=True
     assert get_type_arguments_for(list, list, assume_any=True) == (Any,)
     assert get_type_arguments_for(MyList, MyList, assume_any=True) == (Any,)
+    assert get_type_arguments_for(frozenset, collections.abc.Iterable, assume_any=True) == (Any,)
 
     with pytest.raises(errors.TypeVarNotSet):
         get_type_arguments_for(list, list, assume_any=False)
@@ -1150,7 +1148,24 @@ def test_get_type_argument_for():
     assert get_type_argument_for(Dict[str, int], dict, V) is int
 
 
-def test_get_type_argument_for_errors():
+def test_get_type_argument_missing_typevar_argument_error():
     # Multiple TypeVars, but none specified
     with pytest.raises(errors.ArgumentRequired):
         get_type_argument_for(Dict[str, int], dict)
+
+
+@pytest.mark.parametrize(
+    "type_, expected",
+    [
+        (int, (float,)),
+        (typing.List, (typing.MutableSequence[T],)),
+        (typing.Set, (typing.MutableSet[T],)),
+        (typing.AbstractSet, (typing.Sized, typing.Collection[T_co])),
+        (typing.Sequence, (typing.Reversible[T_co], typing.Collection[T_co])),
+        (typing.Mapping, (typing.Collection[K], typing.Generic[K, V])),
+        (typing.TextIO, (typing.IO[str],)),
+    ],
+)
+def test_get_parent_types(type_, expected):
+    parents = get_parent_types(type_)
+    assert parents == expected

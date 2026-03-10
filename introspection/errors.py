@@ -14,6 +14,7 @@ __all__ = [
     "ArgumentRequired",
     "InvalidArgumentType",
     "InvalidOption",
+    "NotAClass",
     "NotAType",
     "NotAGeneric",
     "NotAParameterizedGeneric",
@@ -86,6 +87,11 @@ class InvalidOption(InvalidArgumentError[V_co], Generic[V_co, T_co], ValueError)
 
     def __str__(self) -> str:
         return super().__str__() + f". Valid options are: {self.options}"
+
+
+class NotAClass(InvalidArgumentError[V_co], TypeError):
+    def __str__(self) -> str:
+        return super().__str__() + ". A class is required."
 
 
 class NotAType(InvalidArgumentError[V_co], TypeError):

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ordered_set
 
+import collections.abc
 import dataclasses
 import sys
 import types
@@ -1218,7 +1219,7 @@ def get_type_name(type_: Type_) -> str:
     return _get_name(type_)
 
 
-def get_parent_types(type_: Type_) -> Tuple[Type_, ...]:
+def get_parent_types(type_: type) -> Tuple[Type_, ...]:
     """
     Given a type as input, returns a tuple of its parent types - including type
     arguments, if it's a generic type.
@@ -1236,13 +1237,23 @@ def get_parent_types(type_: Type_) -> Tuple[Type_, ...]:
         return (float,)
 
     if type_ in GENERIC_INHERITANCE:
-        return tuple(
-            parameterize(
-                getattr(typing, base) if isinstance(base, str) else base,
-                type_vars,
-            )
-            for base, *type_vars in GENERIC_INHERITANCE[type_]
-        )
+        # Resolve base classes in the same module if possible, falling back to the other one if not.
+        if type_.__module__ == "typing":
+            scope = collections.ChainMap(vars(typing), vars(collections.abc))
+        else:
+            scope = collections.ChainMap(vars(collections.abc), vars(typing))
+
+        parents: list[Type_] = []
+
+        for base_cls_name, *type_vars in GENERIC_INHERITANCE[type_]:
+            base = scope[base_cls_name]
+
+            if type_vars:
+                base = parameterize(base, type_vars)
+
+            parents.append(base)
+
+        return tuple(parents)
 
     # When inheriting from a parameterized type, like
     #
@@ -1255,12 +1266,13 @@ def get_parent_types(type_: Type_) -> Tuple[Type_, ...]:
     try:
         orig_bases = type_.__orig_bases__  # type: ignore
     except AttributeError:
-        return type_.__bases__  # type: ignore[wtf]
+        try:
+            return type_.__bases__  # type: ignore
+        except AttributeError:
+            raise NotAClass("type_", type_)
 
     # Map each class in `__bases__` to its corresponding parameterized type in
     # `__orig_bases__`.
-    from .type_compat import to_python
-
     orig_bases_by_base = {}
     for orig_base in orig_bases:
         try:
