@@ -49,6 +49,8 @@ def func_with_forwardrefs(arg: "int") -> "str": ...
         ((), t.Tuple[int, ...], True),
         ((1, 2), t.Tuple[int, ...], True),
         ((1, b""), t.Tuple[int, ...], False),
+        ("bye", t.Literal["hi", "bye"], True),
+        ("bye", t.Literal["hello", "goodbye"], False),
         (dict, t.Callable[[], t.Any], True),
         # (list, Callable[[str], list], True),
         # (list, Callable[[str], List[str]], True),

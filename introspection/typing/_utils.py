@@ -95,12 +95,7 @@ class ImporterDict(collections.abc.Mapping[str, types.ModuleType]):
 
 NOT_INSTANCE_OR_SUBTYPE_CHECKED = {
     obj
-    for name in (
-        "Optional",
-        "Union",
-        "Any",
-        "Annotated",
-    )
+    for name in ("Optional", "Union", "Any", "Annotated", "Literal")
     for obj in resolve_name_in_all_typing_modules(name)
 }
 if sys.version_info >= (3, 10):

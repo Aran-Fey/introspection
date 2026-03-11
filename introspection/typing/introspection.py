@@ -39,6 +39,7 @@ __all__ = [
 T = TypeVar("T")
 
 NoneType = type(None)
+_SpecialForm = getattr(typing, "_SpecialForm", object)
 
 
 def _is_in(needle: T, haystack: Container[T]):
@@ -312,81 +313,99 @@ def _get_type_parameters(type_):
     if isinstance(type_, PARAMETERIZED_GENERIC_META):  # type: ignore
         return type_.__parameters__
 
+    # Classes that inherit from a collections.abc generic (e.g.
+    # `class MyList(MutableSequence[T]):`) don't inherit from
+    # `typing.Generic` and don't have `__parameters__`.
+    try:
+        orig_bases = type_.__orig_bases__
+    except AttributeError:
+        pass
+    else:
+        params = []
+        for base in orig_bases:
+            try:
+                base_params = base.__parameters__
+            except AttributeError:
+                continue
+
+            for p in base_params:
+                if p not in params:
+                    params.append(p)
+
+        return tuple(params)
+
     return None
 
 
 PARAMLESS_SUBSCRIPTABLES = {
     Generic,
+    Protocol,
     typing_extensions.Protocol,
+    Literal,
     typing_extensions.Literal,
 }
 
 
 def _is_generic_base_class(cls):
-    if isinstance(cls, (CallableMeta, _Union)):  # type: ignore
-        return cls.__args__ is None
+    if isinstance(cls, GenericAliases):
+        return False
 
-    if isinstance(cls, GenericMeta):  # type: ignore
-        return cls.__args__ is None and bool(cls.__parameters__)
+    if isinstance(cls, _SpecialForm):  # type: ignore
+        return True
 
-    if type(cls) is _ClassVar:  # type: ignore
-        return cls.__type__ is None
+    if not isinstance(cls, type):
+        return False
 
-    return cls in {Union, Optional, ClassVar}
+    # Classes that inherit from Generic (including PEP 695 generics)
+    # have `__parameters__`.
+    if hasattr(cls, "__parameters__"):
+        return bool(cls.__parameters__)
 
+    # For classes like `MyList(MutableSequence[T])`, we have to check
+    # `__orig_bases__`.
+    try:
+        orig_bases = cls.__orig_bases__
+    except AttributeError:
+        return False
 
-def _is_parameterized_generic(cls):
-    if isinstance(cls, (GenericMeta, _Union)):  # type: ignore
-        return cls.__args__ is not None
-
-    if type(cls) is _ClassVar:  # type: ignore
-        return cls.__type__ is not None
+    for base in orig_bases:
+        if hasattr(base, "__parameters__") and base.__parameters__:
+            return True
 
     return False
 
 
-def _get_generic_base_class(cls):  # type: ignore
+def _is_parameterized_generic(cls):
+    if sys.version_info >= (3, 10) and isinstance(cls, types.UnionType):
+        return True
+
+    if isinstance(cls, GenericAliases):
+        return True
+
+    return False
+
+
+def _get_generic_base_class(cls):
+    if isinstance(cls, GenericAliases):
+        if getattr(cls, "_name", None) is not None:
+            return getattr(typing, cls._name)
+
+        if isinstance(cls, typing._AnnotatedAlias):  # type: ignore
+            return Annotated
+
+        try:
+            return cls.__origin__
+        except AttributeError:
+            pass
+
+    if sys.version_info >= (3, 10) and isinstance(cls, types.UnionType):
+        return Union
+
     return cls.__origin__
 
 
-def _get_name(cls):  # type: ignore
-    try:
-        return cls.__name__
-    except AttributeError:
-        pass
-
-    typing_, _, name = repr(cls).partition(".")
-    return name
-
-
-SPECIAL_GENERICS = {
-    Optional,
-    Union,
-    ClassVar,
-    Callable,
-    Literal,
-    typing_extensions.Literal,
-    Final,
-    typing_extensions.Final,
-}
-
-
-def _is_parameterized_generic(cls):
-    if isinstance(cls, GenericAliases):
-        return not cls._special
-
-    return False
-
-
-def _is_generic_base_class(cls):
-    if isinstance(cls, GenericAliases):
-        # The _special attribute was removed in 3.9
-        if not cls._special:
-            return False
-    elif not isinstance(cls, (type, _SpecialForm)):  # type: ignore
-        return False
-
-    return is_generic(cls)
+def _get_type_args(cls):
+    return get_args(cls)
 
 
 def _is_typing_type(cls):
@@ -399,9 +418,8 @@ def _is_typing_type(cls):
     if isinstance(cls, TypeVar):
         return True
 
-    if sys.version_info >= (3, 10):
-        if cls is types.UnionType or isinstance(cls, types.UnionType):
-            return True
+    if cls is types.UnionType or isinstance(cls, types.UnionType):
+        return True
 
     try:
         module = cls.__module__
@@ -411,113 +429,45 @@ def _is_typing_type(cls):
     return module in ("typing", "typing_extensions")
 
 
-def _get_generic_base_class(cls):  # type: ignore
-    if cls._name is not None:
-        return getattr(typing, cls._name)
-
-    return cls.__origin__
-
-
-# Special case for `t.Union` -> `types.UnionType`, but only upwards of 3.14 because that's where it
-# became subscriptable. If it's not subscriptable, we can't consider it equivalent.
-if sys.version_info >= (3, 14):
-
-    def _to_python(cls):  # NOT an unused function! IDE is wrong!
-        if cls is Union:
-            return types.UnionType
-
-        return getattr(cls, "__origin__", None)
-else:
-
-    def _to_python(cls):  # NOT an unused function! IDE is wrong!
-        return getattr(cls, "__origin__", None)
-
-
 def _get_name(cls):
     try:
         return cls.__name__
     except AttributeError:
+        pass
+
+    try:
         return cls._name
+    except AttributeError:
+        pass
+
+    typing_, _, name = repr(cls).partition(".")
+    return name
 
 
-if sys.version_info >= (3, 9):
+if sys.version_info >= (3, 14):
 
-    def _is_generic_base_class(cls):
-        if safe_is_subclass(cls, Generic):  # type: ignore[wtf]
-            return bool(cls.__parameters__)  # type: ignore
+    def _to_python(cls):
+        if cls is Union:
+            return types.UnionType
 
-        return False
-
-    def _is_parameterized_generic(cls):
-        if sys.version_info >= (3, 10) and isinstance(cls, types.UnionType):
-            return True
-
-        return isinstance(cls, GenericAliases)
-
-    def _get_generic_base_class(cls):
-        if isinstance(cls, GenericAliases):
-            if getattr(cls, "_name", None) is not None:
-                return getattr(typing, cls._name)
-
-            if isinstance(cls, typing._AnnotatedAlias):  # type: ignore
-                return Annotated
-
-            try:
-                return cls.__origin__
-            except AttributeError:
-                pass
-
-        if sys.version_info >= (3, 10) and isinstance(cls, types.UnionType):
-            return Union
-
-        return cls.__origin__
-
-
-if hasattr(typing, "get_args"):  # python 3.8+
-
-    def _get_type_args(cls):  # type: ignore
-        return get_args(cls)
+        return getattr(cls, "__origin__", None)
 
 else:
-    if hasattr(Union, "_subs_tree"):  # python <3.7
 
-        def _get_base_and_args(cls):  # type: ignore
-            # In older python versions, generics only store the
-            # last pair of arguments. For instance,
-            #    >>> Tuple[List[T]][int].__args__
-            #    (int,)
-            # The output we want is (List[int],).
-            # The _subs_tree() method can help us out - it
-            # returns a tuple that we can use to construct
-            # the output we want:
-            #    >>> Tuple[List[T]][int]._subs_tree()
-            #    (Tuple, (List, <class 'int'>))
-            base_generic, *subtypes = cls._subs_tree()
+    def _to_python(cls):
+        return getattr(cls, "__origin__", None)
 
-            def tree_to_type(tree):
-                if isinstance(tree, tuple):
-                    subtypes = tuple(tree_to_type(t) for t in tree[1:])
-                    return tree[0][subtypes]
 
-                return tree
-
-            subtypes = tuple(map(tree_to_type, subtypes))
-
-            return base_generic, subtypes
-
-    else:  # python 3.7
-
-        def _get_base_and_args(cls):
-            return _get_generic_base_class(cls), cls.__args__
-
-    def _get_type_args(cls):
-        base_generic, subtypes = _get_base_and_args(cls)
-
-        if base_generic == Callable:
-            if subtypes[0] is not ...:
-                subtypes = (list(subtypes[:-1]), subtypes[-1])
-
-        return subtypes
+SPECIAL_GENERICS = {
+    Optional,
+    Union,
+    ClassVar,
+    Callable,
+    Literal,
+    typing_extensions.Literal,
+    Final,
+    typing_extensions.Final,
+}
 
 
 def _get_forward_ref_code(ref):

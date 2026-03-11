@@ -28,6 +28,10 @@ class MyGeneric(Generic[E]):
     pass
 
 
+class MyList(collections.abc.MutableSequence[T]):
+    pass
+
+
 class UnhashableMeta(type):
     __hash__ = None  # type: ignore
 
@@ -236,6 +240,8 @@ def test_is_typing_type_non_raising(type_):
         (List[Tuple], False),
         (List[Callable[[E], int]], True),  # type: ignore
         (List[Callable], False),
+        (MyList, True),
+        (MyList[int], False),
         (typing_extensions.Protocol, True),
         (typing_extensions.Literal, True),
         (typing_extensions.Literal[1, 2], False),
@@ -313,6 +319,7 @@ def test_is_generic_non_raising(type_):
         (List[Tuple], False),
         (List[Callable[[E], int]], False),  # type: ignore
         (List[Callable], False),
+        (MyList, False),
         (typing_extensions.Literal, True),
         (typing_extensions.Literal[3], False),
     ],
@@ -375,6 +382,8 @@ def test_is_variadic_generic_non_raising(type_):
         (Optional[int], False),
         (ByteString, False),
         (List[E], False),  # type: ignore
+        (MyList, True),
+        (MyList[int], False),
         (MyGeneric[E], False),  # type: ignore
         (typing_extensions.Literal, True),
         (typing_extensions.Literal[1, 2], False),
@@ -434,6 +443,8 @@ def test_is_generic_base_class_error(type_):
         (MyGeneric[E], True),  # type: ignore
         (List[E], True),  # type: ignore
         (List[Tuple[E]], True),  # type: ignore
+        (MyList, False),
+        (MyList[int], True),
         (typing_extensions.Literal, False),
         (typing_extensions.Literal[3], True),
         (typing_extensions.Protocol, False),
@@ -686,6 +697,7 @@ if is_py39_plus:
         (Optional[int], (int,)),
         (Type[str], (str,)),
         (List[E], (E,)),  # type: ignore
+        (MyList[int], (int,)),
         (Generator[E, int, E][str], (str, int, str)),  # type: ignore
         (Tuple[E, int, E][str], (str, int, str)),  # type: ignore
         (Callable[[E, int], E][str], ([str, int], str)),  # type: ignore
@@ -777,6 +789,7 @@ if is_py39_plus:
         (Callable[[E, int], E][T_co], "(+T_co,)"),  # type: ignore
         (Tuple[List[T_co]], "(+T_co,)"),  # type: ignore
         (MyGeneric, "(~E,)"),
+        (MyList, "(~T,)"),
         (typing_extensions.Protocol[E], "(~E,)"),  # type: ignore
         (typing_extensions.ClassVar, "(+T_co,)"),
         (typing_extensions.ClassVar[int], "()"),
@@ -1064,10 +1077,6 @@ if sys.version_info >= (3, 12):
         assert not is_generic_base_class(NewStyleTypeAlias)
         assert not is_parameterized_generic(NewStyleTypeAlias)
         assert is_parameterized_generic(NewStyleTypeAlias[int, str])
-
-
-class MyList(Generic[T]):
-    pass
 
 
 class MyDict(Generic[K, V]):
