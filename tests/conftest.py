@@ -2,12 +2,22 @@ import pytest
 
 import introspection
 
+import sys
 import types
+from pathlib import Path
 
 try:
     GenericAlias = types.GenericAlias
-except:
+except AttributeError:
     GenericAlias = ()
+
+
+def pytest_ignore_collect(collection_path: Path, config) -> bool | None:
+    # Ignore any file ending in '_312.py' if we aren't on 3.12+
+    if collection_path.name.endswith("_312.py") and sys.version_info < (3, 12):
+        return True
+
+    return None
 
 
 def pytest_make_parametrize_id(config, val, argname):

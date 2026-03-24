@@ -160,6 +160,13 @@ def resolve_forward_refs(  # type: ignore
         elif isinstance(context, collections.abc.Mapping):
             scope.maps.append(context)  # type: ignore
         else:
+            try:
+                type_parameters = context.__type_params__
+            except AttributeError:
+                pass
+            else:
+                scope.maps.append({param.__name__: param for param in type_parameters})
+
             module = importlib.import_module(context.__module__)
             scope.maps.append(vars(module))
 
