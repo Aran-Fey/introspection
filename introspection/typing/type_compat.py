@@ -129,6 +129,12 @@ def to_python(type_: Type_, strict: bool = False) -> Type_:
     if not typing_introspection.is_parameterized_generic(type_):
         if isinstance(type_, TYPE_ALIAS_TYPES):
             type_ = type_.__value__  # type: ignore
+
+            # We already checked that the input wasn't parameterized, so if we now have parameters,
+            # remove them
+            if typing_introspection.is_parameterized_generic(type_):
+                type_ = typing_introspection.get_generic_base_class(type_)
+
             return to_python(type_, strict=strict)
 
         if not typing_introspection.is_typing_type(type_):

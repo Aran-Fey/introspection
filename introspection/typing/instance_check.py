@@ -11,7 +11,7 @@ from .introspection import (
     is_parameterized_generic,
     get_generic_base_class,
 )
-from ._compat import ANYS
+from ._compat import ANYS, TYPE_ALIAS_TYPES
 from ._utils import (
     NOT_INSTANCE_OR_SUBTYPE_CHECKED,
     TypeCheckingConfig,
@@ -70,6 +70,9 @@ def _is_instance(
         if isinstance(type_, te.TypeVar):
             return _test_typevar(config, obj, type_)
 
+        if isinstance(type_, TYPE_ALIAS_TYPES):
+            return _test_type_alias(config, obj, type_)  # type: ignore
+
         return _safe_instancecheck(obj, type_)
 
     # Extract the generic base type and verify if the object is an instance of that
@@ -113,6 +116,10 @@ def _test_typevar(config: TypeCheckingConfig, obj: object, var: te.TypeVar) -> b
         return any(_is_instance(config, obj, typ) for typ in var.__constraints__)
 
     return True
+
+
+def _test_type_alias(config: TypeCheckingConfig, obj: object, type_: te.TypeAliasType) -> bool:
+    return _is_instance(config, obj, type_.__value__)
 
 
 def _test_mapping_subtypes(
