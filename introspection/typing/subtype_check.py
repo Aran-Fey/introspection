@@ -1,4 +1,5 @@
 import types
+import typing
 from typing import Any, Callable, List, Mapping, Optional, Tuple, Type, TypeVar
 from typing_extensions import TypeGuard
 
@@ -74,6 +75,13 @@ def _unparameterized_supertype_check(subtype: Type_, supertype: Type_) -> bool:
     # Check for trivial cases: Everything is a `Union`. Everything is an `Optional`. Etc.
     if supertype in NOT_INSTANCE_OR_SUBTYPE_CHECKED:
         return True
+
+    # Unwrap NewType recursively on both sides - at runtime, NewType is just an alias for its
+    # supertype
+    while isinstance(subtype, typing.NewType):
+        subtype = subtype.__supertype__
+    while isinstance(supertype, typing.NewType):
+        supertype = supertype.__supertype__
 
     # Ignore the subtype's type arguments, if it has any. Since the supertype doesn't have any type
     # arguments, which is equivalent to being parameterized with `Any`, the subtype's type arguments

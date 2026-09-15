@@ -81,6 +81,9 @@ def _is_instance(
         if isinstance(type_, TYPE_ALIAS_TYPES):
             return _test_type_alias(config, obj, type_)  # type: ignore
 
+        if isinstance(type_, t.NewType):
+            return _is_instance(config, obj, type_.__supertype__)
+
         return _safe_instancecheck(obj, type_)
 
     # Extract the generic base type and verify if the object is an instance of that

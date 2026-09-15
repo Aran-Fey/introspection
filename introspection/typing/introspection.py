@@ -23,6 +23,7 @@ __all__ = [
     "is_generic",
     "is_variadic_generic",
     "is_forwardref",
+    "is_newtype",
     "is_generic_base_class",
     "is_parameterized_generic",
     "is_fully_parameterized_generic",
@@ -418,6 +419,9 @@ def _is_typing_type(cls):
     if isinstance(cls, TypeVar):
         return True
 
+    if isinstance(cls, typing.NewType):
+        return True
+
     if cls is types.UnionType or isinstance(cls, types.UnionType):
         return True
 
@@ -537,6 +541,33 @@ def is_forwardref(type_: Type_, raising: bool = True) -> typing_extensions.TypeG
     :return: Whether the object is a class or type (or forward reference)
     """
     if _is_forwardref(type_):
+        return True
+
+    if raising and not is_type(type_):
+        raise NotAType("type_", type_)
+
+    return False
+
+
+def is_newtype(type_: Type_, raising: bool = True) -> bool:
+    """
+    Returns whether ``type_`` is a :class:`typing.NewType`.
+
+    Examples::
+
+        >>> UserId = NewType('UserId', int)
+        >>> is_newtype(UserId)
+        True
+        >>> is_newtype(int)
+        False
+
+    .. versionadded:: 1.15
+
+    :param type_: The object to examine
+    :param raising: Whether to throw a :exc:`NotAType` exception if ``type_`` is not a type
+    :return: Whether the object is a NewType
+    """
+    if isinstance(type_, typing.NewType):
         return True
 
     if raising and not is_type(type_):
