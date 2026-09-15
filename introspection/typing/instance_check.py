@@ -6,6 +6,14 @@ import types
 import typing as t
 import typing_extensions as te
 
+try:
+    import u
+except ImportError:
+    if t.TYPE_CHECKING:
+        import u
+    else:
+        u = None
+
 from .introspection import (
     get_type_arguments,
     is_parameterized_generic,
@@ -90,15 +98,21 @@ def _is_instance(
             return False
 
     # Verify the subtypes
-    if base_type not in SUBTYPE_TESTS:
+    test: t.Callable[..., bool]
+    if base_type in SUBTYPE_TESTS:
+        test = SUBTYPE_TESTS[base_type]
+        subtypes = get_type_arguments(type_)
+
+        return test(config, obj, *subtypes)
+    elif u is not None and base_type is u.Quantity:
+        obj = t.cast(u.Quantity, obj)
+        type_ = t.cast(type[u.Quantity], type_)
+
+        return type_.typecheck(obj)
+    else:
         raise NotImplementedError(
             f"`is_instance` currently doesn't support parameterized {base_type!r}"
         )
-
-    subtypes = get_type_arguments(type_)
-
-    test = SUBTYPE_TESTS[base_type]
-    return test(config, obj, *subtypes)
 
 
 def _safe_instancecheck(obj: object, type_: te.Any) -> bool:
@@ -246,6 +260,12 @@ def _test_regex_match_subtypes(
     config: TypeCheckingConfig, match: re.Match, subtype: te.Type[te.AnyStr]
 ) -> bool:
     return _is_instance(config, match.string, subtype)
+
+
+def _test_u_quantity_subtypes(
+    config: TypeCheckingConfig, quantity: u.Quantity, subtype: type[u.Quantity]
+) -> bool:
+    return subtype.typecheck(quantity)
 
 
 def _return_true(_) -> bool:

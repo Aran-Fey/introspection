@@ -14,7 +14,7 @@ requires-python = ">=3.10"
 dependencies = ["ordered-set", "sentinel", "typing-extensions"]
 
 [project.optional-dependencies]
-test = ["pytest", "pytest-raisin", "tox", "coverage"]
+test = ["pytest", "pytest-raisin", "tox", "coverage", 'u']
 doc = ["sphinx"]
 
 [tool.flit.module]

@@ -3,6 +3,8 @@ import pytest
 import sys
 import typing as t
 
+import u
+
 from introspection.typing import is_instance, is_subtype
 
 
@@ -61,6 +63,9 @@ def func_with_forwardrefs(arg: "int") -> "str": ...
         (func_with_forwardrefs, t.Callable[[int], str], True),
         (func_with_forwardrefs, t.Callable[[float], str], False),
         (func_with_forwardrefs, t.Callable[[int], bytes], False),
+        (u.meters(3), u.Quantity, True),
+        (u.meters(3), u.Distance, True),
+        (u.meters(3), u.Mass, False),
     ],
 )
 def test_is_instance(obj, type_, expected):

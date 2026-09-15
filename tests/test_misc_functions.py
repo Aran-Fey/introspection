@@ -510,6 +510,8 @@ def test_is_sub_qualname(sub_name: str, super_name: str, expected: bool):
     [
         ("FooBar", "upper snake", "FOO_BAR"),
         ("HTTPAdapter", "snake", "http_adapter"),
+        ("HTTP2Adapter", "snake", "http2_adapter"),
+        ("b2b", "kebab", "b2b"),
         ("foo_bar", "pascal", "FooBar"),
         ("http_adapter", "camel", "httpAdapter"),
         ("remoteCode_execution", "kebab", "remote-code-execution"),
